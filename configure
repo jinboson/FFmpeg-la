@@ -5682,6 +5682,10 @@ elif enabled mips; then
     # MMI can be detected at runtime too
     enabled mmi && check_inline_asm mmi '"punpcklhw $f0, $f0, $f0"' '-mloongson-mmi' && append MMIFLAGS '-mloongson-mmi'
 
+    # TODO: The following code is intended to fix h264 decoding module compilation error,
+    # but it is not resonable. Maybe we should fix it in the feature.
+    enabled mmi && h264_decoder_select="$h264_decoder_select hpeldsp"
+
     if enabled bigendian && enabled msa; then
         disable msa
     fi
