@@ -34,4 +34,11 @@ void ff_yuv2planeX_8_msa(const int16_t *filter, int filterSize,
                          const int16_t **src, uint8_t *dest, int dstW,
                          const uint8_t *dither, int offset);
 
+void yuv2bgrx32_full_X_msa(SwsContext *c, const int16_t *lumFilter,
+                           const int16_t **lumSrc, int lumFilterSize,
+                           const int16_t *chrFilter, const int16_t **chrUSrc,
+                           const int16_t **chrVSrc, int chrFilterSize,
+                           const int16_t **alpSrc, uint8_t *dest, int dstW,
+                           int y);
+
 #endif /* SWSCALE_MIPS_SWSCALE_MIPS_H */

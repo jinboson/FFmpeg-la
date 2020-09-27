@@ -32,6 +32,22 @@ av_cold void ff_sws_init_swscale_mips(SwsContext *c)
             c->hyScale = c->hcScale = ff_hscale_8_to_15_msa;
         if (c->dstBpc == 8)
             c->yuv2planeX = ff_yuv2planeX_8_msa;
+        if (c->flags & SWS_FULL_CHR_H_INT) {
+            switch (c->dstFormat) {
+                case AV_PIX_FMT_BGRA:
+#if CONFIG_SMALL
+#else
+#if CONFIG_SWSCALE_ALPHA
+                    if (c->needAlpha) {
+                    } else
+#endif /* CONFIG_SWSCALE_ALPHA */
+                    {
+                        c->yuv2packedX = yuv2bgrx32_full_X_msa;
+                    }
+#endif /* !CONFIG_SMALL */
+                    break;
+            }
+        }
     }
 #endif /* #if HAVE_MSA */
 }

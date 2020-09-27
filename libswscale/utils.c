@@ -53,6 +53,7 @@
 #include "libavutil/ppc/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
+#include "libavutil/mips/cpu.h"
 
 // We have to implement deprecated functions until they are removed, this is the
 // simplest way to prevent warnings
@@ -1665,7 +1666,8 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
         {
             const int filterAlign = X86_MMX(cpu_flags)     ? 4 :
                                     PPC_ALTIVEC(cpu_flags) ? 8 :
-                                    have_neon(cpu_flags)   ? 8 : 1;
+                                    have_neon(cpu_flags)   ? 8 :
+                                    have_msa(cpu_flags)    ? 8 : 1;
 
             if ((ret = initFilter(&c->hLumFilter, &c->hLumFilterPos,
                            &c->hLumFilterSize, c->lumXInc,
