@@ -590,6 +590,15 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
             filterAlign = 1;
     }
 
+    if (have_msa(cpu_flags)) {
+        int reNum = minFilterSize & (0x07);
+
+        if (minFilterSize < 5)
+            filterAlign = 4;
+        if (reNum < 3)
+            filterAlign = 1;
+    }
+
     if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) {
         // special case for unscaled vertical filtering
         if (minFilterSize == 1 && filterAlign == 2)

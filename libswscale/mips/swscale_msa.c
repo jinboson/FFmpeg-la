@@ -27,12 +27,13 @@ void ff_hscale_8_to_15_msa(SwsContext *c, int16_t *dst, int dstW,
                            const uint8_t *src, const int16_t *filter,
                            const int32_t *filterPos, int filterSize)
 {
-    int i, j;
+    int i;
     if (filterSize == 8) {
         for (i = 0; i < dstW; i++) {
             int val = 0;
             v8i16 src0, filter0, out0;
             v16i8 zero = { 0 };
+
             src0 = LD_V(v8i16, src + filterPos[i]);
             filter0 = LD_V(v8i16, filter + (i << 3));
             src0 = (v8i16)__msa_ilvr_b(zero, (v16i8)src0);
@@ -42,14 +43,49 @@ void ff_hscale_8_to_15_msa(SwsContext *c, int16_t *dst, int dstW,
                     __msa_copy_s_w((v4i32)out0, 2));
             dst[i] = FFMIN(val >> 7, (1 << 15) - 1);
         }
-    } else {
+    } else if (filterSize == 4) {
+        int len = dstW & (~1);
+
+        for (i = 0; i < len; i += 2) {
+            v8i16 src1, src2, src3;
+            v8i16 filter0;
+            v4i32 out0;
+            int val1 = 0;
+            int val2 = 0;
+            v16i8 zero = {0};
+
+            src1 = LD_V(v8i16, src + filterPos[i]);
+            src2 = LD_V(v8i16, src + filterPos[i + 1]);
+            filter0 = LD_V(v8i16, filter + (i << 2));
+            src1 = (v8i16)__msa_ilvr_b(zero, (v16i8)src1);
+            src2 = (v8i16)__msa_ilvr_b(zero, (v16i8)src2);
+            src3 = (v8i16)__msa_ilvr_d((v2i64)src2, (v2i64)src1);
+            out0 = (v4i32)__msa_dotp_s_w(src3, filter0);
+            val1 = __msa_copy_s_w(out0, 0) + __msa_copy_s_w(out0, 1);
+            val2 = __msa_copy_s_w(out0, 2) + __msa_copy_s_w(out0, 3);
+            dst[i] = FFMIN(val1 >> 7, (1 << 15) - 1);
+            dst[i + 1] = FFMIN(val2 >> 7, (1 << 15) - 1);
+        }
+        if (i < dstW) {
+           int val = 0;
+           uint8_t *srcPos = src + filterPos[i];
+           int16_t *filterStart = filter + filterSize * i;
+
+           for (int j = 0; j < 4; j++) {
+               val += ((int)srcPos[j]) * filterStart[j];
+           }
+           dst[i] = FFMIN(val >> 7, (1 << 15) - 1);
+        }
+    } else if (filterSize > 8) {
         int len  = filterSize >> 3;
+        int part = len << 3;
+
         for (i = 0; i < dstW; i++) {
             v8i16 src0, filter0, out0;
             v16i8 zero = { 0 };
             uint8_t *srcPos = src + filterPos[i];
             int16_t *filterStart = filter + filterSize * i;
-            int val = 0;
+            int j, val = 0;
 
             for (j = 0; j < len; j++) {
                 src0 = LD_V(v8i16, srcPos + (j << 3));
@@ -59,6 +95,20 @@ void ff_hscale_8_to_15_msa(SwsContext *c, int16_t *dst, int dstW,
                 out0 = (v8i16)__msa_hadd_s_d((v4i32)out0, (v4i32)out0);
                 val += (__msa_copy_s_w((v4i32)out0, 0) +
                         __msa_copy_s_w((v4i32)out0, 2));
+            }
+            for (j = part; j < filterSize; j++) {
+                val += ((int)srcPos[j]) * filterStart[j];
+            }
+            dst[i] = FFMIN(val >> 7, (1 << 15) - 1);
+        }
+    } else {
+        for (i = 0; i < dstW; i++) {
+            int val = 0;
+            uint8_t *srcPos = src + filterPos[i];
+            int16_t *filterStart = filter + filterSize * i;
+
+            for (int j = 0; j < filterSize; j++) {
+                val += ((int)srcPos[j]) * filterStart[j];
             }
             dst[i] = FFMIN(val >> 7, (1 << 15) - 1);
         }
