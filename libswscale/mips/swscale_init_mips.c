@@ -34,18 +34,59 @@ av_cold void ff_sws_init_swscale_mips(SwsContext *c)
             c->yuv2planeX = ff_yuv2planeX_8_msa;
         if (c->flags & SWS_FULL_CHR_H_INT) {
             switch (c->dstFormat) {
-                case AV_PIX_FMT_BGRA:
+            case AV_PIX_FMT_BGRA:
 #if CONFIG_SMALL
 #else
 #if CONFIG_SWSCALE_ALPHA
-                    if (c->needAlpha) {
-                    } else
+                if (c->needAlpha) {
+                } else
 #endif /* CONFIG_SWSCALE_ALPHA */
-                    {
-                        c->yuv2packedX = yuv2bgrx32_full_X_msa;
-                    }
+                {
+                    c->yuv2packedX = yuv2bgrx32_full_X_msa;
+                }
 #endif /* !CONFIG_SMALL */
-                    break;
+                break;
+            }
+        } else {
+            switch (c->dstFormat) {
+            case AV_PIX_FMT_RGB32:
+            case AV_PIX_FMT_BGR32:
+#if CONFIG_SMALL
+#else
+#if CONFIG_SWSCALE_ALPHA
+                if (c->needAlpha) {
+                } else
+#endif /* CONFIG_SWSCALE_ALPHA */
+                {
+                    c->yuv2packed1 = yuv2rgbx32_1_msa;
+                    c->yuv2packed2 = yuv2rgbx32_2_msa;
+                    c->yuv2packedX = yuv2rgbx32_X_msa;
+                }
+#endif /* !CONFIG_SMALL */
+                break;
+            case AV_PIX_FMT_RGB32_1:
+            case AV_PIX_FMT_BGR32_1:
+#if CONFIG_SMALL
+#else
+#if CONFIG_SWSCALE_ALPHA
+                if (c->needAlpha) {
+                } else
+#endif /* CONFIG_SWSCALE_ALPHA */
+                {
+                    c->yuv2packed1 = yuv2rgbx32_1_1_msa;
+                    c->yuv2packed2 = yuv2rgbx32_1_2_msa;
+                    c->yuv2packedX = yuv2rgbx32_1_X_msa;
+                }
+#endif /* !CONFIG_SMALL */
+                break;
+            case AV_PIX_FMT_RGB565LE:
+            case AV_PIX_FMT_RGB565BE:
+            case AV_PIX_FMT_BGR565LE:
+            case AV_PIX_FMT_BGR565BE:
+                c->yuv2packed1 = yuv2rgb16_1_msa;
+                c->yuv2packed2 = yuv2rgb16_2_msa;
+                c->yuv2packedX = yuv2rgb16_X_msa;
+                break;
             }
         }
     }

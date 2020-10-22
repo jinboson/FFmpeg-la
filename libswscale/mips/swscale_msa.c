@@ -161,6 +161,7 @@ void ff_yuv2planeX_8_msa(const int16_t *filter, int filterSize,
     }
 }
 
+/*Copy from libswscale/output.c*/
 static av_always_inline void yuv2bgrx32_write_full(SwsContext *c,
                                                    uint8_t *dest, int Y, int U, int V)
 {
@@ -189,7 +190,6 @@ static av_always_inline void yuv2bgrx32_write_full_msa(uint8_t *dest, v4i32 Y, v
     int R, G, B;
     v4i32 vr = V * v2r;
     v4i32 ub = U * u2b;
-
     v4i32 uv_r = __msa_ilvr_w(V,U);
     v4i32 uv_l = __msa_ilvl_w(V,U);
     uv_r = (v4i32)__msa_dotp_s_d(uv_r, uv_coe);
@@ -198,8 +198,8 @@ static av_always_inline void yuv2bgrx32_write_full_msa(uint8_t *dest, v4i32 Y, v
     for (int i = 0; i < 2; i++) {
         uint32_t y =(unsigned)Y[i];
         int n = i * 2;
-        int j = i + 2;
         int m = i * 4;
+        int j = i + 2;
 
         R = y + vr[i];
         G = y + uv_r[n];
@@ -213,7 +213,6 @@ static av_always_inline void yuv2bgrx32_write_full_msa(uint8_t *dest, v4i32 Y, v
         dest[m + 1] = G >> 22;
         dest[m + 2] = R >> 22;
         dest[m + 3] = 255;
-
         y = (unsigned)Y[j];
         R = y + vr[j];
         G = y + uv_l[n];
@@ -254,7 +253,6 @@ void yuv2bgrx32_full_X_msa(SwsContext *c, const int16_t *lumFilter,
     u2b   = c->yuv2rgb_u2b_coeff;
     y_off = c->yuv2rgb_y_offset;
     y_coe = c->yuv2rgb_y_coeff;
-
     for (i = 0; i < len; i += 8) {
         int j;
         v8i16 l_src, u_src, v_src;
@@ -267,7 +265,6 @@ void yuv2bgrx32_full_X_msa(SwsContext *c, const int16_t *lumFilter,
         u_l   = u_r;
         v_r   = u_r;
         v_l   = u_r;
-
         for (j = 0; j < lumFilterSize; j++) {
             temp  = __msa_fill_w(lumFilter[j]);
             l_src = LD_V(v8i16, (lumSrc[j] + i));
@@ -329,3 +326,462 @@ void yuv2bgrx32_full_X_msa(SwsContext *c, const int16_t *lumFilter,
     c->dither_error[2][i] = err[2];
 }
 
+/*Copy from libswscale/output.c*/
+static av_always_inline void
+yuv2rgb_write(uint8_t *_dest, int i, int Y1, int Y2,
+              unsigned A1, unsigned A2,
+              const void *_r, const void *_g, const void *_b, int y,
+              enum AVPixelFormat target, int hasAlpha)
+{
+    if (target == AV_PIX_FMT_ARGB || target == AV_PIX_FMT_RGBA ||
+        target == AV_PIX_FMT_ABGR || target == AV_PIX_FMT_BGRA) {
+        uint32_t *dest = (uint32_t *) _dest;
+        const uint32_t *r = (const uint32_t *) _r;
+        const uint32_t *g = (const uint32_t *) _g;
+        const uint32_t *b = (const uint32_t *) _b;
+
+#if CONFIG_SMALL
+        dest[i * 2 + 0] = r[Y1] + g[Y1] + b[Y1];
+        dest[i * 2 + 1] = r[Y2] + g[Y2] + b[Y2];
+#else
+#if defined(ASSERT_LEVEL) && ASSERT_LEVEL > 1
+        int sh = (target == AV_PIX_FMT_RGB32_1 ||
+                  target == AV_PIX_FMT_BGR32_1) ? 0 : 24;
+        av_assert2((((r[Y1] + g[Y1] + b[Y1]) >> sh) & 0xFF) == 0xFF);
+#endif
+        dest[i * 2 + 0] = r[Y1] + g[Y1] + b[Y1];
+        dest[i * 2 + 1] = r[Y2] + g[Y2] + b[Y2];
+#endif
+
+    } else if (target == AV_PIX_FMT_RGB565 || target == AV_PIX_FMT_BGR565 ||
+               target == AV_PIX_FMT_RGB555 || target == AV_PIX_FMT_BGR555 ||
+               target == AV_PIX_FMT_RGB444 || target == AV_PIX_FMT_BGR444) {
+        uint16_t *dest = (uint16_t *) _dest;
+        const uint16_t *r = (const uint16_t *) _r;
+        const uint16_t *g = (const uint16_t *) _g;
+        const uint16_t *b = (const uint16_t *) _b;
+        int dr1, dg1, db1, dr2, dg2, db2;
+
+        if (target == AV_PIX_FMT_RGB565 || target == AV_PIX_FMT_BGR565) {
+            dr1 = ff_dither_2x2_8[ y & 1     ][0];
+            dg1 = ff_dither_2x2_4[ y & 1     ][0];
+            db1 = ff_dither_2x2_8[(y & 1) ^ 1][0];
+            dr2 = ff_dither_2x2_8[ y & 1     ][1];
+            dg2 = ff_dither_2x2_4[ y & 1     ][1];
+            db2 = ff_dither_2x2_8[(y & 1) ^ 1][1];
+        }
+
+        dest[i * 2 + 0] = r[Y1 + dr1] + g[Y1 + dg1] + b[Y1 + db1];
+        dest[i * 2 + 1] = r[Y2 + dr2] + g[Y2 + dg2] + b[Y2 + db2];
+    }
+}
+
+static av_always_inline void
+yuv2rgb_X_msa_template(SwsContext *c, const int16_t *lumFilter,
+                       const int16_t **lumSrc, int lumFilterSize,
+                       const int16_t *chrFilter, const int16_t **chrUSrc,
+                       const int16_t **chrVSrc, int chrFilterSize,
+                       const int16_t **alpSrc, uint8_t *dest, int dstW,
+                       int y, enum AVPixelFormat target, int hasAlpha)
+{
+    int i, j;
+    int count = 0;
+    int len = dstW & (~0x07);
+    int len_count = (dstW + 1) >> 1;
+    const void *r, *g, *b;
+    v4i32 headroom  = (v4i32)__msa_fill_w(YUVRGB_TABLE_HEADROOM);
+
+    for (i = 0; i < len; i += 8) {
+        int t = 1 << 18;
+        v8i16 l_src, u_src, v_src;
+        v4i32 lumsrc_r, lumsrc_l, usrc, vsrc, temp;
+        v4i32 y_r, y_l, u, v;
+
+        y_r = __msa_fill_w(t);
+        y_l = y_r;
+        u   = y_r;
+        v   = y_r;
+        for (j = 0; j < lumFilterSize; j++) {
+            temp     = __msa_fill_w(lumFilter[j]);
+            l_src    = LD_V(v8i16, (lumSrc[j] + i));
+            UNPCK_SH_SW(l_src, lumsrc_r, lumsrc_l);       /*can use lsx optimization*/
+            y_r      = __msa_maddv_w(lumsrc_r, temp, y_r);
+            y_l      = __msa_maddv_w(lumsrc_l, temp, y_l);
+        }
+        for (j = 0; j < chrFilterSize; j++) {
+            u_src = LD_V(v8i16, (chrUSrc[j] + count));
+            v_src = LD_V(v8i16, (chrVSrc[j] + count));
+            UNPCK_R_SH_SW(u_src, usrc);
+            UNPCK_R_SH_SW(v_src, vsrc);
+            temp  = __msa_fill_w(chrFilter[j]);
+            u     = __msa_maddv_w(usrc, temp, u);
+            v     = __msa_maddv_w(vsrc, temp, v);
+        }
+        y_r = __msa_srai_w(y_r, 19);
+        y_l = __msa_srai_w(y_l, 19);
+        u   = __msa_srai_w(u, 19);
+        v   = __msa_srai_w(v, 19);
+        u   = __msa_addv_w(u, headroom);
+        v   = __msa_addv_w(v, headroom);
+        for (j = 0; j < 2; j++) {
+            int Y1, Y2, U, V;
+            int m = j * 2;
+            int n = j + 2;
+
+            Y1 = y_r[m];
+            Y2 = y_r[m + 1];
+            U  = u[j];
+            V  = v[j];
+            r  =  c->table_rV[V];
+            g  = (c->table_gU[U] + c->table_gV[V]);
+            b  =  c->table_bU[U];
+
+            yuv2rgb_write(dest, count + j, Y1, Y2, 0, 0,
+                          r, g, b, y, target, 0);
+            Y1 = y_l[m];
+            Y2 = y_l[m + 1];
+            U  = u[n];
+            V  = v[n];
+            r  =  c->table_rV[V];
+            g  = (c->table_gU[U] + c->table_gV[V]);
+            b  =  c->table_bU[U];
+
+            yuv2rgb_write(dest, count + n, Y1, Y2, 0, 0,
+                          r, g, b, y, target, 0);
+        }
+        count += 4;
+    }
+    for (count; count < len_count; count++) {
+        int Y1 = 1 << 18;
+        int Y2 = 1 << 18;
+        int U  = 1 << 18;
+        int V  = 1 << 18;
+
+        for (j = 0; j < lumFilterSize; j++) {
+            Y1 += lumSrc[j][count * 2]     * lumFilter[j];
+            Y2 += lumSrc[j][count * 2 + 1] * lumFilter[j];
+        }
+        for (j = 0; j < chrFilterSize; j++) {
+            U += chrUSrc[j][count] * chrFilter[j];
+            V += chrVSrc[j][count] * chrFilter[j];
+        }
+        Y1 >>= 19;
+        Y2 >>= 19;
+        U  >>= 19;
+        V  >>= 19;
+        r =  c->table_rV[V + YUVRGB_TABLE_HEADROOM];
+        g = (c->table_gU[U + YUVRGB_TABLE_HEADROOM] +
+             c->table_gV[V + YUVRGB_TABLE_HEADROOM]);
+        b =  c->table_bU[U + YUVRGB_TABLE_HEADROOM];
+
+        yuv2rgb_write(dest, count, Y1, Y2, 0, 0,
+                      r, g, b, y, target, 0);
+    }
+}
+
+static av_always_inline void
+yuv2rgb_2_msa_template(SwsContext *c, const int16_t *buf[2],
+                       const int16_t *ubuf[2], const int16_t *vbuf[2],
+                       const int16_t *abuf[2], uint8_t *dest, int dstW,
+                       int yalpha, int uvalpha, int y,
+                       enum AVPixelFormat target, int hasAlpha)
+{
+    const int16_t *buf0  = buf[0],  *buf1  = buf[1],
+                  *ubuf0 = ubuf[0], *ubuf1 = ubuf[1],
+                  *vbuf0 = vbuf[0], *vbuf1 = vbuf[1],
+                  *abuf0 = NULL,
+                  *abuf1 = NULL;
+    int yalpha1  = 4096 - yalpha;
+    int uvalpha1 = 4096 - uvalpha;
+    int i, count = 0;
+    int len = dstW & (~0x07);
+    int len_count = (dstW + 1) >> 1;
+    const void *r, *g, *b;
+    v4i32 v_yalpha1  = (v4i32)__msa_fill_w(yalpha1);
+    v4i32 v_uvalpha1 = (v4i32)__msa_fill_w(uvalpha1);
+    v4i32 v_yalpha   = (v4i32)__msa_fill_w(yalpha);
+    v4i32 v_uvalpha  = (v4i32)__msa_fill_w(uvalpha);
+    v4i32 headroom   = (v4i32)__msa_fill_w(YUVRGB_TABLE_HEADROOM);
+
+    for (i = 0; i < len; i += 8) {
+        v8i16 src_y, src_u, src_v;
+        v4i32 y0_r, y0_l, u0, v0;
+        v4i32 y1_r, y1_l, u1, v1;
+        v4i32 y_r, y_l, u, v;
+
+        src_y = LD_V(v8i16, buf0 + i);
+        src_u = LD_V(v8i16, ubuf0 + count);
+        src_v = LD_V(v8i16, vbuf0 + count);
+        UNPCK_SH_SW(src_y, y0_r, y0_l);
+        UNPCK_R_SH_SW(src_u, u0);
+        UNPCK_R_SH_SW(src_v, v0);
+        src_y = LD_V(v8i16, buf1  + i);
+        src_u = LD_V(v8i16, ubuf1 + count);
+        src_v = LD_V(v8i16, vbuf1 + count);
+        UNPCK_SH_SW(src_y, y1_r, y1_l);
+        UNPCK_R_SH_SW(src_u, u1);
+        UNPCK_R_SH_SW(src_v, v1);
+        y0_r = __msa_mulv_w(y0_r, v_yalpha1);
+        y0_l = __msa_mulv_w(y0_l, v_yalpha1);
+        u0   = __msa_mulv_w(u0, v_uvalpha1);
+        v0   = __msa_mulv_w(v0, v_uvalpha1);
+        y_r  = __msa_maddv_w(y1_r, v_yalpha, y0_r);
+        y_l  = __msa_maddv_w(y1_l, v_yalpha, y0_l);
+        u    = __msa_maddv_w(u1, v_uvalpha, u0);
+        v    = __msa_maddv_w(v1, v_uvalpha, v0);
+        y_r  = __msa_srai_w(y_r, 19);
+        y_l  = __msa_srai_w(y_l, 19);
+        u    = __msa_srai_w(u, 19);
+        v    = __msa_srai_w(v, 19);
+        u    = __msa_addv_w(u, headroom);
+        v    = __msa_addv_w(v, headroom);
+        for (int j = 0; j < 2; j++) {
+            int Y1, Y2, U, V;
+            int m = j * 2;
+            int n = j + 2;
+
+            Y1 = y_r[m];
+            Y2 = y_r[m + 1];
+            U  = u[j];
+            V  = v[j];
+            r  =  c->table_rV[V];
+            g  = (c->table_gU[U] + c->table_gV[V]);
+            b  =  c->table_bU[U];
+
+            yuv2rgb_write(dest, count + j, Y1, Y2, 0, 0,
+                          r, g, b, y, target, 0);
+            Y1 = y_l[m];
+            Y2 = y_l[m + 1];
+            U  = u[n];
+            V  = v[n];
+            r  =  c->table_rV[V];
+            g  = (c->table_gU[U] + c->table_gV[V]);
+            b  =  c->table_bU[U];
+
+            yuv2rgb_write(dest, count + n, Y1, Y2, 0, 0,
+                          r, g, b, y, target, 0);
+        }
+        count += 4;
+    }
+
+    for (count; count < len_count; count++) {
+        int Y1 = (buf0[count * 2]     * yalpha1  +
+                  buf1[count * 2]     * yalpha)  >> 19;
+        int Y2 = (buf0[count * 2 + 1] * yalpha1  +
+                  buf1[count * 2 + 1] * yalpha) >> 19;
+        int U  = (ubuf0[count] * uvalpha1 + ubuf1[count] * uvalpha) >> 19;
+        int V  = (vbuf0[count] * uvalpha1 + vbuf1[count] * uvalpha) >> 19;
+
+        r =  c->table_rV[V + YUVRGB_TABLE_HEADROOM],
+        g = (c->table_gU[U + YUVRGB_TABLE_HEADROOM] +
+             c->table_gV[V + YUVRGB_TABLE_HEADROOM]),
+        b =  c->table_bU[U + YUVRGB_TABLE_HEADROOM];
+
+        yuv2rgb_write(dest, count, Y1, Y2, 0, 0,
+                      r, g, b, y, target, 0);
+    }
+}
+
+static av_always_inline void
+yuv2rgb_1_msa_template(SwsContext *c, const int16_t *buf0,
+                       const int16_t *ubuf[2], const int16_t *vbuf[2],
+                       const int16_t *abuf0, uint8_t *dest, int dstW,
+                       int uvalpha, int y, enum AVPixelFormat target,
+                       int hasAlpha)
+{
+    const int16_t *ubuf0 = ubuf[0], *vbuf0 = vbuf[0];
+    int i, j;
+    const void *r, *g, *b;
+    int len = dstW & (~0x07);
+    int len_count = (dstW + 1) >> 1;
+
+    if (uvalpha < 2048) {
+        int count = 0;
+        v4i32 headroom  = (v4i32)__msa_fill_w(YUVRGB_TABLE_HEADROOM);
+        v4i32 bias_64   = (v4i32)__msa_fill_w(64);
+
+        for (i = 0; i < len; i += 8) {
+            v8i16 src_y, src_u, src_v;
+            v4i32 y_r, y_l, u, v;
+
+            src_y = LD_V(v8i16, buf0 + i);
+            src_u = LD_V(v8i16, ubuf0 + count);
+            src_v = LD_V(v8i16, vbuf0 + count);
+            UNPCK_SH_SW(src_y, y_r, y_l);
+            UNPCK_R_SH_SW(src_u, u);
+            UNPCK_R_SH_SW(src_v, v);
+            y_r = __msa_addv_w(y_r, bias_64);
+            y_l = __msa_addv_w(y_l, bias_64);
+            u   = __msa_addv_w(u, bias_64);
+            v   = __msa_addv_w(v, bias_64);
+            y_r = __msa_srai_w(y_r, 7);
+            y_l = __msa_srai_w(y_l, 7);
+            u   = __msa_srai_w(u, 7);
+            v   = __msa_srai_w(v, 7);
+            u   = __msa_addv_w(u, headroom);
+            v   = __msa_addv_w(v, headroom);
+            for (j = 0; j < 2; j++) {
+                int Y1, Y2, U, V;
+                int m = j * 2;
+                int n = j + 2;
+
+                Y1 = y_r[m];
+                Y2 = y_r[m + 1];
+                U  = u[j];
+                V  = v[j];
+                r  =  c->table_rV[V];
+                g  = (c->table_gU[U] + c->table_gV[V]);
+                b  =  c->table_bU[U];
+
+                yuv2rgb_write(dest, count + j, Y1, Y2, 0, 0,
+                              r, g, b, y, target, 0);
+                Y1 = y_l[m];
+                Y2 = y_l[m + 1];
+                U  = u[n];
+                V  = v[n];
+                r  =  c->table_rV[V];
+                g  = (c->table_gU[U] + c->table_gV[V]);
+                b  =  c->table_bU[U];
+
+                yuv2rgb_write(dest, count + n, Y1, Y2, 0, 0,
+                              r, g, b, y, target, 0);
+            }
+            count += 4;
+        }
+        for (count; count < len_count; count++) {
+            int Y1 = (buf0[count * 2    ] + 64) >> 7;
+            int Y2 = (buf0[count * 2 + 1] + 64) >> 7;
+            int U  = (ubuf0[count]        + 64) >> 7;
+            int V  = (vbuf0[count]        + 64) >> 7;
+
+            r =  c->table_rV[V + YUVRGB_TABLE_HEADROOM],
+            g = (c->table_gU[U + YUVRGB_TABLE_HEADROOM] +
+                 c->table_gV[V + YUVRGB_TABLE_HEADROOM]),
+            b =  c->table_bU[U + YUVRGB_TABLE_HEADROOM];
+
+            yuv2rgb_write(dest, count, Y1, Y2, 0, 0,
+                          r, g, b, y, target, 0);
+        }
+    } else {
+        const int16_t *ubuf1 = ubuf[1], *vbuf1 = vbuf[1];
+        int count = 0;
+        v4i32 headroom  = (v4i32)__msa_fill_w(YUVRGB_TABLE_HEADROOM);
+        v4i32 bias_64   = (v4i32)__msa_fill_w(64);
+        v4i32 bias_128  = (v4i32)__msa_fill_w(128);
+
+        for (i = 0; i < len; i += 8) {
+            v8i16 src_y, src_u, src_v;
+            v4i32 y_r, y_l, u0, v0, u1, v1, u, v;
+
+            src_y = LD_V(v8i16, buf0 + i);
+            src_u = LD_V(v8i16, ubuf0 + count);
+            src_v = LD_V(v8i16, vbuf0 + count);
+            UNPCK_SH_SW(src_y, y_r, y_l);
+            UNPCK_R_SH_SW(src_u, u0);
+            UNPCK_R_SH_SW(src_v, v0);
+            src_u = LD_V(v8i16, ubuf1 + count);
+            src_v = LD_V(v8i16, vbuf1 + count);
+            UNPCK_R_SH_SW(src_u, u1);
+            UNPCK_R_SH_SW(src_v, v1);
+
+            u   = __msa_addv_w(u0, u1);
+            v   = __msa_addv_w(v0, v1);
+            y_r = __msa_addv_w(y_r, bias_64);
+            y_l = __msa_addv_w(y_l, bias_64);
+            u   = __msa_addv_w(u, bias_128);
+            v   = __msa_addv_w(v, bias_128);
+            y_r = __msa_srai_w(y_r, 7);
+            y_l = __msa_srai_w(y_l, 7);
+            u   = __msa_srai_w(u, 8);
+            v   = __msa_srai_w(v, 8);
+            u   = __msa_addv_w(u, headroom);
+            v   = __msa_addv_w(v, headroom);
+            for (j = 0; j < 2; j++) {
+                int Y1, Y2, U, V;
+                int m = j * 2;
+                int n = j + 2;
+
+                Y1 = y_r[m];
+                Y2 = y_r[m + 1];
+                U  = u[j];
+                V  = v[j];
+                r  =  c->table_rV[V];
+                g  = (c->table_gU[U] + c->table_gV[V]);
+                b  =  c->table_bU[U];
+
+                yuv2rgb_write(dest, count + j, Y1, Y2, 0, 0,
+                              r, g, b, y, target, 0);
+                Y1 = y_l[m];
+                Y2 = y_l[m + 1];
+                U  = u[n];
+                V  = v[n];
+                r  =  c->table_rV[V];
+                g  = (c->table_gU[U] + c->table_gV[V]);
+                b  =  c->table_bU[U];
+
+                yuv2rgb_write(dest, count + n, Y1, Y2, 0, 0,
+                              r, g, b, y, target, 0);
+            }
+            count += 4;
+        }
+        for (count; count < len_count; count++) {
+            int Y1 = (buf0[count * 2    ]         +  64) >> 7;
+            int Y2 = (buf0[count * 2 + 1]         +  64) >> 7;
+            int U  = (ubuf0[count] + ubuf1[count] + 128) >> 8;
+            int V  = (vbuf0[count] + vbuf1[count] + 128) >> 8;
+
+            r =  c->table_rV[V + YUVRGB_TABLE_HEADROOM],
+            g = (c->table_gU[U + YUVRGB_TABLE_HEADROOM] +
+                 c->table_gV[V + YUVRGB_TABLE_HEADROOM]),
+            b =  c->table_bU[U + YUVRGB_TABLE_HEADROOM];
+
+            yuv2rgb_write(dest, count, Y1, Y2, 0, 0,
+                          r, g, b, y, target, 0);
+        }
+    }
+}
+
+#define YUV2RGBWRAPPERX(name, base, ext, fmt, hasAlpha)                        \
+void name ## ext ## _X_msa(SwsContext *c, const int16_t *lumFilter,            \
+                           const int16_t **lumSrc, int lumFilterSize,          \
+                           const int16_t *chrFilter, const int16_t **chrUSrc,  \
+                           const int16_t **chrVSrc, int chrFilterSize,         \
+                           const int16_t **alpSrc, uint8_t *dest, int dstW,    \
+                           int y)                                              \
+{                                                                              \
+    name ## base ## _X_msa_template(c, lumFilter, lumSrc, lumFilterSize,       \
+                                    chrFilter, chrUSrc, chrVSrc, chrFilterSize,\
+                                    alpSrc, dest, dstW, y, fmt, hasAlpha);     \
+}
+
+#define YUV2RGBWRAPPERX2(name, base, ext, fmt, hasAlpha)                       \
+YUV2RGBWRAPPERX(name, base, ext, fmt, hasAlpha)                                \
+void name ## ext ## _2_msa(SwsContext *c, const int16_t *buf[2],               \
+                           const int16_t *ubuf[2], const int16_t *vbuf[2],     \
+                           const int16_t *abuf[2], uint8_t *dest, int dstW,    \
+                           int yalpha, int uvalpha, int y)                     \
+{                                                                              \
+    name ## base ## _2_msa_template(c, buf, ubuf, vbuf, abuf, dest,            \
+                                    dstW, yalpha, uvalpha, y, fmt, hasAlpha);  \
+}
+
+#define YUV2RGBWRAPPER(name, base, ext, fmt, hasAlpha)                         \
+YUV2RGBWRAPPERX2(name, base, ext, fmt, hasAlpha)                               \
+void name ## ext ## _1_msa(SwsContext *c, const int16_t *buf0,                 \
+                           const int16_t *ubuf[2], const int16_t *vbuf[2],     \
+                           const int16_t *abuf0, uint8_t *dest, int dstW,      \
+                           int uvalpha, int y)                                 \
+{                                                                              \
+    name ## base ## _1_msa_template(c, buf0, ubuf, vbuf, abuf0, dest,          \
+                                    dstW, uvalpha, y, fmt, hasAlpha);          \
+}
+
+
+#if CONFIG_SAMALL
+#else
+#if CONFIG_SWSCALE_ALPHA
+#endif
+YUV2RGBWRAPPER(yuv2rgb,, x32_1,  AV_PIX_FMT_RGB32_1, 0)
+YUV2RGBWRAPPER(yuv2rgb,, x32,    AV_PIX_FMT_RGB32, 0)
+#endif
+YUV2RGBWRAPPER(yuv2rgb,,  16,    AV_PIX_FMT_RGB565,    0)

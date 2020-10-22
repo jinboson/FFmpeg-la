@@ -41,4 +41,55 @@ void yuv2bgrx32_full_X_msa(SwsContext *c, const int16_t *lumFilter,
                            const int16_t **alpSrc, uint8_t *dest, int dstW,
                            int y);
 
+void yuv2rgbx32_1_X_msa(SwsContext *c, const int16_t *lumFilter,
+                        const int16_t **lumSrc, int lumFilterSize,
+                        const int16_t *chrFilter, const int16_t **chrUSrc,
+                        const int16_t **chrVSrc, int chrFilterSize,
+                        const int16_t **alpSrc, uint8_t *dest, int dstW,
+                        int y);
+
+void yuv2rgbx32_1_2_msa(SwsContext *c, const int16_t *buf[2],
+                        const int16_t *ubuf[2], const int16_t *vbuf[2],
+                        const int16_t *abuf[2], uint8_t *dest, int dstW,
+                        int yalpha, int uvalpha, int y);
+
+void yuv2rgbx32_1_1_msa(SwsContext *c, const int16_t *buf0,
+                        const int16_t *ubuf[2], const int16_t *vbuf[2],
+                        const int16_t *abuf0, uint8_t *dest, int dstW,
+                        int uvalpha, int y);
+
+void yuv2rgbx32_X_msa(SwsContext *c, const int16_t *lumFilter,
+                      const int16_t **lumSrc, int lumFilterSize,
+                      const int16_t *chrFilter, const int16_t **chrUSrc,
+                      const int16_t **chrVSrc, int chrFilterSize,
+                      const int16_t **alpSrc, uint8_t *dest, int dstW,
+                      int y);
+
+void yuv2rgbx32_2_msa(SwsContext *c, const int16_t *buf[2],
+                      const int16_t *ubuf[2], const int16_t *vbuf[2],
+                      const int16_t *abuf[2], uint8_t *dest, int dstW,
+                      int yalpha, int uvalpha, int y);
+
+void yuv2rgbx32_1_msa(SwsContext *c, const int16_t *buf0,
+                      const int16_t *ubuf[2], const int16_t *vbuf[2],
+                      const int16_t *abuf0, uint8_t *dest, int dstW,
+                      int uvalpha, int y);
+
+void yuv2rgb16_2_msa(SwsContext *c, const int16_t *buf[2],
+                     const int16_t *ubuf[2], const int16_t *vbuf[2],
+                     const int16_t *abuf[2], uint8_t *dest, int dstW,
+                     int yalpha, int uvalpha, int y);
+
+void yuv2rgb16_1_msa(SwsContext *c, const int16_t *buf0,
+                     const int16_t *ubuf[2], const int16_t *vbuf[2],
+                     const int16_t *abuf0, uint8_t *dest, int dstW,
+                     int uvalpha, int y);
+
+void yuv2rgb16_X_msa(SwsContext *c, const int16_t *lumFilter,
+                     const int16_t **lumSrc, int lumFilterSize,
+                     const int16_t *chrFilter, const int16_t **chrUSrc,
+                     const int16_t **chrVSrc, int chrFilterSize,
+                     const int16_t **alpSrc, uint8_t *dest, int dstW,
+                     int y);
+
 #endif /* SWSCALE_MIPS_SWSCALE_MIPS_H */
