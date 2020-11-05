@@ -104,4 +104,70 @@ void yuv2rgb16_X_msa(SwsContext *c, const int16_t *lumFilter,
                      const int16_t **alpSrc, uint8_t *dest, int dstW,
                      int y);
 
+void yuv2plane1_9BE_msa(const int16_t *src, uint8_t *dest, int dstW,
+                        const uint8_t *dither, int offset);
+
+void yuv2plane1_9LE_msa(const int16_t *src, uint8_t *dest, int dstW,
+                        const uint8_t *dither, int offset);
+
+void yuv2planeX_9BE_msa(const int16_t *filter, int filterSize, const int16_t **src,
+                        uint8_t *dest, int dstW, const uint8_t *ditherm, int offset);
+
+void yuv2planeX_9LE_msa(const int16_t *filter, int filterSize, const int16_t **src,
+                        uint8_t *dest, int dstW, const uint8_t *ditherm, int offset);
+
+void yuv2plane1_10BE_msa(const int16_t *src, uint8_t *dest, int dstW,
+                         const uint8_t *dither, int offset);
+
+void yuv2plane1_10LE_msa(const int16_t *src, uint8_t *dest, int dstW,
+                         const uint8_t *dither, int offset);
+
+void yuv2planeX_10BE_msa(const int16_t *filter, int filterSize, const int16_t **src,
+                         uint8_t *dest, int dstW, const uint8_t *ditherm, int offset);
+
+void yuv2planeX_10LE_msa(const int16_t *filter, int filterSize, const int16_t **src,
+                         uint8_t *dest, int dstW, const uint8_t *ditherm, int offset);
+
+void yuv2plane1_12BE_msa(const int16_t *src, uint8_t *dest, int dstW,
+                         const uint8_t *dither, int offset);
+
+void yuv2plane1_12LE_msa(const int16_t *src, uint8_t *dest, int dstW,
+                         const uint8_t *dither, int offset);
+
+void yuv2planeX_12BE_msa(const int16_t *filter, int filterSize, const int16_t **src,
+                         uint8_t *dest, int dstW, const uint8_t *ditherm, int offset);
+
+void yuv2planeX_12LE_msa(const int16_t *filter, int filterSize, const int16_t **src,
+                         uint8_t *dest, int dstW, const uint8_t *ditherm, int offset);
+
+void yuv2plane1_14BE_msa(const int16_t *src, uint8_t *dest, int dstW,
+                         const uint8_t *dither, int offset);
+
+void yuv2plane1_14LE_msa(const int16_t *src, uint8_t *dest, int dstW,
+                         const uint8_t *dither, int offset);
+
+void yuv2planeX_14BE_msa(const int16_t *filter, int filterSize, const int16_t **src,
+                         uint8_t *dest, int dstW, const uint8_t *ditherm, int offset);
+
+void yuv2planeX_14LE_msa(const int16_t *filter, int filterSize, const int16_t **src,
+                         uint8_t *dest, int dstW, const uint8_t *ditherm, int offset);
+
+void yuv2plane1_16BE_msa(const int16_t *src, uint8_t *dest, int dstW,
+                         const uint8_t *dither, int offset);
+
+void yuv2plane1_16LE_msa(const int16_t *src, uint8_t *dest, int dstW,
+                         const uint8_t *dither, int offset);
+
+void yuv2planeX_16BE_msa(const int16_t *filter, int filterSize, const int16_t **src,
+                         uint8_t *dest, int dstW, const uint8_t *ditherm, int offset);
+
+void yuv2planeX_16LE_msa(const int16_t *filter, int filterSize, const int16_t **src,
+                         uint8_t *dest, int dstW, const uint8_t *ditherm, int offset);
+
+void planar_rgb_to_uv_msa(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[4],
+                          int width, int32_t *rgb2yuv);
+
+void planar_rgb_to_y_msa(uint8_t *_dst, const uint8_t *src[4], int width,
+                         int32_t *rgb2yuv);
+
 #endif /* SWSCALE_MIPS_SWSCALE_MIPS_H */

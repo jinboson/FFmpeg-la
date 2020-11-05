@@ -22,6 +22,7 @@
 
 #include "swscale_mips.h"
 #include "libavutil/mips/generic_macros_msa.h"
+#include "libavutil/intreadwrite.h"
 
 void ff_hscale_8_to_15_msa(SwsContext *c, int16_t *dst, int dstW,
                            const uint8_t *src, const int16_t *filter,
@@ -1103,3 +1104,323 @@ YUV2RGBWRAPPER(yuv2rgb,, x32_1,  AV_PIX_FMT_RGB32_1, 0)
 YUV2RGBWRAPPER(yuv2rgb,, x32,    AV_PIX_FMT_RGB32, 0)
 #endif
 YUV2RGBWRAPPER(yuv2rgb,,  16,    AV_PIX_FMT_RGB565,    0)
+
+#define output_pixel(pos, val, bias, signedness)                          \
+    if (big_endian) {                                                     \
+        AV_WB16(pos, bias + av_clip_ ## signedness ## 16(val >> shift));  \
+    } else {                                                              \
+        AV_WL16(pos, bias + av_clip_ ## signedness ## 16(val >> shift));  \
+    }
+
+static av_always_inline void
+yuv2plane1_16_msa_template(const int32_t *src, uint16_t *dest, int dstW,
+                           int big_endian, int output_bits)
+{
+    int i;
+    int shift = 3;
+    int len   = dstW & (~0x03);
+    int temp  = 1 << (shift -1);
+    v4i32 sh  = (v4i32)__msa_fill_w(temp);
+
+    av_assert0(output_bits == 16);
+    for (i = 0; i < len; i += 4) {
+        v4i32 v_src = LD_V(v4i32, src + i);
+        v4i32 out;
+
+        out = (v4i32)__msa_addv_w(v_src, sh);
+        output_pixel(&dest[i + 0], out[0], 0, uint);
+        output_pixel(&dest[i + 1], out[1], 0, uint);
+        output_pixel(&dest[i + 2], out[2], 0, uint);
+        output_pixel(&dest[i + 3], out[3], 0, uint);
+    }
+    for (i; i < dstW; i++) {
+        int val = src[i] + temp;
+        output_pixel(&dest[i], val, 0, uint);
+    }
+}
+
+static av_always_inline void
+yuv2planeX_16_msa_template(const int16_t *filter, int filterSize,
+                           const int32_t **src, uint16_t *dest, int dstW,
+                           int big_endian, int output_bits)
+{
+    int i, j;
+    int shift = 15;
+    int temp  = 1 << (shift - 1);
+    int len   = dstW & (~0x03);
+    int value = temp - 0x40000000;
+
+    for (i = 0; i < len; i += 4) {
+        v4i32 out = __msa_fill_w(value);
+
+        for (j = 0; j < filterSize; j++) {
+            const int32_t *_src = src[j];
+            v4i32 filter0 = (v4i32)__msa_fill_w((unsigned)(filter[j]));
+            v4i32 src0;
+
+            src0 = LD_V(v4i32, (_src + i));
+            out  = __msa_maddv_w(src0, filter0, out);
+        }
+        output_pixel(&dest[i + 0], out[0], 0x8000, int);
+        output_pixel(&dest[i + 1], out[1], 0x8000, int);
+        output_pixel(&dest[i + 2], out[2], 0x8000, int);
+        output_pixel(&dest[i + 3], out[3], 0x8000, int);
+    }
+    for (i; i < dstW; i++) {
+        int val = value;
+        for (j = 0; j < filterSize; j++)
+            val += src[j][i] * (unsigned)filter[j];
+
+        output_pixel(&dest[i], val, 0x8000, int);
+    }
+}
+
+#undef output_pixel
+
+#define output_pixel(pos, val)                                   \
+    if (big_endian) {                                            \
+        AV_WB16(pos, av_clip_uintp2(val >> shift, output_bits)); \
+    } else {                                                     \
+        AV_WL16(pos, av_clip_uintp2(val >> shift, output_bits)); \
+    }
+
+static av_always_inline void
+yuv2plane1_10_msa_template(const int16_t *src, uint16_t *dest, int dstW,
+                           int big_endian, int output_bits)
+{
+    int i;
+    int len    = dstW & (~0x07);
+    int shift  = 15 - output_bits;
+    int temp   = 1 << (shift - 1);
+    v4i32 sh   = (v4i32)__msa_fill_w(temp);
+
+    for (i = 0; i < len; i += 8) {
+        v8i16 v_src = LD_V(v8i16, src + i);
+        v4i32 src_r, src_l, out_r, out_l;
+
+        UNPCK_SH_SW(v_src, src_r, src_l);
+        out_r = (v4i32)__msa_addv_w(src_r, sh);
+        out_l = (v4i32)__msa_addv_w(src_l, sh);
+        for (int j = 0; j < 4; j++) {
+            int m = i + j;
+
+            output_pixel(&dest[m], out_r[j]);
+            output_pixel(&dest[m + 4], out_l[j]);
+        }
+    }
+    for (i; i < dstW; i++) {
+        int val = src[i] + (1 << (shift - 1));
+
+        output_pixel(&dest[i], val);
+    }
+}
+
+static av_always_inline void
+yuv2planeX_10_msa_template(const int16_t *filter, int filterSize,
+                           const int16_t **src, uint16_t *dest, int dstW,
+                           int big_endian, int output_bits)
+{
+    int i, j;
+    int shift = 27 - output_bits;
+    int temp  = 1 << (shift -1);
+    int len = dstW & (~0x07);
+
+    for (i = 0; i < len; i += 8) {
+        v4i32 out_r = __msa_fill_w(temp);
+        v4i32 out_l = out_r;
+
+        for (j = 0; j < filterSize; j++) {
+            v8i16 src0;
+            v4i32 filter0 = (v4i32)__msa_fill_w(filter[j]);
+            v4i32 src_r, src_l;
+
+            src0 = LD_V(v8i16, (src[j] + i));
+            UNPCK_SH_SW(src0, src_r, src_l);
+            out_r = __msa_maddv_w(src_r, filter0, out_r);
+            out_l = __msa_maddv_w(src_l, filter0, out_l);
+        }
+        for (int n = 0; n < 4; n++) {
+            int m = i + n;
+
+            output_pixel(&dest[m], out_r[n]);
+            output_pixel(&dest[m + 4], out_l[n]);
+        }
+    }
+    for (i; i < dstW; i++) {
+        int val = temp;
+        for (j = 0; j < filterSize; j++) {
+            val += src[j][i] * filter[j];
+        }
+        output_pixel(&dest[i], val);
+    }
+}
+
+#undef output_pixel
+
+#define yuv2NBPS(bits, BE_LE, is_be, template_size, typeX_t)         \
+void yuv2plane1_ ## bits ## BE_LE ## _msa(                           \
+         const int16_t *src, uint8_t *dest, int dstW,                \
+         const uint8_t *dither, int offset)                          \
+{                                                                    \
+    yuv2plane1_ ## template_size ## _msa_template(                   \
+      (const typeX_t *)src, (uint16_t *)dest, dstW, is_be, bits);    \
+}                                                                    \
+void yuv2planeX_ ## bits ## BE_LE ## _msa(                           \
+        const int16_t *filter, int filterSize, const int16_t **src,  \
+        uint8_t *dest, int dstW, const uint8_t *diter, int offset)   \
+{                                                                    \
+    yuv2planeX_ ## template_size ## _msa_template(                   \
+                          filter, filterSize, (const typeX_t **) src,\
+                          (uint16_t *) dest, dstW, is_be, bits);     \
+}
+yuv2NBPS( 9, BE, 1, 10, int16_t)
+yuv2NBPS( 9, LE, 0, 10, int16_t)
+yuv2NBPS(10, BE, 1, 10, int16_t)
+yuv2NBPS(10, LE, 0, 10, int16_t)
+yuv2NBPS(12, BE, 1, 10, int16_t)
+yuv2NBPS(12, LE, 0, 10, int16_t)
+yuv2NBPS(14, BE, 1, 10, int16_t)
+yuv2NBPS(14, LE, 0, 10, int16_t)
+yuv2NBPS(16, BE, 1, 16, int32_t)
+yuv2NBPS(16, LE, 0, 16, int32_t)
+
+void planar_rgb_to_uv_msa(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[4],
+                          int width, int32_t *rgb2yuv)
+{
+    uint16_t *dstU = (uint16_t *)_dstU;
+    uint16_t *dstV = (uint16_t *)_dstV;
+    int i;
+    int len = width & (~0x07);
+    int set = 0x4001<<(RGB2YUV_SHIFT - 7);
+    int32_t tem_ru = rgb2yuv[RU_IDX], tem_gu = rgb2yuv[GU_IDX];
+    int32_t tem_bu = rgb2yuv[BU_IDX];
+    int32_t tem_rv = rgb2yuv[RV_IDX], tem_gv = rgb2yuv[GV_IDX];
+    int32_t tem_bv = rgb2yuv[BV_IDX];
+    int shift = RGB2YUV_SHIFT - 6;
+    v4i32 ru, gu, bu, rv, gv, bv;
+    v4i32 temp = __msa_fill_w(set);
+    v4i32 sra  = __msa_fill_w(shift);
+    v16i8 zero = {0};
+
+    ru = __msa_fill_w(tem_ru);
+    gu = __msa_fill_w(tem_gu);
+    bu = __msa_fill_w(tem_bu);
+    rv = __msa_fill_w(tem_rv);
+    gv = __msa_fill_w(tem_gv);
+    bv = __msa_fill_w(tem_bv);
+    for (i = 0; i < len; i += 8) {
+        v16i8 _g, _b, _r;
+        v8i16 t_g, t_b, t_r;
+        v4i32 g_r, g_l, b_r, b_l, r_r, r_l;
+        v4i32 v_r, v_l, u_r, u_l;
+
+        _g  = LD_V(v16i8, (src[0] + i));
+        _b  = LD_V(v16i8, (src[1] + i));
+        _r  = LD_V(v16i8, (src[2] + i));
+        t_g = (v8i16)__msa_ilvr_b((v16i8)zero, (v16i8)_g);
+        t_b = (v8i16)__msa_ilvr_b((v16i8)zero, (v16i8)_b);
+        t_r = (v8i16)__msa_ilvr_b((v16i8)zero, (v16i8)_r);
+        g_r = (v4i32)__msa_ilvr_h((v8i16)zero, (v8i16)t_g);
+        g_l = (v4i32)__msa_ilvl_h((v8i16)zero, (v8i16)t_g);
+        b_r = (v4i32)__msa_ilvr_h((v8i16)zero, (v8i16)t_b);
+        b_l = (v4i32)__msa_ilvl_h((v8i16)zero, (v8i16)t_b);
+        r_r = (v4i32)__msa_ilvr_h((v8i16)zero, (v8i16)t_r);
+        r_l = (v4i32)__msa_ilvl_h((v8i16)zero, (v8i16)t_r);
+        v_r = (v4i32)__msa_mulv_w(r_r, rv);
+        v_l = (v4i32)__msa_mulv_w(r_l, rv);
+        v_r = (v4i32)__msa_maddv_w(g_r, gv, v_r);
+        v_l = (v4i32)__msa_maddv_w(g_l, gv, v_l);
+        v_r = (v4i32)__msa_maddv_w(b_r, bv, v_r);
+        v_l = (v4i32)__msa_maddv_w(b_l, bv, v_l);
+        u_r = (v4i32)__msa_mulv_w(r_r, ru);
+        u_l = (v4i32)__msa_mulv_w(r_l, ru);
+        u_r = (v4i32)__msa_maddv_w(g_r, gu, u_r);
+        u_l = (v4i32)__msa_maddv_w(g_l, gu, u_l);
+        u_r = (v4i32)__msa_maddv_w(b_r, bu, u_r);
+        u_l = (v4i32)__msa_maddv_w(b_l, bu, u_l);
+        v_r = (v4i32)__msa_addv_w(v_r, temp);
+        v_l = (v4i32)__msa_addv_w(v_l, temp);
+        u_r = (v4i32)__msa_addv_w(u_r, temp);
+        u_l = (v4i32)__msa_addv_w(u_l, temp);
+        v_r = (v4i32)__msa_sra_w(v_r, sra);
+        v_l = (v4i32)__msa_sra_w(v_l, sra);
+        u_r = (v4i32)__msa_sra_w(u_r, sra);
+        u_l = (v4i32)__msa_sra_w(u_l, sra);
+        for (int j = 0; j < 4; j++) {
+            int m = i + j;
+
+            dstU[m] = u_r[j];
+            dstV[m] = v_r[j];
+            dstU[m + 4] = u_l[j];
+            dstV[m + 4] = v_l[j];
+        }
+    }
+    for (i; i < width; i++) {
+        int g = src[0][i];
+        int b = src[1][i];
+        int r = src[2][i];
+
+        dstU[i] = (tem_ru * r + tem_gu * g + tem_bu * b + set) >> shift;
+        dstV[i] = (tem_rv * r + tem_gv * g + tem_bv * b + set) >> shift;
+    }
+}
+
+void planar_rgb_to_y_msa(uint8_t *_dst, const uint8_t *src[4], int width,
+                         int32_t *rgb2yuv)
+{
+    uint16_t *dst = (uint16_t *)_dst;
+    int32_t tem_ry = rgb2yuv[RY_IDX], tem_gy = rgb2yuv[GY_IDX];
+    int32_t tem_by = rgb2yuv[BY_IDX];
+    int len    = width & (~0x07);
+    int shift  = (RGB2YUV_SHIFT-6);
+    int set    = 0x801 << (RGB2YUV_SHIFT - 7);
+    int i;
+    v4i32 temp = (v4i32)__msa_fill_w(set);
+    v4i32 sra  = (v4i32)__msa_fill_w(shift);
+    v4i32 ry   = (v4i32)__msa_fill_w(tem_ry);
+    v4i32 gy   = (v4i32)__msa_fill_w(tem_gy);
+    v4i32 by   = (v4i32)__msa_fill_w(tem_by);
+    v16i8 zero = {0};
+
+    for (i = 0; i < len; i += 8) {
+        v16i8 _g, _b, _r;
+        v8i16 t_g, t_b, t_r;
+        v4i32 g_r, g_l, b_r, b_l, r_r, r_l;
+        v4i32 out_r, out_l;
+
+        _g    = LD_V(v16i8, src[0] + i);
+        _b    = LD_V(v16i8, src[1] + i);
+        _r    = LD_V(v16i8, src[2] + i);
+        t_g   = (v8i16)__msa_ilvr_b((v16i8)zero, (v16i8)_g);
+        t_b   = (v8i16)__msa_ilvr_b((v16i8)zero, (v16i8)_b);
+        t_r   = (v8i16)__msa_ilvr_b((v16i8)zero, (v16i8)_r);
+        g_r   = (v4i32)__msa_ilvr_h((v8i16)zero, (v8i16)t_g);
+        g_l   = (v4i32)__msa_ilvl_h((v8i16)zero, (v8i16)t_g);
+        b_r   = (v4i32)__msa_ilvr_h((v8i16)zero, (v8i16)t_b);
+        b_l   = (v4i32)__msa_ilvl_h((v8i16)zero, (v8i16)t_b);
+        r_r   = (v4i32)__msa_ilvr_h((v8i16)zero, (v8i16)t_r);
+        r_l   = (v4i32)__msa_ilvl_h((v8i16)zero, (v8i16)t_r);
+        out_r = (v4i32)__msa_mulv_w(r_r, ry);
+        out_l = (v4i32)__msa_mulv_w(r_l, ry);
+        out_r = (v4i32)__msa_maddv_w(g_r, gy, out_r);
+        out_l = (v4i32)__msa_maddv_w(g_l, gy, out_l);
+        out_r = (v4i32)__msa_maddv_w(b_r, by, out_r);
+        out_l = (v4i32)__msa_maddv_w(b_l, by, out_l);
+        out_r = (v4i32)__msa_addv_w(out_r, temp);
+        out_l = (v4i32)__msa_addv_w(out_l, temp);
+        out_r = (v4i32)__msa_sra_w(out_r, sra);
+        out_l = (v4i32)__msa_sra_w(out_l, sra);
+        for (int j = 0; j < 4; j++) {
+            int m = i + j;
+            dst[m] = out_r[j];
+            dst[m + 4] = out_l[j];
+        }
+    }
+    for (i; i < width; i++) {
+        int g = src[0][i];
+        int b = src[1][i];
+        int r = src[2][i];
+
+        dst[i] = (tem_ry * r + tem_gy * g + tem_by * b + set) >> shift;
+    }
+}
