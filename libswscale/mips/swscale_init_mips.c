@@ -51,39 +51,117 @@ av_cold void ff_sws_init_swscale_mips(SwsContext *c)
         }
         if (c->dstBpc == 8)
             c->yuv2planeX = ff_yuv2planeX_8_msa;
-        if (c->dstFormat == AV_PIX_FMT_P010LE || c->dstFormat == AV_PIX_FMT_P010BE) {
-        } else if (is16BPS(c->dstFormat)) {
-            c->yuv2planeX = isBE(c->dstFormat) ? yuv2planeX_16BE_msa  : yuv2planeX_16LE_msa;
-            c->yuv2plane1 = isBE(c->dstFormat) ? yuv2plane1_16BE_msa  : yuv2plane1_16LE_msa;
-        } else if (isNBPS(c->dstFormat)) {
-            if (desc->comp[0].depth == 9) {
-                c->yuv2planeX = isBE(c->dstFormat) ? yuv2planeX_9BE_msa  : yuv2planeX_9LE_msa;
-                c->yuv2plane1 = isBE(c->dstFormat) ? yuv2plane1_9BE_msa  : yuv2plane1_9LE_msa;
-            } else if (desc->comp[0].depth == 10) {
-                c->yuv2planeX = isBE(c->dstFormat) ? yuv2planeX_10BE_msa  : yuv2planeX_10LE_msa;
-                c->yuv2plane1 = isBE(c->dstFormat) ? yuv2plane1_10BE_msa  : yuv2plane1_10LE_msa;
-            } else if (desc->comp[0].depth == 12) {
-                c->yuv2planeX = isBE(c->dstFormat) ? yuv2planeX_12BE_msa  : yuv2planeX_12LE_msa;
-                c->yuv2plane1 = isBE(c->dstFormat) ? yuv2plane1_12BE_msa  : yuv2plane1_12LE_msa;
-            } else if (desc->comp[0].depth == 14) {
-                c->yuv2planeX = isBE(c->dstFormat) ? yuv2planeX_14BE_msa  : yuv2planeX_14LE_msa;
-                c->yuv2plane1 = isBE(c->dstFormat) ? yuv2plane1_14BE_msa  : yuv2plane1_14LE_msa;
-            } else
-                av_assert0(0);
-        }
         if (c->flags & SWS_FULL_CHR_H_INT) {
             switch (c->dstFormat) {
-            case AV_PIX_FMT_BGRA:
+            case AV_PIX_FMT_RGBA:
 #if CONFIG_SMALL
+                c->yuv2packedX = yuv2rgba32_full_X_msa;
+                c->yuv2packed2 = yuv2rgba32_full_2_msa;
+                c->yuv2packed1 = yuv2rgba32_full_1_msa;
 #else
 #if CONFIG_SWSCALE_ALPHA
                 if (c->needAlpha) {
+                    c->yuv2packedX = yuv2rgba32_full_X_msa;
+                    c->yuv2packed2 = yuv2rgba32_full_2_msa;
+                    c->yuv2packed1 = yuv2rgba32_full_1_msa;
+                } else
+#endif /* CONFIG_SWSCALE_ALPHA */
+                {
+                    c->yuv2packedX = yuv2rgbx32_full_X_msa;
+                    c->yuv2packed2 = yuv2rgbx32_full_2_msa;
+                    c->yuv2packed1 = yuv2rgbx32_full_1_msa;
+                }
+#endif /* !CONFIG_SMALL */
+                break;
+            case AV_PIX_FMT_ARGB:
+#if CONFIG_SMALL
+                c->yuv2packedX = yuv2argb32_full_X_msa;
+                c->yuv2packed2 = yuv2argb32_full_2_msa;
+                c->yuv2packed1 = yuv2argb32_full_1_msa;
+#else
+#if CONFIG_SWSCALE_ALPHA
+                if (c->needAlpha) {
+                    c->yuv2packedX = yuv2argb32_full_X_msa;
+                    c->yuv2packed2 = yuv2argb32_full_2_msa;
+                    c->yuv2packed1 = yuv2argb32_full_1_msa;
+                } else
+#endif /* CONFIG_SWSCALE_ALPHA */
+                {
+                    c->yuv2packedX = yuv2xrgb32_full_X_msa;
+                    c->yuv2packed2 = yuv2xrgb32_full_2_msa;
+                    c->yuv2packed1 = yuv2xrgb32_full_1_msa;
+                }
+#endif /* !CONFIG_SMALL */
+                break;
+            case AV_PIX_FMT_BGRA:
+#if CONFIG_SMALL
+                c->yuv2packedX = yuv2bgra32_full_X_msa;
+                c->yuv2packed2 = yuv2bgra32_full_2_msa;
+                c->yuv2packed1 = yuv2bgra32_full_1_msa;
+#else
+#if CONFIG_SWSCALE_ALPHA
+                if (c->needAlpha) {
+                    c->yuv2packedX = yuv2bgra32_full_X_msa;
+                    c->yuv2packed2 = yuv2bgra32_full_2_msa;
+                    c->yuv2packed1 = yuv2bgra32_full_1_msa;
                 } else
 #endif /* CONFIG_SWSCALE_ALPHA */
                 {
                     c->yuv2packedX = yuv2bgrx32_full_X_msa;
+                    c->yuv2packed2 = yuv2bgrx32_full_2_msa;
+                    c->yuv2packed1 = yuv2bgrx32_full_1_msa;
                 }
 #endif /* !CONFIG_SMALL */
+                break;
+            case AV_PIX_FMT_ABGR:
+#if CONFIG_SMALL
+                c->yuv2packedX = yuv2abgr32_full_X_msa;
+                c->yuv2packed2 = yuv2abgr32_full_2_msa;
+                c->yuv2packed1 = yuv2abgr32_full_1_msa;
+#else
+#if CONFIG_SWSCALE_ALPHA
+                if (c->needAlpha) {
+                    c->yuv2packedX = yuv2abgr32_full_X_msa;
+                    c->yuv2packed2 = yuv2abgr32_full_2_msa;
+                    c->yuv2packed1 = yuv2abgr32_full_1_msa;
+                } else
+#endif /* CONFIG_SWSCALE_ALPHA */
+                {
+                    c->yuv2packedX = yuv2xbgr32_full_X_msa;
+                    c->yuv2packed2 = yuv2xbgr32_full_2_msa;
+                    c->yuv2packed1 = yuv2xbgr32_full_1_msa;
+                }
+#endif /* !CONFIG_SMALL */
+                break;
+            case AV_PIX_FMT_RGB24:
+                c->yuv2packedX = yuv2rgb24_full_X_msa;
+                c->yuv2packed2 = yuv2rgb24_full_2_msa;
+                c->yuv2packed1 = yuv2rgb24_full_1_msa;
+                break;
+            case AV_PIX_FMT_BGR24:
+                c->yuv2packedX = yuv2bgr24_full_X_msa;
+                c->yuv2packed2 = yuv2bgr24_full_2_msa;
+                c->yuv2packed1 = yuv2bgr24_full_1_msa;
+                break;
+            case AV_PIX_FMT_BGR4_BYTE:
+                c->yuv2packedX = yuv2bgr4_byte_full_X_msa;
+                c->yuv2packed2 = yuv2bgr4_byte_full_2_msa;
+                c->yuv2packed1 = yuv2bgr4_byte_full_1_msa;
+                break;
+            case AV_PIX_FMT_RGB4_BYTE:
+                c->yuv2packedX = yuv2rgb4_byte_full_X_msa;
+                c->yuv2packed2 = yuv2rgb4_byte_full_2_msa;
+                c->yuv2packed1 = yuv2rgb4_byte_full_1_msa;
+                break;
+            case AV_PIX_FMT_BGR8:
+                c->yuv2packedX = yuv2bgr8_full_X_msa;
+                c->yuv2packed2 = yuv2bgr8_full_2_msa;
+                c->yuv2packed1 = yuv2bgr8_full_1_msa;
+                break;
+            case AV_PIX_FMT_RGB8:
+                c->yuv2packedX = yuv2rgb8_full_X_msa;
+                c->yuv2packed2 = yuv2rgb8_full_2_msa;
+                c->yuv2packed1 = yuv2rgb8_full_1_msa;
                 break;
             }
         } else {
