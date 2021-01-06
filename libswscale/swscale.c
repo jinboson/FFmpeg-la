@@ -609,6 +609,8 @@ SwsFunc ff_getSwsFunc(SwsContext *c)
         ff_sws_init_swscale_arm(c);
     if (ARCH_MIPS)
         ff_sws_init_swscale_mips(c);
+    if (ARCH_LOONGARCH)
+        ff_sws_init_swscale_loongarch(c);
 
     return swscale;
 }
