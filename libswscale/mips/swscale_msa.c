@@ -932,7 +932,7 @@ void name ## ext ## _1_msa(SwsContext *c, const int16_t *buf0,                 \
 }
 
 
-#if CONFIG_SAMALL
+#if CONFIG_SMALL
 #else
 #if CONFIG_SWSCALE_ALPHA
 #endif
@@ -1529,7 +1529,7 @@ yuv2rgb_full_1_msa_template(SwsContext *c, const int16_t *buf0,
             dest += step;
         }
     } else {
-        const int16_t *ubuf1 = ubuf1[1], *vbuf1 = vbuf[1];
+        const int16_t *ubuf1 = ubuf[1], *vbuf1 = vbuf[1];
         int uvtemp = 128 << 8;
         v4i32 uv   = __msa_fill_w(uvtemp);
 
