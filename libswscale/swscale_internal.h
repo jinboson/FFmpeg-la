@@ -642,6 +642,7 @@ av_cold void ff_sws_init_range_convert(SwsContext *c);
 
 SwsFunc ff_yuv2rgb_init_x86(SwsContext *c);
 SwsFunc ff_yuv2rgb_init_ppc(SwsContext *c);
+SwsFunc ff_yuv2rgb_init_loongarch(SwsContext *c);
 
 static av_always_inline int is16BPS(enum AVPixelFormat pix_fmt)
 {

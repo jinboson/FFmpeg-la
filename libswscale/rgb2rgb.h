@@ -171,5 +171,6 @@ void ff_sws_rgb2rgb_init(void);
 
 void rgb2rgb_init_x86(void);
 void rgb2rgb_init_mips(void);
+void rgb2rgb_init_loongarch(void);
 
 #endif /* SWSCALE_RGB2RGB_H */
