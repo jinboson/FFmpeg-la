@@ -1930,6 +1930,9 @@ ARCH_LIST="
     x86
     x86_32
     x86_64
+    loongarch
+    loongarch32
+    loongarch64
 "
 
 ARCH_EXT_LIST_ARM="
@@ -2514,8 +2517,8 @@ for ext in $(filter_out mmx $ARCH_EXT_LIST_X86_SIMD); do
 done
 
 aligned_stack_if_any="aarch64 ppc x86"
-fast_64bit_if_any="aarch64 alpha ia64 mips64 parisc64 ppc64 sparc64 x86_64"
-fast_clz_if_any="aarch64 alpha avr32 mips ppc x86"
+fast_64bit_if_any="aarch64 alpha ia64 mips64 parisc64 ppc64 sparc64 x86_64 loongarch64"
+fast_clz_if_any="aarch64 alpha avr32 mips ppc x86 loongarch"
 fast_unaligned_if_any="aarch64 ppc x86"
 simd_align_16_if_any="altivec neon sse"
 simd_align_32_if_any="avx"
@@ -4667,6 +4670,9 @@ case "$arch" in
     arm*|iPad*|iPhone*)
         arch="arm"
     ;;
+    loongarch*)
+        arch="loongarch"
+    ;;
     mips*|IP*)
         case "$arch" in
         *el)
@@ -5013,6 +5019,20 @@ elif enabled x86; then
         ;;
     esac
 
+elif enabled loongarch; then
+    # TODO: pending to test.
+    enable local_aligned
+    enable simd_align_16
+    enable fast_64bit
+    enable fast_clz
+    enable fast_cmov
+    enable fast_unaligned
+    disable aligned_stack
+    case $cpu in
+        gs464v)
+            cpuflags="-march=$cpu"
+        ;;
+    esac
 fi
 
 if [ "$cpu" != generic ]; then
@@ -5094,6 +5114,11 @@ case "$arch" in
             enabled shared && enable_weak pic
             objformat=elf64
         fi
+    ;;
+    loongarch)
+        check_64bit loongarch32 loongarch64
+        enabled loongarch64 && disable loongarch32
+        enabled shared && enable_weak pic
     ;;
 esac
 
