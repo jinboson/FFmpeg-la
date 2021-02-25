@@ -445,7 +445,6 @@ static void vc1_inv_trans_4x8_c(uint8_t *dest, ptrdiff_t stride, int16_t *block)
         dst[1] = (t2 - t4) >> 3;
         dst[2] = (t2 + t4) >> 3;
         dst[3] = (t1 - t3) >> 3;
-
         src += 8;
         dst += 8;
     }
@@ -1039,4 +1038,6 @@ av_cold void ff_vc1dsp_init(VC1DSPContext *dsp)
         ff_vc1dsp_init_x86(dsp);
     if (ARCH_MIPS)
         ff_vc1dsp_init_mips(dsp);
+    if (ARCH_LOONGARCH)
+        ff_vc1dsp_init_loongarch(dsp);
 }
