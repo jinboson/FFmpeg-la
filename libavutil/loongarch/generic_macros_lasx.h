@@ -966,7 +966,7 @@
 #define LASX_ILVLH_B_128SV(in_h, in_l, out_h, out_l)                           \
 {                                                                              \
     LASX_ILVL_B_128SV(in_h, in_l, out_l);                                      \
-    LASX_ILVH_B_128SV(in_h, in_h, out_h);                                      \
+    LASX_ILVH_B_128SV(in_h, in_l, out_h);                                      \
 }
 
 #define LASX_ILVLH_B_2_128SV(in0_h, in0_l, in1_h, in1_l, out0_h, out0_l, out1_h, out1_l)  \
@@ -1103,8 +1103,8 @@
     out_h = __lasx_xvpermi_q(tmp0, tmp1, 0x13);                          \
 }
 
-#define LASX_ILVLH_W_2(in0, in1, in2, in3, out0, out1,                   \
-                       out2, out3)                                       \
+#define LASX_ILVLH_W_2(in0_h, in0_l, in1_h, in1_l, out0_h, out0_l,       \
+                       out1_h, out1_l)                                   \
 {                                                                        \
     LASX_ILVLH_W(in0_h, in0_l, out0_h, out0_l);                          \
     LASX_ILVLH_W(in1_h, in1_l, out1_h, out1_l);                          \
@@ -2152,6 +2152,23 @@
     out5 = (RTYPE)in2 - (RTYPE)in5;                                        \
     out6 = (RTYPE)in1 - (RTYPE)in6;                                        \
     out7 = (RTYPE)in0 - (RTYPE)in7;                                        \
+}
+
+/*
+ * Description : print out value in vec.
+ * Arguments   : Inputs  - in0
+ *                       - RTYPE
+ *                       - element_num
+ * Details     : Print out value according to the RTYPE
+ */
+#define LASX_PRINT(RTYPE, element_num, in0)           \
+{                                                     \
+    RTYPE _tmp0 = (RTYPE)in0;                         \
+    int _i = 0;                                       \
+    printf("LASX_PRINT: ");                           \
+    for(_i = 0; _i < element_num; _i++)               \
+        printf("%u,",_tmp0[_i]);                      \
+    printf("\n");                                     \
 }
 
 #endif /* AVUTIL_LOONGARCH_GENERIC_MACROS_LASX_H */
