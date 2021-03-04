@@ -783,3 +783,856 @@ void ff_h264_v_lpf_luma_intra_8_lasx(uint8_t *data, int img_width,
         LASX_ST(q0_org, data);
     }
 }
+
+void ff_biweight_h264_pixels16_8_lasx(uint8_t *dst, uint8_t *src,
+                                      ptrdiff_t stride, int height,
+                                      int log2_denom, int weight_dst,
+                                      int weight_src, int offset_in)
+{
+    __m256i wgt;
+    __m256i src0, src1, src2, src3;
+    __m256i dst0, dst1, dst2, dst3;
+    __m256i vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
+    __m256i tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
+    __m256i denom, offset;
+
+    offset_in   = (unsigned) ((offset_in + 1) | 1) << log2_denom;
+    offset_in  += ((weight_src + weight_dst) << 7);
+    log2_denom += 1;
+
+    tmp0   = __lasx_xvldrepl_b(&weight_src, 0);
+    tmp1   = __lasx_xvldrepl_b(&weight_dst, 0);
+    wgt    = __lasx_xvilvh_b(tmp1, tmp0);
+    offset = __lasx_xvldrepl_h(&offset_in, 0);
+    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+
+    LASX_LD_8(src, stride, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7);
+    src += 8 * stride;
+    LASX_PCKEV_Q_4(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6,
+                   src0, src1, src2, src3);
+    LASX_LD_8(dst, stride, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7);
+    LASX_PCKEV_Q_4(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6,
+                   dst0, dst1, dst2, dst3);
+
+    LASX_XORI_B_8_128(src0, src1, src2, src3, dst0, dst1, dst2, dst3);
+    LASX_ILVLH_B_4(dst0, src0, dst1, src1, dst2, src2, dst3, src3,
+                   vec1, vec0, vec3, vec2, vec5, vec4, vec7, vec6);
+
+    tmp0 = __lasx_xvdp2add_h_b(offset, wgt, vec0);
+    tmp1 = __lasx_xvdp2add_h_b(offset, wgt, vec1);
+    tmp2 = __lasx_xvdp2add_h_b(offset, wgt, vec2);
+    tmp3 = __lasx_xvdp2add_h_b(offset, wgt, vec3);
+    tmp4 = __lasx_xvdp2add_h_b(offset, wgt, vec4);
+    tmp5 = __lasx_xvdp2add_h_b(offset, wgt, vec5);
+    tmp6 = __lasx_xvdp2add_h_b(offset, wgt, vec6);
+    tmp7 = __lasx_xvdp2add_h_b(offset, wgt, vec7);
+
+    tmp0 = __lasx_xvsra_h(tmp0, denom);
+    tmp1 = __lasx_xvsra_h(tmp1, denom);
+    tmp2 = __lasx_xvsra_h(tmp2, denom);
+    tmp3 = __lasx_xvsra_h(tmp3, denom);
+    tmp4 = __lasx_xvsra_h(tmp4, denom);
+    tmp5 = __lasx_xvsra_h(tmp5, denom);
+    tmp6 = __lasx_xvsra_h(tmp6, denom);
+    tmp7 = __lasx_xvsra_h(tmp7, denom);
+
+    LASX_CLIP_H_0_255_4(tmp0, tmp1, tmp2, tmp3,
+                        tmp0, tmp1, tmp2, tmp3);
+    LASX_CLIP_H_0_255_4(tmp4, tmp5, tmp6, tmp7,
+                        tmp4, tmp5, tmp6, tmp7);
+    LASX_PCKEV_B_4(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6,
+                   dst0, dst1, dst2, dst3);
+    __lasx_xvstelm_d(dst0, dst, 0, 0);
+    __lasx_xvstelm_d(dst0, dst, 8, 1);
+    dst += stride;
+    __lasx_xvstelm_d(dst0, dst, 0, 2);
+    __lasx_xvstelm_d(dst0, dst, 8, 3);
+    dst += stride;
+    __lasx_xvstelm_d(dst1, dst, 0, 0);
+    __lasx_xvstelm_d(dst1, dst, 8, 1);
+    dst += stride;
+    __lasx_xvstelm_d(dst1, dst, 0, 2);
+    __lasx_xvstelm_d(dst1, dst, 8, 3);
+    dst += stride;
+    __lasx_xvstelm_d(dst2, dst, 0, 0);
+    __lasx_xvstelm_d(dst2, dst, 8, 1);
+    dst += stride;
+    __lasx_xvstelm_d(dst2, dst, 0, 2);
+    __lasx_xvstelm_d(dst2, dst, 8, 3);
+    dst += stride;
+    __lasx_xvstelm_d(dst3, dst, 0, 0);
+    __lasx_xvstelm_d(dst3, dst, 8, 1);
+    dst += stride;
+    __lasx_xvstelm_d(dst3, dst, 0, 2);
+    __lasx_xvstelm_d(dst3, dst, 8, 3);
+    dst += stride;
+
+    if (16 == height) {
+        LASX_LD_8(src, stride, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7);
+        LASX_PCKEV_Q_4(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6,
+                       src0, src1, src2, src3);
+        LASX_LD_8(dst, stride, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7);
+        LASX_PCKEV_Q_4(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6,
+                       dst0, dst1, dst2, dst3);
+
+        LASX_XORI_B_8_128(src0, src1, src2, src3, dst0, dst1, dst2, dst3);
+        LASX_ILVLH_B_4(dst0, src0, dst1, src1, dst2, src2, dst3, src3,
+                       vec1, vec0, vec3, vec2, vec5, vec4, vec7, vec6);
+
+        tmp0 = __lasx_xvdp2add_h_b(offset, wgt, vec0);
+        tmp1 = __lasx_xvdp2add_h_b(offset, wgt, vec1);
+        tmp2 = __lasx_xvdp2add_h_b(offset, wgt, vec2);
+        tmp3 = __lasx_xvdp2add_h_b(offset, wgt, vec3);
+        tmp4 = __lasx_xvdp2add_h_b(offset, wgt, vec4);
+        tmp5 = __lasx_xvdp2add_h_b(offset, wgt, vec5);
+        tmp6 = __lasx_xvdp2add_h_b(offset, wgt, vec6);
+        tmp7 = __lasx_xvdp2add_h_b(offset, wgt, vec7);
+
+        tmp0 = __lasx_xvsra_h(tmp0, denom);
+        tmp1 = __lasx_xvsra_h(tmp1, denom);
+        tmp2 = __lasx_xvsra_h(tmp2, denom);
+        tmp3 = __lasx_xvsra_h(tmp3, denom);
+        tmp4 = __lasx_xvsra_h(tmp4, denom);
+        tmp5 = __lasx_xvsra_h(tmp5, denom);
+        tmp6 = __lasx_xvsra_h(tmp6, denom);
+        tmp7 = __lasx_xvsra_h(tmp7, denom);
+
+        LASX_CLIP_H_0_255_4(tmp0, tmp1, tmp2, tmp3,
+                            tmp0, tmp1, tmp2, tmp3);
+        LASX_CLIP_H_0_255_4(tmp4, tmp5, tmp6, tmp7,
+                            tmp4, tmp5, tmp6, tmp7);
+        LASX_PCKEV_B_4(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6,
+                       dst0, dst1, dst2, dst3);
+        __lasx_xvstelm_d(dst0, dst, 0, 0);
+        __lasx_xvstelm_d(dst0, dst, 8, 1);
+        dst += stride;
+        __lasx_xvstelm_d(dst0, dst, 0, 2);
+        __lasx_xvstelm_d(dst0, dst, 8, 3);
+        dst += stride;
+        __lasx_xvstelm_d(dst1, dst, 0, 0);
+        __lasx_xvstelm_d(dst1, dst, 8, 1);
+        dst += stride;
+        __lasx_xvstelm_d(dst1, dst, 0, 2);
+        __lasx_xvstelm_d(dst1, dst, 8, 3);
+        dst += stride;
+        __lasx_xvstelm_d(dst2, dst, 0, 0);
+        __lasx_xvstelm_d(dst2, dst, 8, 1);
+        dst += stride;
+        __lasx_xvstelm_d(dst2, dst, 0, 2);
+        __lasx_xvstelm_d(dst2, dst, 8, 3);
+        dst += stride;
+        __lasx_xvstelm_d(dst3, dst, 0, 0);
+        __lasx_xvstelm_d(dst3, dst, 8, 1);
+        dst += stride;
+        __lasx_xvstelm_d(dst3, dst, 0, 2);
+        __lasx_xvstelm_d(dst3, dst, 8, 3);
+    }
+}
+
+static void avc_biwgt_8x4_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+                               int32_t log2_denom, int32_t weight_src,
+                               int32_t weight_dst, int32_t offset_in)
+{
+    __m256i wgt, vec0, vec1;
+    __m256i src0, dst0;
+    __m256i tmp0, tmp1, tmp2, tmp3, denom, offset;
+
+    offset_in   = (unsigned) ((offset_in + 1) | 1) << log2_denom;
+    offset_in  += ((weight_src + weight_dst) << 7);
+    log2_denom += 1;
+
+    tmp0   = __lasx_xvldrepl_b(&weight_src, 0);
+    tmp1   = __lasx_xvldrepl_b(&weight_dst, 0);
+    wgt    = __lasx_xvilvh_b(tmp1, tmp0);
+    offset = __lasx_xvldrepl_h(&offset_in, 0);
+    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+
+    LASX_LD_4(src, stride, tmp0, tmp1, tmp2, tmp3);
+    LASX_ILVL_D_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
+    LASX_PCKEV_Q(tmp1, tmp0, src0);
+    LASX_LD_4(dst, stride, tmp0, tmp1, tmp2, tmp3);
+    LASX_ILVL_D_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
+    LASX_PCKEV_Q(tmp1, tmp0, dst0);
+    LASX_XORI_B_2_128(src0, dst0);
+    LASX_ILVLH_B(dst0, src0, vec1, vec0);
+    tmp0 = __lasx_xvdp2add_h_b(offset, wgt, vec0);
+    tmp1 = __lasx_xvdp2add_h_b(offset, wgt, vec1);
+    tmp0 = __lasx_xvsra_h(tmp0, denom);
+    tmp1 = __lasx_xvsra_h(tmp1, denom);
+    LASX_CLIP_H_0_255_2(tmp0, tmp1, tmp0, tmp1);
+    LASX_PCKEV_B(tmp1, tmp0, dst0)
+    LASX_ST_D_4(dst0, 0, 1, 2, 3, dst, stride);
+}
+
+static void avc_biwgt_8x8_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+                               int32_t log2_denom, int32_t weight_src,
+                               int32_t weight_dst, int32_t offset_in)
+{
+    __m256i wgt, vec0, vec1, vec2, vec3;
+    __m256i src0, src1, dst0, dst1;
+    __m256i tmp0, tmp1, tmp2, tmp3, denom, offset;
+    ptrdiff_t stride_4x = stride << 2;
+    uint8_t* dst_tmp = dst;
+
+    offset_in   = (unsigned) ((offset_in + 1) | 1) << log2_denom;
+    offset_in  += ((weight_src + weight_dst) << 7);
+    log2_denom += 1;
+
+    tmp0   = __lasx_xvldrepl_b(&weight_src, 0);
+    tmp1   = __lasx_xvldrepl_b(&weight_dst, 0);
+    wgt    = __lasx_xvilvh_b(tmp1, tmp0);
+    offset = __lasx_xvldrepl_h(&offset_in, 0);
+    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+
+    LASX_LD_4(src, stride, tmp0, tmp1, tmp2, tmp3);
+    src += stride_4x;
+    LASX_ILVL_D_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
+    LASX_PCKEV_Q(tmp1, tmp0, src0);
+    LASX_LD_4(src, stride, tmp0, tmp1, tmp2, tmp3);
+    LASX_ILVL_D_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
+    LASX_PCKEV_Q(tmp1, tmp0, src1);
+
+    LASX_LD_4(dst_tmp, stride, tmp0, tmp1, tmp2, tmp3);
+    dst_tmp += stride_4x;
+    LASX_ILVL_D_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
+    LASX_PCKEV_Q(tmp1, tmp0, dst0);
+    LASX_LD_4(dst_tmp, stride, tmp0, tmp1, tmp2, tmp3);
+    LASX_ILVL_D_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
+    LASX_PCKEV_Q(tmp1, tmp0, dst1);
+
+    LASX_XORI_B_4_128(src0, src1, dst0, dst1);
+    LASX_ILVLH_B_2(dst0, src0, dst1, src1, vec1, vec0, vec3, vec2);
+    tmp0 = __lasx_xvdp2add_h_b(offset, wgt, vec0);
+    tmp1 = __lasx_xvdp2add_h_b(offset, wgt, vec1);
+    tmp2 = __lasx_xvdp2add_h_b(offset, wgt, vec2);
+    tmp3 = __lasx_xvdp2add_h_b(offset, wgt, vec3);
+    tmp0 = __lasx_xvsra_h(tmp0, denom);
+    tmp1 = __lasx_xvsra_h(tmp1, denom);
+    tmp2 = __lasx_xvsra_h(tmp2, denom);
+    tmp3 = __lasx_xvsra_h(tmp3, denom);
+    LASX_CLIP_H_0_255_4(tmp0, tmp1, tmp2, tmp3, tmp0, tmp1, tmp2, tmp3);
+    LASX_PCKEV_B_2(tmp1, tmp0, tmp3, tmp2, dst0, dst1)
+    LASX_ST_D_4(dst0, 0, 1, 2, 3, dst, stride);
+    dst += stride_4x;
+    LASX_ST_D_4(dst1, 0, 1, 2, 3, dst, stride);
+}
+
+static void avc_biwgt_8x16_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+                                int32_t log2_denom, int32_t weight_src,
+                                int32_t weight_dst, int32_t offset_in)
+{
+    __m256i wgt, vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
+    __m256i src0, src1, src2, src3, dst0, dst1, dst2, dst3;
+    __m256i tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, denom, offset;
+    ptrdiff_t stride_4x = stride << 2;
+    uint8_t* dst_tmp = dst;
+
+    offset_in   = (unsigned) ((offset_in + 1) | 1) << log2_denom;
+    offset_in  += ((weight_src + weight_dst) << 7);
+    log2_denom += 1;
+
+    tmp0   = __lasx_xvldrepl_b(&weight_src, 0);
+    tmp1   = __lasx_xvldrepl_b(&weight_dst, 0);
+    wgt    = __lasx_xvilvh_b(tmp1, tmp0);
+    offset = __lasx_xvldrepl_h(&offset_in, 0);
+    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+
+    LASX_LD_4(src, stride, tmp0, tmp1, tmp2, tmp3);
+    src += stride_4x;
+    LASX_ILVL_D_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
+    LASX_PCKEV_Q(tmp1, tmp0, src0);
+    LASX_LD_4(src, stride, tmp0, tmp1, tmp2, tmp3);
+    src += stride_4x;
+    LASX_ILVL_D_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
+    LASX_PCKEV_Q(tmp1, tmp0, src1);
+    LASX_LD_4(src, stride, tmp0, tmp1, tmp2, tmp3);
+    src += stride_4x;
+    LASX_ILVL_D_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
+    LASX_PCKEV_Q(tmp1, tmp0, src2);
+    LASX_LD_4(src, stride, tmp0, tmp1, tmp2, tmp3);
+    LASX_ILVL_D_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
+    LASX_PCKEV_Q(tmp1, tmp0, src3);
+
+    LASX_LD_4(dst_tmp, stride, tmp0, tmp1, tmp2, tmp3);
+    dst_tmp += stride_4x;
+    LASX_ILVL_D_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
+    LASX_PCKEV_Q(tmp1, tmp0, dst0);
+    LASX_LD_4(dst_tmp, stride, tmp0, tmp1, tmp2, tmp3);
+    dst_tmp += stride_4x;
+    LASX_ILVL_D_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
+    LASX_PCKEV_Q(tmp1, tmp0, dst1);
+    LASX_LD_4(dst_tmp, stride, tmp0, tmp1, tmp2, tmp3);
+    dst_tmp += stride_4x;
+    LASX_ILVL_D_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
+    LASX_PCKEV_Q(tmp1, tmp0, dst2);
+    LASX_LD_4(dst_tmp, stride, tmp0, tmp1, tmp2, tmp3);
+    LASX_ILVL_D_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
+    LASX_PCKEV_Q(tmp1, tmp0, dst3);
+
+    LASX_XORI_B_8_128(src0, src1, src2, src3, dst0, dst1, dst2, dst3);
+    LASX_ILVLH_B_4(dst0, src0, dst1, src1, dst2, src2, dst3, src3,
+                  vec1, vec0, vec3, vec2, vec5, vec4, vec7, vec6);
+    tmp0 = __lasx_xvdp2add_h_b(offset, wgt, vec0);
+    tmp1 = __lasx_xvdp2add_h_b(offset, wgt, vec1);
+    tmp2 = __lasx_xvdp2add_h_b(offset, wgt, vec2);
+    tmp3 = __lasx_xvdp2add_h_b(offset, wgt, vec3);
+    tmp4 = __lasx_xvdp2add_h_b(offset, wgt, vec4);
+    tmp5 = __lasx_xvdp2add_h_b(offset, wgt, vec5);
+    tmp6 = __lasx_xvdp2add_h_b(offset, wgt, vec6);
+    tmp7 = __lasx_xvdp2add_h_b(offset, wgt, vec7);
+    tmp0 = __lasx_xvsra_h(tmp0, denom);
+    tmp1 = __lasx_xvsra_h(tmp1, denom);
+    tmp2 = __lasx_xvsra_h(tmp2, denom);
+    tmp3 = __lasx_xvsra_h(tmp3, denom);
+    tmp4 = __lasx_xvsra_h(tmp4, denom);
+    tmp5 = __lasx_xvsra_h(tmp5, denom);
+    tmp6 = __lasx_xvsra_h(tmp6, denom);
+    tmp7 = __lasx_xvsra_h(tmp7, denom);
+    LASX_CLIP_H_0_255_4(tmp0, tmp1, tmp2, tmp3, tmp0, tmp1, tmp2, tmp3);
+    LASX_CLIP_H_0_255_4(tmp4, tmp5, tmp6, tmp7, tmp4, tmp5, tmp6, tmp7);
+    LASX_PCKEV_B_4(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6,
+                   dst0, dst1, dst2, dst3)
+    LASX_ST_D_4(dst0, 0, 1, 2, 3, dst, stride);
+    dst += stride_4x;
+    LASX_ST_D_4(dst1, 0, 1, 2, 3, dst, stride);
+    dst += stride_4x;
+    LASX_ST_D_4(dst2, 0, 1, 2, 3, dst, stride);
+    dst += stride_4x;
+    LASX_ST_D_4(dst3, 0, 1, 2, 3, dst, stride);
+}
+
+void ff_biweight_h264_pixels8_8_lasx(uint8_t *dst, uint8_t *src,
+                                     ptrdiff_t stride, int height,
+                                     int log2_denom, int weight_dst,
+                                     int weight_src, int offset)
+{
+    if (4 == height) {
+        avc_biwgt_8x4_lasx(src, dst, stride, log2_denom, weight_src, weight_dst,
+                           offset);
+    } else if (8 == height) {
+        avc_biwgt_8x8_lasx(src, dst, stride, log2_denom, weight_src, weight_dst,
+                           offset);
+    } else {
+        avc_biwgt_8x16_lasx(src, dst, stride, log2_denom, weight_src, weight_dst,
+                            offset);
+    }
+}
+
+static void avc_biwgt_4x2_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+                               int32_t log2_denom, int32_t weight_src,
+                               int32_t weight_dst, int32_t offset_in)
+{
+    __m256i wgt, vec0;
+    __m256i src0, dst0;
+    __m256i tmp0, tmp1, denom, offset;
+
+    offset_in   = (unsigned) ((offset_in + 1) | 1) << log2_denom;
+    offset_in  += ((weight_src + weight_dst) << 7);
+    log2_denom += 1;
+
+    tmp0   = __lasx_xvldrepl_b(&weight_src, 0);
+    tmp1   = __lasx_xvldrepl_b(&weight_dst, 0);
+    wgt    = __lasx_xvilvh_b(tmp1, tmp0);
+    offset = __lasx_xvldrepl_h(&offset_in, 0);
+    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+
+    LASX_LD_2(src, stride, tmp0, tmp1);
+    LASX_ILVL_W_128SV(tmp1, tmp0, src0);
+    LASX_LD_2(dst, stride, tmp0, tmp1);
+    LASX_ILVL_W_128SV(tmp1, tmp0, dst0);
+    LASX_XORI_B_2_128(src0, dst0);
+    LASX_ILVL_B_128SV(dst0, src0, vec0);
+    tmp0 = __lasx_xvdp2add_h_b(offset, wgt, vec0);
+    tmp0 = __lasx_xvsra_h(tmp0, denom);
+    LASX_CLIP_H_0_255(tmp0, tmp0);
+    LASX_PCKEV_B(tmp0, tmp0, tmp0);
+    LASX_ST_W_2(tmp0, 0, 1, dst, stride);
+}
+
+static void avc_biwgt_4x4_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+                               int32_t log2_denom, int32_t weight_src,
+                               int32_t weight_dst, int32_t offset_in)
+{
+    __m256i wgt, vec0;
+    __m256i src0, dst0;
+    __m256i tmp0, tmp1, tmp2, tmp3, denom, offset;
+
+    offset_in   = (unsigned) ((offset_in + 1) | 1) << log2_denom;
+    offset_in  += ((weight_src + weight_dst) << 7);
+    log2_denom += 1;
+
+    tmp0   = __lasx_xvldrepl_b(&weight_src, 0);
+    tmp1   = __lasx_xvldrepl_b(&weight_dst, 0);
+    wgt    = __lasx_xvilvh_b(tmp1, tmp0);
+    offset = __lasx_xvldrepl_h(&offset_in, 0);
+    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+
+    LASX_LD_4(src, stride, tmp0, tmp1, tmp2, tmp3);
+    LASX_ILVL_W_2_128SV(tmp2, tmp0, tmp3, tmp1, tmp0, tmp1);
+    LASX_ILVL_W_128SV(tmp1, tmp0, src0);
+    LASX_LD_4(dst, stride, tmp0, tmp1, tmp2, tmp3);
+    LASX_ILVL_W_2_128SV(tmp2, tmp0, tmp3, tmp1, tmp0, tmp1);
+    LASX_ILVL_W_128SV(tmp1, tmp0, dst0);
+    LASX_XORI_B_2_128(src0, dst0);
+    LASX_ILVL_B(dst0, src0, vec0);
+    tmp0 = __lasx_xvdp2add_h_b(offset, wgt, vec0);
+    tmp0 = __lasx_xvsra_h(tmp0, denom);
+    LASX_CLIP_H_0_255(tmp0, tmp0);
+    LASX_PCKEV_B(tmp0, tmp0, tmp0);
+    LASX_ST_W_4(tmp0, 0, 1, 2, 3, dst, stride);
+}
+
+static void avc_biwgt_4x8_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
+                               int32_t log2_denom, int32_t weight_src,
+                               int32_t weight_dst, int32_t offset_in)
+{
+    __m256i wgt, vec0, vec1;
+    __m256i src0, dst0;
+    __m256i tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, denom, offset;
+
+    offset_in   = (unsigned) ((offset_in + 1) | 1) << log2_denom;
+    offset_in  += ((weight_src + weight_dst) << 7);
+    log2_denom += 1;
+
+    tmp0   = __lasx_xvldrepl_b(&weight_src, 0);
+    tmp1   = __lasx_xvldrepl_b(&weight_dst, 0);
+    wgt    = __lasx_xvilvh_b(tmp1, tmp0);
+    offset = __lasx_xvldrepl_h(&offset_in, 0);
+    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+
+    LASX_LD_8(src, stride, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7);
+    LASX_ILVL_W_4_128SV(tmp2, tmp0, tmp3, tmp1, tmp6, tmp4, tmp7, tmp5,
+                        tmp0, tmp1, tmp2, tmp3);
+    LASX_ILVL_W_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
+    LASX_PCKEV_Q(tmp1, tmp0, src0);
+    LASX_LD_8(dst, stride, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7);
+    LASX_ILVL_W_4_128SV(tmp2, tmp0, tmp3, tmp1, tmp6, tmp4, tmp7, tmp5,
+                        tmp0, tmp1, tmp2, tmp3);
+    LASX_ILVL_W_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
+    LASX_PCKEV_Q(tmp1, tmp0, dst0);
+    LASX_XORI_B_2_128(src0, dst0);
+    LASX_ILVLH_B(dst0, src0, vec1, vec0);
+    tmp0 = __lasx_xvdp2add_h_b(offset, wgt, vec0);
+    tmp1 = __lasx_xvdp2add_h_b(offset, wgt, vec1);
+    tmp0 = __lasx_xvsra_h(tmp0, denom);
+    tmp1 = __lasx_xvsra_h(tmp1, denom);
+    LASX_CLIP_H_0_255_2(tmp0, tmp1, tmp0, tmp1);
+    LASX_PCKEV_B(tmp1, tmp0, tmp0);
+    LASX_ST_W_8(tmp0, 0, 1, 2, 3, 4, 5, 6, 7, dst, stride);
+}
+
+void ff_biweight_h264_pixels4_8_lasx(uint8_t *dst, uint8_t *src,
+                                     ptrdiff_t stride, int height,
+                                     int log2_denom, int weight_dst,
+                                     int weight_src, int offset)
+{
+    if (2 == height) {
+        avc_biwgt_4x2_lasx(src, dst, stride, log2_denom, weight_src, weight_dst,
+                           offset);
+    } else if (4 == height) {
+        avc_biwgt_4x4_lasx(src, dst, stride, log2_denom, weight_src, weight_dst,
+                           offset);
+    } else {
+        avc_biwgt_4x8_lasx(src, dst, stride, log2_denom, weight_src, weight_dst,
+                           offset);
+    }
+}
+
+void ff_weight_h264_pixels16_8_lasx(uint8_t *src, ptrdiff_t stride,
+                                    int height, int log2_denom,
+                                    int weight_src, int offset_in)
+{
+    uint32_t offset_val;
+    __m256i zero = __lasx_xvldi(0);
+    __m256i src0, src1, src2, src3;
+    __m256i src0_l, src1_l, src2_l, src3_l, src0_h, src1_h, src2_h, src3_h;
+    __m256i tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
+    __m256i wgt, denom, offset;
+
+    offset_val = (unsigned) offset_in << log2_denom;
+
+    wgt    = __lasx_xvldrepl_h(&weight_src, 0);
+    offset = __lasx_xvldrepl_h(&offset_val, 0);
+    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+
+    LASX_LD_8(src, stride, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7);
+    LASX_PCKEV_Q_4(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6,
+                   src0, src1, src2, src3);
+    LASX_ILVLH_B_4(zero, src0, zero, src1, zero, src2, zero, src3,
+                   src0_h, src0_l, src1_h, src1_l, src2_h, src2_l, src3_h, src3_l);
+    src0_l = __lasx_xvmul_h(wgt, src0_l);
+    src0_h = __lasx_xvmul_h(wgt, src0_h);
+    src1_l = __lasx_xvmul_h(wgt, src1_l);
+    src1_h = __lasx_xvmul_h(wgt, src1_h);
+    src2_l = __lasx_xvmul_h(wgt, src2_l);
+    src2_h = __lasx_xvmul_h(wgt, src2_h);
+    src3_l = __lasx_xvmul_h(wgt, src3_l);
+    src3_h = __lasx_xvmul_h(wgt, src3_h);
+    LASX_SADD_H_4(src0_l, offset, src0_h, offset, src1_l, offset,
+                  src1_h, offset, src0_l, src0_h, src1_l, src1_h);
+    LASX_SADD_H_4(src2_l, offset, src2_h, offset, src3_l, offset,
+                  src3_h, offset, src2_l, src2_h, src3_l, src3_h);
+    src0_l = __lasx_xvmaxi_h(src0_l, 0);
+    src0_h = __lasx_xvmaxi_h(src0_h, 0);
+    src1_l = __lasx_xvmaxi_h(src1_l, 0);
+    src1_h = __lasx_xvmaxi_h(src1_h, 0);
+    src2_l = __lasx_xvmaxi_h(src2_l, 0);
+    src2_h = __lasx_xvmaxi_h(src2_h, 0);
+    src3_l = __lasx_xvmaxi_h(src3_l, 0);
+    src3_h = __lasx_xvmaxi_h(src3_h, 0);
+    src0_l = __lasx_xvssrlrn_bu_h(src0_l, denom);
+    src0_h = __lasx_xvssrlrn_bu_h(src0_h, denom);
+    src1_l = __lasx_xvssrlrn_bu_h(src1_l, denom);
+    src1_h = __lasx_xvssrlrn_bu_h(src1_h, denom);
+    src2_l = __lasx_xvssrlrn_bu_h(src2_l, denom);
+    src2_h = __lasx_xvssrlrn_bu_h(src2_h, denom);
+    src3_l = __lasx_xvssrlrn_bu_h(src3_l, denom);
+    src3_h = __lasx_xvssrlrn_bu_h(src3_h, denom);
+    __lasx_xvstelm_d(src0_l, src, 0, 0);
+    __lasx_xvstelm_d(src0_l, src, 8, 2);
+    src += stride;
+    __lasx_xvstelm_d(src0_h, src, 0, 0);
+    __lasx_xvstelm_d(src0_h, src, 8, 2);
+    src += stride;
+    __lasx_xvstelm_d(src1_l, src, 0, 0);
+    __lasx_xvstelm_d(src1_l, src, 8, 2);
+    src += stride;
+    __lasx_xvstelm_d(src1_h, src, 0, 0);
+    __lasx_xvstelm_d(src1_h, src, 8, 2);
+    src += stride;
+    __lasx_xvstelm_d(src2_l, src, 0, 0);
+    __lasx_xvstelm_d(src2_l, src, 8, 2);
+    src += stride;
+    __lasx_xvstelm_d(src2_h, src, 0, 0);
+    __lasx_xvstelm_d(src2_h, src, 8, 2);
+    src += stride;
+    __lasx_xvstelm_d(src3_l, src, 0, 0);
+    __lasx_xvstelm_d(src3_l, src, 8, 2);
+    src += stride;
+    __lasx_xvstelm_d(src3_h, src, 0, 0);
+    __lasx_xvstelm_d(src3_h, src, 8, 2);
+    src += stride;
+
+    if (16 == height) {
+        LASX_LD_8(src, stride, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7);
+        LASX_PCKEV_Q_4(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6,
+                       src0, src1, src2, src3);
+        LASX_ILVLH_B_4(zero, src0, zero, src1, zero, src2, zero, src3,
+                       src0_h, src0_l, src1_h, src1_l, src2_h, src2_l,
+                       src3_h, src3_l);
+        src0_l = __lasx_xvmul_h(wgt, src0_l);
+        src0_h = __lasx_xvmul_h(wgt, src0_h);
+        src1_l = __lasx_xvmul_h(wgt, src1_l);
+        src1_h = __lasx_xvmul_h(wgt, src1_h);
+        src2_l = __lasx_xvmul_h(wgt, src2_l);
+        src2_h = __lasx_xvmul_h(wgt, src2_h);
+        src3_l = __lasx_xvmul_h(wgt, src3_l);
+        src3_h = __lasx_xvmul_h(wgt, src3_h);
+        LASX_SADD_H_4(src0_l, offset, src0_h, offset, src1_l, offset,
+                      src1_h, offset, src0_l, src0_h, src1_l, src1_h);
+        LASX_SADD_H_4(src2_l, offset, src2_h, offset, src3_l, offset,
+                      src3_h, offset, src2_l, src2_h, src3_l, src3_h);
+        src0_l = __lasx_xvmaxi_h(src0_l, 0);
+        src0_h = __lasx_xvmaxi_h(src0_h, 0);
+        src1_l = __lasx_xvmaxi_h(src1_l, 0);
+        src1_h = __lasx_xvmaxi_h(src1_h, 0);
+        src2_l = __lasx_xvmaxi_h(src2_l, 0);
+        src2_h = __lasx_xvmaxi_h(src2_h, 0);
+        src3_l = __lasx_xvmaxi_h(src3_l, 0);
+        src3_h = __lasx_xvmaxi_h(src3_h, 0);
+        src0_l = __lasx_xvssrlrn_bu_h(src0_l, denom);
+        src0_h = __lasx_xvssrlrn_bu_h(src0_h, denom);
+        src1_l = __lasx_xvssrlrn_bu_h(src1_l, denom);
+        src1_h = __lasx_xvssrlrn_bu_h(src1_h, denom);
+        src2_l = __lasx_xvssrlrn_bu_h(src2_l, denom);
+        src2_h = __lasx_xvssrlrn_bu_h(src2_h, denom);
+        src3_l = __lasx_xvssrlrn_bu_h(src3_l, denom);
+        src3_h = __lasx_xvssrlrn_bu_h(src3_h, denom);
+        __lasx_xvstelm_d(src0_l, src, 0, 0);
+        __lasx_xvstelm_d(src0_l, src, 8, 2);
+        src += stride;
+        __lasx_xvstelm_d(src0_h, src, 0, 0);
+        __lasx_xvstelm_d(src0_h, src, 8, 2);
+        src += stride;
+        __lasx_xvstelm_d(src1_l, src, 0, 0);
+        __lasx_xvstelm_d(src1_l, src, 8, 2);
+        src += stride;
+        __lasx_xvstelm_d(src1_h, src, 0, 0);
+        __lasx_xvstelm_d(src1_h, src, 8, 2);
+        src += stride;
+        __lasx_xvstelm_d(src2_l, src, 0, 0);
+        __lasx_xvstelm_d(src2_l, src, 8, 2);
+        src += stride;
+        __lasx_xvstelm_d(src2_h, src, 0, 0);
+        __lasx_xvstelm_d(src2_h, src, 8, 2);
+        src += stride;
+        __lasx_xvstelm_d(src3_l, src, 0, 0);
+        __lasx_xvstelm_d(src3_l, src, 8, 2);
+        src += stride;
+        __lasx_xvstelm_d(src3_h, src, 0, 0);
+        __lasx_xvstelm_d(src3_h, src, 8, 2);
+    }
+}
+
+static void avc_wgt_8x4_lasx(uint8_t *src, ptrdiff_t stride,
+                             int32_t log2_denom, int32_t weight_src,
+                             int32_t offset_in)
+{
+    uint32_t offset_val;
+    __m256i wgt, zero = __lasx_xvldi(0);
+    __m256i src0, src0_h, src0_l;
+    __m256i tmp0, tmp1, tmp2, tmp3, denom, offset;
+
+    offset_val = (unsigned) offset_in << log2_denom;
+
+    wgt    = __lasx_xvldrepl_h(&weight_src, 0);
+    offset = __lasx_xvldrepl_h(&offset_val, 0);
+    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+
+    LASX_LD_4(src, stride, tmp0, tmp1, tmp2, tmp3);
+    LASX_ILVL_D_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
+    LASX_PCKEV_Q(tmp1, tmp0, src0);
+    LASX_ILVLH_B(zero, src0, src0_h, src0_l);
+    src0_l = __lasx_xvmul_h(wgt, src0_l);
+    src0_h = __lasx_xvmul_h(wgt, src0_h);
+    src0_l = __lasx_xvsadd_h(src0_l, offset);
+    src0_h = __lasx_xvsadd_h(src0_h, offset);
+    src0_l = __lasx_xvmaxi_h(src0_l, 0);
+    src0_h = __lasx_xvmaxi_h(src0_h, 0);
+    src0_l = __lasx_xvssrlrn_bu_h(src0_l, denom);
+    src0_h = __lasx_xvssrlrn_bu_h(src0_h, denom);
+
+    LASX_PCKEV_D(src0_h, src0_l, src0);
+    LASX_ST_D_4(src0, 0, 1, 2, 3, src, stride);
+}
+
+static void avc_wgt_8x8_lasx(uint8_t *src, ptrdiff_t stride, int32_t log2_denom,
+                             int32_t src_weight, int32_t offset_in)
+{
+    uint32_t offset_val;
+    __m256i src0, src1, src0_h, src0_l, src1_h, src1_l, zero = __lasx_xvldi(0);
+    __m256i tmp0, tmp1, tmp2, tmp3, denom, offset, wgt;
+    ptrdiff_t stride_4x = stride << 2;
+    uint8_t* src_tmp = src;
+
+    offset_val = (unsigned) offset_in << log2_denom;
+
+    wgt    = __lasx_xvldrepl_h(&src_weight, 0);
+    offset = __lasx_xvldrepl_h(&offset_val, 0);
+    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+
+    LASX_LD_4(src_tmp, stride, tmp0, tmp1, tmp2, tmp3);
+    src_tmp += stride_4x;
+    LASX_ILVL_D_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
+    LASX_PCKEV_Q(tmp1, tmp0, src0);
+    LASX_LD_4(src_tmp, stride, tmp0, tmp1, tmp2, tmp3);
+    LASX_ILVL_D_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
+    LASX_PCKEV_Q(tmp1, tmp0, src1);
+    LASX_ILVLH_B_2(zero, src0, zero, src1, src0_h, src0_l, src1_h, src1_l);
+    src0_l = __lasx_xvmul_h(wgt, src0_l);
+    src0_h = __lasx_xvmul_h(wgt, src0_h);
+    src1_l = __lasx_xvmul_h(wgt, src1_l);
+    src1_h = __lasx_xvmul_h(wgt, src1_h);
+    LASX_SADD_H_4(src0_l, offset, src0_h, offset, src1_l, offset,
+                  src1_h, offset, src0_l, src0_h, src1_l, src1_h);
+    src0_l = __lasx_xvmaxi_h(src0_l, 0);
+    src0_h = __lasx_xvmaxi_h(src0_h, 0);
+    src1_l = __lasx_xvmaxi_h(src1_l, 0);
+    src1_h = __lasx_xvmaxi_h(src1_h, 0);
+    src0_l = __lasx_xvssrlrn_bu_h(src0_l, denom);
+    src0_h = __lasx_xvssrlrn_bu_h(src0_h, denom);
+    src1_l = __lasx_xvssrlrn_bu_h(src1_l, denom);
+    src1_h = __lasx_xvssrlrn_bu_h(src1_h, denom);
+
+    LASX_PCKEV_D_2(src0_h, src0_l, src1_h, src1_l, src0, src1);
+    LASX_ST_D_4(src0, 0, 1, 2, 3, src, stride);
+    src += stride_4x;
+    LASX_ST_D_4(src1, 0, 1, 2, 3, src, stride);
+}
+
+static void avc_wgt_8x16_lasx(uint8_t *src, ptrdiff_t stride,
+                              int32_t log2_denom, int32_t src_weight,
+                              int32_t offset_in)
+{
+    uint32_t offset_val;
+    __m256i src0, src1, src2, src3;
+    __m256i src0_h, src0_l, src1_h, src1_l, src2_h, src2_l, src3_h, src3_l;
+    __m256i tmp0, tmp1, tmp2, tmp3, denom, offset, wgt;
+    __m256i zero = __lasx_xvldi(0);
+    ptrdiff_t stride_4x = stride << 2;
+    uint8_t* src_tmp = src;
+
+    offset_val = (unsigned) offset_in << log2_denom;
+
+    wgt    = __lasx_xvldrepl_h(&src_weight, 0);
+    offset = __lasx_xvldrepl_h(&offset_val, 0);
+    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+
+    LASX_LD_4(src_tmp, stride, tmp0, tmp1, tmp2, tmp3);
+    src_tmp += stride_4x;
+    LASX_ILVL_D_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
+    LASX_PCKEV_Q(tmp1, tmp0, src0);
+    LASX_LD_4(src_tmp, stride, tmp0, tmp1, tmp2, tmp3);
+    src_tmp += stride_4x;
+    LASX_ILVL_D_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
+    LASX_PCKEV_Q(tmp1, tmp0, src1);
+    LASX_LD_4(src_tmp, stride, tmp0, tmp1, tmp2, tmp3);
+    src_tmp += stride_4x;
+    LASX_ILVL_D_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
+    LASX_PCKEV_Q(tmp1, tmp0, src2);
+    LASX_LD_4(src_tmp, stride, tmp0, tmp1, tmp2, tmp3);
+    LASX_ILVL_D_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
+    LASX_PCKEV_Q(tmp1, tmp0, src3);
+
+    LASX_ILVLH_B_4(zero, src0, zero, src1, zero, src2, zero, src3,
+                   src0_h, src0_l, src1_h, src1_l, src2_h, src2_l, src3_h, src3_l);
+    src0_l = __lasx_xvmul_h(wgt, src0_l);
+    src0_h = __lasx_xvmul_h(wgt, src0_h);
+    src1_l = __lasx_xvmul_h(wgt, src1_l);
+    src1_h = __lasx_xvmul_h(wgt, src1_h);
+    src2_l = __lasx_xvmul_h(wgt, src2_l);
+    src2_h = __lasx_xvmul_h(wgt, src2_h);
+    src3_l = __lasx_xvmul_h(wgt, src3_l);
+    src3_h = __lasx_xvmul_h(wgt, src3_h);
+
+    LASX_SADD_H_4(src0_l, offset, src0_h, offset, src1_l, offset,
+                  src1_h, offset, src0_l, src0_h, src1_l, src1_h);
+    LASX_SADD_H_4(src2_l, offset, src2_h, offset, src3_l, offset,
+                  src3_h, offset, src2_l, src2_h, src3_l, src3_h);
+
+    src0_l = __lasx_xvmaxi_h(src0_l, 0);
+    src0_h = __lasx_xvmaxi_h(src0_h, 0);
+    src1_l = __lasx_xvmaxi_h(src1_l, 0);
+    src1_h = __lasx_xvmaxi_h(src1_h, 0);
+    src2_l = __lasx_xvmaxi_h(src2_l, 0);
+    src2_h = __lasx_xvmaxi_h(src2_h, 0);
+    src3_l = __lasx_xvmaxi_h(src3_l, 0);
+    src3_h = __lasx_xvmaxi_h(src3_h, 0);
+    src0_l = __lasx_xvssrlrn_bu_h(src0_l, denom);
+    src0_h = __lasx_xvssrlrn_bu_h(src0_h, denom);
+    src1_l = __lasx_xvssrlrn_bu_h(src1_l, denom);
+    src1_h = __lasx_xvssrlrn_bu_h(src1_h, denom);
+    src2_l = __lasx_xvssrlrn_bu_h(src2_l, denom);
+    src2_h = __lasx_xvssrlrn_bu_h(src2_h, denom);
+    src3_l = __lasx_xvssrlrn_bu_h(src3_l, denom);
+    src3_h = __lasx_xvssrlrn_bu_h(src3_h, denom);
+    LASX_PCKEV_D_4(src0_h, src0_l, src1_h, src1_l, src2_h, src2_l, src3_h, src3_l,
+                   src0, src1, src2, src3);
+
+    LASX_ST_D_4(src0, 0, 1, 2, 3, src, stride);
+    src += stride_4x;
+    LASX_ST_D_4(src1, 0, 1, 2, 3, src, stride);
+    src += stride_4x;
+    LASX_ST_D_4(src2, 0, 1, 2, 3, src, stride);
+    src += stride_4x;
+    LASX_ST_D_4(src3, 0, 1, 2, 3, src, stride);
+}
+
+void ff_weight_h264_pixels8_8_lasx(uint8_t *src, ptrdiff_t stride,
+                                   int height, int log2_denom,
+                                   int weight_src, int offset)
+{
+    if (4 == height) {
+        avc_wgt_8x4_lasx(src, stride, log2_denom, weight_src, offset);
+    } else if (8 == height) {
+        avc_wgt_8x8_lasx(src, stride, log2_denom, weight_src, offset);
+    } else {
+        avc_wgt_8x16_lasx(src, stride, log2_denom, weight_src, offset);
+    }
+}
+
+static void avc_wgt_4x2_lasx(uint8_t *src, ptrdiff_t stride,
+                             int32_t log2_denom, int32_t weight_src,
+                             int32_t offset_in)
+{
+    uint32_t offset_val;
+    __m256i wgt, zero = __lasx_xvldi(0);
+    __m256i src0, tmp0, tmp1, denom, offset;
+
+    offset_val = (unsigned) offset_in << log2_denom;
+
+    wgt    = __lasx_xvldrepl_h(&weight_src, 0);
+    offset = __lasx_xvldrepl_h(&offset_val, 0);
+    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+
+    LASX_LD_2(src, stride, tmp0, tmp1);
+    LASX_ILVL_W_128SV(tmp1, tmp0, src0);
+    LASX_ILVL_B_128SV(zero, src0, src0);
+    src0 = __lasx_xvmul_h(wgt, src0);
+    src0 = __lasx_xvsadd_h(src0, offset);
+    src0 = __lasx_xvmaxi_h(src0, 0);
+    src0 = __lasx_xvssrlrn_bu_h(src0, denom);
+    LASX_ST_W_2(src0, 0, 1, src, stride);
+}
+
+static void avc_wgt_4x4_lasx(uint8_t *src, ptrdiff_t stride,
+                             int32_t log2_denom, int32_t weight_src,
+                             int32_t offset_in)
+{
+    uint32_t offset_val;
+    __m256i wgt, zero = __lasx_xvldi(0);
+    __m256i src0, tmp0, tmp1, tmp2, tmp3, denom, offset;
+
+    offset_val = (unsigned) offset_in << log2_denom;
+
+    wgt    = __lasx_xvldrepl_h(&weight_src, 0);
+    offset = __lasx_xvldrepl_h(&offset_val, 0);
+    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+
+    LASX_LD_4(src, stride, tmp0, tmp1, tmp2, tmp3);
+    LASX_ILVL_W_2_128SV(tmp2, tmp0, tmp3, tmp1, tmp0, tmp1);
+    LASX_ILVL_W_128SV(tmp1, tmp0, src0);
+    LASX_ILVL_B(zero, src0, src0);
+    src0 = __lasx_xvmul_h(wgt, src0);
+    src0 = __lasx_xvsadd_h(src0, offset);
+    src0 = __lasx_xvmaxi_h(src0, 0);
+    src0 = __lasx_xvssrlrn_bu_h(src0, denom);
+    LASX_ST_W_4(src0, 0, 1, 4, 5, src, stride);
+}
+
+static void avc_wgt_4x8_lasx(uint8_t *src, ptrdiff_t stride,
+                             int32_t log2_denom, int32_t weight_src,
+                             int32_t offset_in)
+{
+    uint32_t offset_val;
+    __m256i src0, src0_h, src0_l;
+    __m256i tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, denom, offset;
+    __m256i wgt, zero = __lasx_xvldi(0);
+
+    offset_val = (unsigned) offset_in << log2_denom;
+
+    wgt    = __lasx_xvldrepl_h(&weight_src, 0);
+    offset = __lasx_xvldrepl_h(&offset_val, 0);
+    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+
+    LASX_LD_8(src, stride, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7);
+    LASX_ILVL_W_4_128SV(tmp2, tmp0, tmp3, tmp1, tmp6, tmp4, tmp7, tmp5,
+                        tmp0, tmp1, tmp2, tmp3);
+    LASX_ILVL_W_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
+    LASX_PCKEV_Q(tmp1, tmp0, src0);
+    LASX_ILVLH_B(zero, src0, src0_h, src0_l);
+    src0_l = __lasx_xvmul_h(wgt, src0_l);
+    src0_h = __lasx_xvmul_h(wgt, src0_h);
+    src0_l = __lasx_xvsadd_h(src0_l, offset);
+    src0_h = __lasx_xvsadd_h(src0_h, offset);
+    src0_l = __lasx_xvmaxi_h(src0_l, 0);
+    src0_h = __lasx_xvmaxi_h(src0_h, 0);
+    src0_l = __lasx_xvssrlrn_bu_h(src0_l, denom);
+    src0_h = __lasx_xvssrlrn_bu_h(src0_h, denom);
+    LASX_ST_W_4(src0_l, 0, 1, 4, 5, src, stride);
+    src += (stride << 2);
+    LASX_ST_W_4(src0_h, 0, 1, 4, 5, src, stride);
+}
+
+void ff_weight_h264_pixels4_8_lasx(uint8_t *src, ptrdiff_t stride,
+                                   int height, int log2_denom,
+                                   int weight_src, int offset)
+{
+    if (2 == height) {
+        avc_wgt_4x2_lasx(src, stride, log2_denom, weight_src, offset);
+    } else if (4 == height) {
+        avc_wgt_4x4_lasx(src, stride, log2_denom, weight_src, offset);
+    } else {
+        avc_wgt_4x8_lasx(src, stride, log2_denom, weight_src, offset);
+    }
+}

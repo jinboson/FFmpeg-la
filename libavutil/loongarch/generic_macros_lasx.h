@@ -1,8 +1,8 @@
 /*
  * Copyright (c) 2020 Loongson Technology Corporation Limited
  * All rights reserved.
- * Contributed by Xiwei Gu     <guxiwei-hf@loongson.cn>
- *                Shiyou Yin   <yinshiyou-hf@loongson.cn>
+ * Contributed by Shiyou Yin   <yinshiyou-hf@loongson.cn>
+ *                Xiwei Gu     <guxiwei-hf@loongson.cn>
  *                Jin Bo       <jinbo@loongson.cn>
  *                Hao Chen     <chenhao@loongson.cn>
  *                Lu Wang      <wanglu@loongson.cn>
@@ -38,7 +38,7 @@
  * MICRO version: Comment changes or implementation changes。
  */
 #define LSOM_LASX_VERSION_MAJOR 1
-#define LSOM_LASX_VERSION_MINOR 3
+#define LSOM_LASX_VERSION_MINOR 8
 #define LSOM_LASX_VERSION_MICRO 0
 
 /* Description : Load 256-bit vector data with stride
@@ -278,6 +278,109 @@
 {                                                                           \
     LASX_UNPCK_L_W_H_4(in0, in1, in2, in3, out0, out1, out2, out3);         \
     LASX_UNPCK_L_W_H_4(in4, in5, in6, in7, out4, out5, out6, out7);         \
+}
+
+/* Description : Interleave odd byte elements from vectors.
+ * Arguments   : Inputs  - in_h, in_l, ~
+ *               Outputs - out, out0, ~
+ * Details     : Odd byte elements of in_h and odd byte
+ *               elements of in_l are interleaved and copied to out.
+ * Example     : See LASX_ILVOD_W(in_h, in_l, out)
+ */
+#define LASX_ILVOD_B(in_h, in_l, out)                                            \
+{                                                                                \
+    out = __lasx_xvpackod_b((in_h, in1_l);                                       \
+}
+
+#define LASX_ILVOD_B_2(in0_h, in0_l, in1_h, in1_l, out0, out1)                   \
+{                                                                                \
+    LASX_ILVOD_B(in0_h, in0_l, out0);                                            \
+    LASX_ILVOD_B(in1_h, in1_l, out1);                                            \
+}
+
+#define LASX_ILVOD_B_4(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l, in3_h, in3_l,   \
+                       out0, out1, out2, out3)                                   \
+{                                                                                \
+    LASX_ILVOD_B_2(in0_h, in0_l, in1_h, in1_l, out0, out1);                      \
+    LASX_ILVOD_B_2(in2_h, in2_l, in3_h, in3_l, out2, out3);                      \
+}
+
+/* Description : Interleave odd half word elements from vectors.
+ * Arguments   : Inputs  - in_h, in_l, ~
+ *               Outputs - out, out0, ~
+ * Details     : Odd half word elements of in_h and odd half word
+ *               elements of in_l are interleaved and copied to out.
+ * Example     : See LASX_ILVOD_W(in_h, in_l, out)
+ */
+#define LASX_ILVOD_H(in_h, in_l, out)                                           \
+{                                                                               \
+    out = __lasx_xvpackod_h(in_h, in_l);                                        \
+}
+
+#define LASX_ILVOD_H_2(in0_h, in0_l, in1_h, in1_l, out0, out1)                  \
+{                                                                               \
+    LASX_ILVOD_H(in0_h, in0_l, out0);                                           \
+    LASX_ILVOD_H(in1_h, in1_l, out1);                                           \
+}
+
+#define LASX_ILVOD_H_4(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l, in3_h, in3_l,  \
+                       out0, out1, out2, out3)                                  \
+{                                                                               \
+    LASX_ILVOD_H_2(in0_h, in0_l, in1_h, in1_l, out0, out1);                     \
+    LASX_ILVOD_H_2(in2_h, in2_l, in3_h, in3_l, out2, out3);                     \
+}
+
+/* Description : Interleave odd word elements from vectors.
+ * Arguments   : Inputs  - in_h, in_l, ~
+ *               Outputs - out, out0, ~
+ * Details     : Odd word elements of in_h and odd word
+ *               elements of in_l are interleaved and copied to out.
+ * Example     : See LASX_ILVOD_W(in_h, in_l, out)
+ *        in_h : 1, 2, 3, 4,   5, 6, 7, 8
+ *        in_l : 1, 0, 3, 1,   1, 2, 3, 4
+ *         out : 0, 2, 1, 4,   2, 6, 4, 8
+ */
+#define LASX_ILVOD_W(in_h, in_l, out)                                           \
+{                                                                               \
+    out = __lasx_xvpackod_w(in_h, in_l);                                        \
+}
+
+#define LASX_ILVOD_W_2(in0_h, in0_l, in1_h, in1_l, out0, out1)                  \
+{                                                                               \
+    LASX_ILVOD_W(in0_h, in0_l, out0);                                           \
+    LASX_ILVOD_W(in1_h, in1_l, out1);                                           \
+}
+
+#define LASX_ILVOD_W_4(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l, in3_h, in3_l,  \
+                       out0, out1, out2, out3)                                  \
+{                                                                               \
+    LASX_ILVOD_W_2(in0_h, in0_l, in1_h, in1_l, out0, out1);                     \
+    LASX_ILVOD_W_2(in2_h, in2_l, in3_h, in3_l, out2, out3);                     \
+}
+
+/* Description : Interleave odd double word elements from vectors.
+ * Arguments   : Inputs  - in_h, in_l, ~
+ *               Outputs - out, out0, ~
+ * Details     : Odd double word elements of in_h and odd double word
+ *               elements of in_l are interleaved and copied to out.
+ * Example     : LASX_ILVOD_W(in_h, in_l, out)
+ */
+#define LASX_ILVOD_D(in_h, in_l, out)                                           \
+{                                                                               \
+    out = __lasx_xvpackod_d(in_h, in_l);                                        \
+}
+
+#define LASX_ILVOD_D_2(in0_h, in0_l, in1_h, in1_l, out0, out1)                  \
+{                                                                               \
+    LASX_ILVOD_D(in0_h, in0_l, out0);                                           \
+    LASX_ILVOD_D(in1_h, in1_l, out1);                                           \
+}
+
+#define LASX_ILVOD_D_4(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l, in3_h, in3_l,  \
+                       out0, out1, out2, out3)                                  \
+{                                                                               \
+    LASX_ILVOD_D_2(in0_h, in0_l, in1_h, in1_l, out0, out1);                     \
+    LASX_ILVOD_D_2(in2_h, in2_l, in3_h, in3_l, out2, out3);                     \
 }
 
 /* Description : Interleave right half of byte elements from vectors
@@ -1012,8 +1115,8 @@
     out_h = __lasx_xvpermi_q(tmp0, tmp1, 0x13);                          \
 }
 
-#define LASX_ILVLH_H_2(in0, in1, in2, in3, out0, out1,                   \
-                       out2, out3)                                       \
+#define LASX_ILVLH_H_2(in0_h, in0_l, in1_h, in1_l, out0_h, out0_l,       \
+                       out1_h, out1_l)                                   \
 {                                                                        \
     LASX_ILVLH_H(in0_h, in0_l, out0_h, out0_l);                          \
     LASX_ILVLH_H(in1_h, in1_l, out1_h, out1_l);                          \
@@ -1195,8 +1298,8 @@
     out_h = __lasx_xvpermi_q(tmp0, tmp1, 0x13);                          \
 }
 
-#define LASX_ILVLH_D_2(in0, in1, in2, in3, out0, out1,                   \
-                       out2, out3)                                       \
+#define LASX_ILVLH_D_2(in0_h, in0_l, in1_h, in1_l, out0_h, out0_l,       \
+                       out1_h, out1_l)                                   \
 {                                                                        \
     LASX_ILVLH_D(in0_h, in0_l, out0_h, out0_l);                          \
     LASX_ILVLH_D(in1_h, in1_l, out1_h, out1_l);                          \
@@ -1409,6 +1512,63 @@
                    in7_h, in7_l, out4, out5, out6, out7);                      \
 }
 
+/* Description : Pack even half word elements of vector pairs
+ * Arguments   : Inputs  - in_h, in_l, ~
+ *               Outputs - out0, out1, ~
+ * Details     : Even half word elements of in_l are copied to the  low
+ *               half of out0.  Even  half  word  elements  of in_h are
+ *               copied to the high half of out0.
+ * Example     : See LASX_PCKEV_W(in_h, in_l, out0)
+ */
+#define LASX_PCKEV_D(in_h, in_l, out0)                                        \
+{                                                                             \
+    out0 = __lasx_xvpickev_d(in_h, in_l);                                     \
+    out0 = __lasx_xvpermi_d(out0, 0xd8);                                      \
+}
+
+#define LASX_PCKEV_D_2(in0_h, in0_l, in1_h, in1_l, out0, out1)                \
+{                                                                             \
+    LASX_PCKEV_D(in0_h, in0_l, out0)                                          \
+    LASX_PCKEV_D(in1_h, in1_l, out1)                                          \
+}
+
+#define LASX_PCKEV_D_4(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l,              \
+                       in3_h, in3_l, out0, out1, out2, out3)                  \
+{                                                                             \
+    LASX_PCKEV_D_2(in0_h, in0_l, in1_h, in1_l, out0, out1)                    \
+    LASX_PCKEV_D_2(in2_h, in2_l, in3_h, in3_l, out2, out3)                    \
+}
+
+/* Description : Pack even half word elements of vector pairs
+ *               (128-bit symmetry version)
+ * Arguments   : Inputs  - in_h, in_l, ~
+ *               Outputs - out0, out1, ~
+ * Details     : Even half word elements of in_l are copied to the  low
+ *               half of out0.  Even  half  word  elements  of in_h are
+ *               copied to the high half of out0.
+ * Example     : LASX_PCKEV_D_128SV(in_h, in_l, out0)
+ *        in_h : 1, 2, 3, 4
+ *        in_l : 5, 6, 7, 8
+ *        out0 : 5, 1, 7, 3
+ */
+#define LASX_PCKEV_D_128SV(in_h, in_l, out0)                                  \
+{                                                                             \
+    out0 = __lasx_xvpickev_d(in_h, in_l);                                     \
+}
+
+#define LASX_PCKEV_D_2_128SV(in0_h, in0_l, in1_h, in1_l, out0, out1)          \
+{                                                                             \
+    LASX_PCKEV_D_128SV(in0_h, in0_l, out0)                                    \
+    LASX_PCKEV_D_128SV(in1_h, in1_l, out1)                                    \
+}
+
+#define LASX_PCKEV_D_4_128SV(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l,        \
+                             in3_h, in3_l, out0, out1, out2, out3)            \
+{                                                                             \
+    LASX_PCKEV_D_2_128SV(in0_h, in0_l, in1_h, in1_l, out0, out1)              \
+    LASX_PCKEV_D_2_128SV(in2_h, in2_l, in3_h, in3_l, out2, out3)              \
+}
+
 /* Description : Pack even quad word elements of vector pairs
  * Arguments   : Inputs  - in_h, in_l, ~
  *               Outputs - out0, out1, ~
@@ -1446,6 +1606,147 @@
                    in7_h, in7_l, out4, out5, out6, out7);                      \
 }
 
+/* Description : Pack odd byte elements of vector pairs
+ * Arguments   : Inputs  - in_h, in_l, ~
+ *               Outputs - out0, out1, ~
+ * Details     : Odd byte elements of in_l are copied to the low half of
+ *               out0. Odd byte elements of in_h are copied to the high
+ *               half of out0.
+ *               Similar for other pairs.
+ * Example     : see LASX_PCKOD_W(in_h, in_l, out0)
+ */
+#define LASX_PCKOD_B(in_h, in_l, out0)                                         \
+{                                                                              \
+    out0 = __lasx_xvpickod_b(in_h, in_l);                                      \
+    out0 = __lasx_xvpermi_d(out0, 0xd8);                                       \
+}
+
+#define LASX_PCKOD_B_2(in0_h, in0_l, in1_h, in1_l, out0, out1)                 \
+{                                                                              \
+    LASX_PCKOD_B(in0_h, in0_l, out0);                                          \
+    LASX_PCKOD_B(in1_h, in1_l, out1);                                          \
+}
+
+#define LASX_PCKOD_B_4(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l,               \
+                       in3_h, in3_l, out0, out1, out2, out3)                   \
+{                                                                              \
+    LASX_PCKOD_B_2(in0_h, in0_l, in1_h, in1_l, out0, out1);                    \
+    LASX_PCKOD_B_2(in2_h, in2_l, in3_h, in3_l, out2, out3);                    \
+}
+
+#define LASX_PCKOD_B_8(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l, in3_h, in3_l, \
+                       in4_h, in4_l, in5_h, in5_l, in6_h, in6_l, in7_h, in7_l, \
+                       out0, out1, out2, out3, out4, out5, out6, out7)         \
+{                                                                              \
+    LASX_PCKOD_B_4(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l,                   \
+                   in3_h, in3_l, out0, out1, out2, out3);                      \
+    LASX_PCKOD_B_4(in4_h, in4_l, in5_h, in5_l, in6_h, in6_l,                   \
+                   in7_h, in7_l, out4, out5, out6, out7);                      \
+}
+
+/* Description : Pack odd half word elements of vector pairs
+ * Arguments   : Inputs  - in_h, in_l, ~
+ *               Outputs - out0, out1, ~
+ * Details     : Odd half word elements of in_l are copied to the low
+ *               half of out0. Odd half word elements of in_h are copied
+ *               to the high half of out0.
+ * Example     : see LASX_PCKOD_W(in_h, in_l, out0)
+ */
+#define LASX_PCKOD_H(in_h, in_l, out0)                                         \
+{                                                                              \
+    out0 = __lasx_xvpickod_h(in_h, in_l);                                      \
+    out0 = __lasx_xvpermi_d(out0, 0xd8);                                       \
+}
+
+#define LASX_PCKOD_H_2(in0_h, in0_l, in1_h, in1_l, out0, out1)                 \
+{                                                                              \
+    LASX_PCKOD_H(in0_h, in0_l, out0);                                          \
+    LASX_PCKOD_H(in1_h, in1_l, out1);                                          \
+}
+
+#define LASX_PCKOD_H_4(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l,               \
+                       in3_h, in3_l, out0, out1, out2, out3)                   \
+{                                                                              \
+    LASX_PCKOD_H_2(in0_h, in0_l, in1_h, in1_l, out0, out1);                    \
+    LASX_PCKOD_H_2(in2_h, in2_l, in3_h, in3_l, out2, out3);                    \
+}
+
+#define LASX_PCKOD_H_8(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l, in3_h, in3_l, \
+                       in4_h, in4_l, in5_h, in5_l, in6_h, in6_l, in7_h, in7_l, \
+                       out0, out1, out2, out3, out4, out5, out6, out7)         \
+{                                                                              \
+    LASX_PCKOD_H_4(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l,                   \
+                   in3_h, in3_l, out0, out1, out2, out3);                      \
+    LASX_PCKOD_H_4(in4_h, in4_l, in5_h, in5_l, in6_h, in6_l,                   \
+                   in7_h, in7_l, out4, out5, out6, out7);                      \
+}
+
+/* Description : Pack odd word elements of vector pairs
+ * Arguments   : Inputs  - in_h, in_l, ~
+ *               Outputs - out0, out1, ~
+ * Details     : Odd word elements of in_l are copied to the low half of out0.
+ *               Odd word elements of in_h are copied to the high half of out0.
+ * Example     : LASX_PCKOD_W(in_h, in_l, out0)
+ *         in_h: -1, -2, -3, -4, -5, -6, -7, -8
+ *         in_l:  1,  2,  3,  4,  5,  6,  7,  8
+ *         out0:  2,  4,  6,  8, -2, -4, -6, -8
+ */
+#define LASX_PCKOD_W(in_h, in_l, out0)                                         \
+{                                                                              \
+    out0 = __lasx_xvpickod_w(in_h, in_l);                                      \
+    out0 = __lasx_xvpermi_d(out0, 0xd8);                                       \
+}
+
+#define LASX_PCKOD_W_2(in0_h, in0_l, in1_h, in1_l, out0, out1)                 \
+{                                                                              \
+    LASX_PCKOD_W(in0_h, in0_l, out0);                                          \
+    LASX_PCKOD_W(in1_h, in1_l, out1);                                          \
+}
+
+#define LASX_PCKOD_W_4(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l,               \
+                       in3_h, in3_l, out0, out1, out2, out3)                   \
+{                                                                              \
+    LASX_PCKOD_W_2(in0_h, in0_l, in1_h, in1_l, out0, out1);                    \
+    LASX_PCKOD_W_2(in2_h, in2_l, in3_h, in3_l, out2, out3);                    \
+}
+
+#define LASX_PCKOD_W_8(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l, in3_h, in3_l, \
+                       in4_h, in4_l, in5_h, in5_l, in6_h, in6_l, in7_h, in7_l, \
+                       out0, out1, out2, out3, out4, out5, out6, out7)         \
+{                                                                              \
+    LASX_PCKOD_W_4(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l,                   \
+                   in3_h, in3_l, out0, out1, out2, out3);                      \
+    LASX_PCKOD_W_4(in4_h, in4_l, in5_h, in5_l, in6_h, in6_l,                   \
+                   in7_h, in7_l, out4, out5, out6, out7);                      \
+}
+
+/* Description : Pack odd half word elements of vector pairs
+ * Arguments   : Inputs  - in_h, in_l, ~
+ *               Outputs - out0, out1, ~
+ * Details     : Odd half word elements of in_l are copied to the low
+ *               half of out0. Odd half word elements of in_h are
+ *               copied to the high half of out0.
+ * Example     : See LASX_PCKOD_W(in_h, in_l, out0)
+ */
+#define LASX_PCKOD_D(in_h, in_l, out0)                                        \
+{                                                                             \
+    out0 = __lasx_xvpickod_d(in_h, in_l);                                     \
+    out0 = __lasx_xvpermi_d(out0, 0xd8);                                      \
+}
+
+#define LASX_PCKOD_D_2(in0_h, in0_l, in1_h, in1_l, out0, out1)                \
+{                                                                             \
+    LASX_PCKOD_D(in0_h, in0_l, out0)                                          \
+    LASX_PCKOD_D(in1_h, in1_l, out1)                                          \
+}
+
+#define LASX_PCKOD_D_4(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l,              \
+                       in3_h, in3_l, out0, out1, out2, out3)                  \
+{                                                                             \
+    LASX_PCKOD_D_2(in0_h, in0_l, in1_h, in1_l, out0, out1)                    \
+    LASX_PCKOD_D_2(in2_h, in2_l, in3_h, in3_l, out2, out3)                    \
+}
+
 /* Description : Pack odd quad word elements of vector pairs
  * Arguments   : Inputs  - in_h, in_l, ~
  *               Outputs - out0, out1, ~
@@ -1460,22 +1761,22 @@
  *               in_l:   0,0,0,0, 0,0,0,0, 1,2,3,4, 5,6,7,8
  *               out0:  1,2,3,4, 5,6,7,8, 19,10,11,12, 13,14,15,16
  */
-#define LASX_PCKOD_Q(in_h, in_l, out0)                    \
-{                                                         \
-    out0 = __lasx_xvpermi_q(in_h, in_l, 0x31);            \
+#define LASX_PCKOD_Q(in_h, in_l, out0)                                         \
+{                                                                              \
+    out0 = __lasx_xvpermi_q(in_h, in_l, 0x31);                                 \
 }
 
-#define LASX_PCKOD_Q_2(in0_h, in0_l, in1_h, in1_l, out0, out1)          \
-{                                                                       \
-    LASX_PCKOD_Q(in0_h, in0_l, out0);                                   \
-    LASX_PCKOD_Q(in1_h, in1_l, out1);                                   \
+#define LASX_PCKOD_Q_2(in0_h, in0_l, in1_h, in1_l, out0, out1)                 \
+{                                                                              \
+    LASX_PCKOD_Q(in0_h, in0_l, out0);                                          \
+    LASX_PCKOD_Q(in1_h, in1_l, out1);                                          \
 }
 
-#define LASX_PCKOD_Q_4(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l,        \
-                       in3_h, in3_l, out0, out1, out2, out3)            \
-{                                                                       \
-    LASX_PCKOD_Q_2(in0_h, in0_l, in1_h, in1_l, out0, out1);             \
-    LASX_PCKOD_Q_2(in2_h, in2_l, in3_h, in3_l, out2, out3);             \
+#define LASX_PCKOD_Q_4(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l,               \
+                       in3_h, in3_l, out0, out1, out2, out3)                   \
+{                                                                              \
+    LASX_PCKOD_Q_2(in0_h, in0_l, in1_h, in1_l, out0, out1);                    \
+    LASX_PCKOD_Q_2(in2_h, in2_l, in3_h, in3_l, out2, out3);                    \
 }
 
 #define LASX_PCKOD_Q_8(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l, in3_h, in3_l, \
@@ -1486,6 +1787,83 @@
                    in3_h, in3_l, out0, out1, out2, out3);                      \
     LASX_PCKOD_Q_4(in4_h, in4_l, in5_h, in5_l, in6_h, in6_l,                   \
                    in7_h, in7_l, out4, out5, out6, out7);                      \
+}
+
+/* Description : Pack odd half word elements of vector pairsi
+ *               (128-bit symmetry version)
+ * Arguments   : Inputs  - in_h, in_l, ~
+ *               Outputs - out0, out1, ~
+ * Details     : Odd half word elements of in_l are copied to the low
+ *               half of out0 of . Odd half word elements of in_h are
+ *               copied to the high half of out0.
+ * Example     : LASX_PCKOD_D_128SV(in_h, in_l, out0)
+ *        in_h : 1, 2, 3, 4
+ *        in_l : 5, 6, 7, 8
+ *        out0 : 6, 2, 8, 4
+ */
+#define LASX_PCKOD_D_128SV(in_h, in_l, out0)                                  \
+{                                                                             \
+    out0 = __lasx_xvpickod_d(in_h, in_l);                                     \
+}
+
+#define LASX_PCKOD_D_2_128SV(in0_h, in0_l, in1_h, in1_l, out0, out1)          \
+{                                                                             \
+    LASX_PCKOD_D_128SV(in0_h, in0_l, out0)                                    \
+    LASX_PCKOD_D_128SV(in1_h, in1_l, out1)                                    \
+}
+
+#define LASX_PCKOD_D_4_128SV(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l,        \
+                             in3_h, in3_l, out0, out1, out2, out3)            \
+{                                                                             \
+    LASX_PCKOD_D_2_128SV(in0_h, in0_l, in1_h, in1_l, out0, out1)              \
+    LASX_PCKOD_D_2_128SV(in2_h, in2_l, in3_h, in3_l, out2, out3)              \
+}
+
+
+/* Description : Transposes 8x8 block with half word elements in vectors.
+ * Arguments   : Inputs  - in0, in1, ~
+ *               Outputs - out0, out1, ~
+ * Details     : The rows of the matrix become columns, and the columns become rows.
+ * Example     : LASX_TRANSPOSE8x8_H
+ *         in0 : 1,2,3,4, 5,6,7,8, 0,0,0,0, 0,0,0,0
+ *         in1 : 8,2,3,4, 5,6,7,8, 0,0,0,0, 0,0,0,0
+ *         in2 : 8,2,3,4, 5,6,7,8, 0,0,0,0, 0,0,0,0
+ *         in3 : 1,2,3,4, 5,6,7,8, 0,0,0,0, 0,0,0,0
+ *         in4 : 9,2,3,4, 5,6,7,8, 0,0,0,0, 0,0,0,0
+ *         in5 : 1,2,3,4, 5,6,7,8, 0,0,0,0, 0,0,0,0
+ *         in6 : 1,2,3,4, 5,6,7,8, 0,0,0,0, 0,0,0,0
+ *         in7 : 9,2,3,4, 5,6,7,8, 0,0,0,0, 0,0,0,0
+ *
+ *        out0 : 1,8,8,1, 9,1,1,9, 0,0,0,0, 0,0,0,0
+ *        out1 : 2,2,2,2, 2,2,2,2, 0,0,0,0, 0,0,0,0
+ *        out2 : 3,3,3,3, 3,3,3,3, 0,0,0,0, 0,0,0,0
+ *        out3 : 4,4,4,4, 4,4,4,4, 0,0,0,0, 0,0,0,0
+ *        out4 : 5,5,5,5, 5,5,5,5, 0,0,0,0, 0,0,0,0
+ *        out5 : 6,6,6,6, 6,6,6,6, 0,0,0,0, 0,0,0,0
+ *        out6 : 7,7,7,7, 7,7,7,7, 0,0,0,0, 0,0,0,0
+ *        out7 : 8,8,8,8, 8,8,8,8, 0,0,0,0, 0,0,0,0
+ */
+#define LASX_TRANSPOSE8x8_H(in0, in1, in2, in3, in4, in5, in6, in7,           \
+                            out0, out1, out2, out3, out4, out5, out6, out7)   \
+{                                                                             \
+    __m256i s0_m, s1_m;                                                       \
+    __m256i tmp0_m, tmp1_m, tmp2_m, tmp3_m;                                   \
+    __m256i tmp4_m, tmp5_m, tmp6_m, tmp7_m;                                   \
+                                                                              \
+    LASX_ILVL_H_2_128SV(in6, in4, in7, in5, s0_m, s1_m);                      \
+    LASX_ILVLH_H_128SV(s1_m, s0_m, tmp1_m, tmp0_m);                           \
+    LASX_ILVH_H_2_128SV(in6, in4, in7, in5, s0_m, s1_m);                      \
+    LASX_ILVLH_H_128SV(s1_m, s0_m, tmp3_m, tmp2_m);                           \
+                                                                              \
+    LASX_ILVL_H_2_128SV(in2, in0, in3, in1, s0_m, s1_m);                      \
+    LASX_ILVLH_H_128SV(s1_m, s0_m, tmp5_m, tmp4_m);                           \
+    LASX_ILVH_H_2_128SV(in2, in0, in3, in1, s0_m, s1_m);                      \
+    LASX_ILVLH_H_128SV(s1_m, s0_m, tmp7_m, tmp6_m);                           \
+                                                                              \
+    LASX_PCKEV_D_4_128SV(tmp0_m, tmp4_m, tmp1_m, tmp5_m, tmp2_m, tmp6_m,      \
+                         tmp3_m, tmp7_m, out0, out2, out4, out6);             \
+    LASX_PCKOD_D_4_128SV(tmp0_m, tmp4_m, tmp1_m, tmp5_m, tmp2_m, tmp6_m,      \
+                         tmp3_m, tmp7_m, out1, out3, out5, out7);             \
 }
 
 /* Description : Transposes 8x8 block with word elements in vectors
@@ -1552,10 +1930,10 @@
 {                                                                             \
     __m256i s0_m, s1_m;                                                       \
                                                                               \
-    LASX_ILVL_H2_128SV(in0, in1, in2, in3, s0_m, s1_m);                       \
-    LASX_ILVLH_W_128SV(s0_m, s1_m, out0, out2);                               \
+    LASX_ILVL_H_2_128SV(in1, in0, in3, in2, s0_m, s1_m);                      \
+    LASX_ILVLH_W_128SV(s1_m, s0_m, out2, out0);                               \
     out1 = __lasx_xvilvh_d(out0, out0);                                       \
-    out3 = __lasx_xvilvh_d(out0, out2);                                       \
+    out3 = __lasx_xvilvh_d(out2, out2);                                       \
 }
 
 /* Description : Transposes input 8x8 byte block
@@ -1570,12 +1948,12 @@
 {                                                                           \
     __m256i tmp0_m, tmp1_m, tmp2_m, tmp3_m;                                 \
     __m256i tmp4_m, tmp5_m, tmp6_m, tmp7_m;                                 \
-    LASX_ILVL_B4_128SV(in2, in0, in3, in1, in6, in4, in7, in5,              \
+    LASX_ILVL_B_4_128SV(in2, in0, in3, in1, in6, in4, in7, in5,             \
                        tmp0_m, tmp1_m, tmp2_m, tmp3_m);                     \
     LASX_ILVLH_B_128SV(tmp1_m, tmp0_m, tmp5_m, tmp4_m);                     \
     LASX_ILVLH_B_128SV(tmp3_m, tmp2_m, tmp7_m, tmp6_m);                     \
-    LASX_ILVLH_W_128SV(tmp6_m, tmp4_m, out0, out2);                         \
-    LASX_ILVLH_W_128SV(tmp7_m, tmp5_m, out4, out6);                         \
+    LASX_ILVLH_W_128SV(tmp6_m, tmp4_m, out2, out0);                         \
+    LASX_ILVLH_W_128SV(tmp7_m, tmp5_m, out6, out4);                         \
     LASX_SLDI_B_2_0_128SV(out0, out2, out1, out3, 8);                       \
     LASX_SLDI_B_2_0_128SV(out4, out6, out5, out7, 8);                       \
 }
@@ -1605,6 +1983,70 @@
     LASX_ILVLH_W_2_128SV(t6, t4, t7, t5, tmp3_m, tmp1_m, tmp7_m, tmp5_m);         \
     LASX_ILVLH_D_2_128SV(tmp1_m, tmp0_m, tmp3_m, tmp2_m, out1, out0, out3, out2); \
     LASX_ILVLH_D_2_128SV(tmp5_m, tmp4_m, tmp7_m, tmp6_m, out5, out4, out7, out6); \
+}
+
+/* Description : Transposes input 16x8 byte block
+ * Arguments   : Inputs  - in0, in1, in2, in3, in4, in5, in6, in7,
+ *                         in8, in9, in10, in11, in12, in13, in14, in15
+ *                         (input 16x8 byte block)
+ *               Outputs - out0, out1, out2, out3, out4, out5, out6, out7
+ *                         (output 8x16 byte block)
+ * Details     : The rows of the matrix become columns, and the columns become rows.
+ * Example     : LASX_TRANSPOSE16x8_H
+ *         in0 : 1,2,3,4,5,6,7,8,0,0,0,0,0,0,0,0
+ *         in1 : 2,2,3,4,5,6,7,8,0,0,0,0,0,0,0,0
+ *         in2 : 3,2,3,4,5,6,7,8,0,0,0,0,0,0,0,0
+ *         in3 : 4,2,3,4,5,6,7,8,0,0,0,0,0,0,0,0
+ *         in4 : 5,2,3,4,5,6,7,8,0,0,0,0,0,0,0,0
+ *         in5 : 6,2,3,4,5,6,7,8,0,0,0,0,0,0,0,0
+ *         in6 : 7,2,3,4,5,6,7,8,0,0,0,0,0,0,0,0
+ *         in7 : 8,2,3,4,5,6,7,8,0,0,0,0,0,0,0,0
+ *         in8 : 9,2,3,4,5,6,7,8,0,0,0,0,0,0,0,0
+ *         in9 : 1,2,3,4,5,6,7,8,0,0,0,0,0,0,0,0
+ *        in10 : 0,2,3,4,5,6,7,8,0,0,0,0,0,0,0,0
+ *        in11 : 2,2,3,4,5,6,7,8,0,0,0,0,0,0,0,0
+ *        in12 : 3,2,3,4,5,6,7,8,0,0,0,0,0,0,0,0
+ *        in13 : 7,2,3,4,5,6,7,8,0,0,0,0,0,0,0,0
+ *        in14 : 5,2,3,4,5,6,7,8,0,0,0,0,0,0,0,0
+ *        in15 : 6,2,3,4,5,6,7,8,0,0,0,0,0,0,0,0
+ *
+ *        out0 : 1,2,3,4,5,6,7,8,9,1,0,2,3,7,5,6
+ *        out1 : 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
+ *        out2 : 3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3
+ *        out3 : 4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4
+ *        out4 : 5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5
+ *        out5 : 6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6
+ *        out6 : 7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7
+ *        out7 : 8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8
+ */
+#define LASX_TRANSPOSE16x8_H(in0, in1, in2, in3, in4, in5, in6, in7,              \
+                             in8, in9, in10, in11, in12, in13, in14, in15,        \
+                             out0, out1, out2, out3, out4, out5, out6, out7)      \
+{                                                                                 \
+    __m256i tmp0_m, tmp1_m, tmp2_m, tmp3_m;                                       \
+    __m256i tmp4_m, tmp5_m, tmp6_m, tmp7_m;                                       \
+    __m256i t0, t1, t2, t3, t4, t5, t6, t7;                                       \
+    LASX_ILVL_H_8_128SV(in2, in0, in3, in1, in6, in4, in7, in5,                   \
+                        in10, in8, in11, in9, in14, in12, in15, in13,             \
+                        tmp0_m, tmp1_m, tmp2_m, tmp3_m,                           \
+                        tmp4_m, tmp5_m, tmp6_m, tmp7_m);                          \
+    LASX_ILVLH_H_2_128SV(tmp1_m, tmp0_m, tmp3_m, tmp2_m, t1, t0, t3, t2);         \
+    LASX_ILVLH_H_2_128SV(tmp5_m, tmp4_m, tmp7_m, tmp6_m, t5, t4, t7, t6);         \
+    LASX_ILVLH_D_2_128SV(t2, t0, t3, t1, tmp2_m, tmp0_m, tmp6_m, tmp4_m);         \
+    LASX_ILVLH_D_2_128SV(t6, t4, t7, t5, tmp3_m, tmp1_m, tmp7_m, tmp5_m);         \
+    LASX_PCKEV_Q_2(tmp1_m, tmp0_m, tmp3_m, tmp2_m, out0, out1);                   \
+    LASX_PCKEV_Q_2(tmp5_m, tmp4_m, tmp7_m, tmp6_m, out2, out3);                   \
+                                                                                  \
+    LASX_ILVH_H_8_128SV(in2, in0, in3, in1, in6, in4, in7, in5,                   \
+                        in10, in8, in11, in9, in14, in12, in15, in13,             \
+                        tmp0_m, tmp1_m, tmp2_m, tmp3_m,                           \
+                        tmp4_m, tmp5_m, tmp6_m, tmp7_m);                          \
+    LASX_ILVLH_H_2_128SV(tmp1_m, tmp0_m, tmp3_m, tmp2_m, t1, t0, t3, t2);         \
+    LASX_ILVLH_H_2_128SV(tmp5_m, tmp4_m, tmp7_m, tmp6_m, t5, t4, t7, t6);         \
+    LASX_ILVLH_D_2_128SV(t2, t0, t3, t1, tmp2_m, tmp0_m, tmp6_m, tmp4_m);         \
+    LASX_ILVLH_D_2_128SV(t6, t4, t7, t5, tmp3_m, tmp1_m, tmp7_m, tmp5_m);         \
+    LASX_PCKEV_Q_2(tmp1_m, tmp0_m, tmp3_m, tmp2_m, out4, out5);                   \
+    LASX_PCKEV_Q_2(tmp5_m, tmp4_m, tmp7_m, tmp6_m, out6, out7);                   \
 }
 
 /* Description : Clips all signed word elements of input vector
@@ -1779,6 +2221,114 @@
     out_m = __lasx_xvxori_b(out_m, 128);        \
 }
 
+/* Description : Shift right logical all byte elements of vector.
+ * Arguments   : Inputs  - in, shift
+ *               Outputs - in (in place)
+ * Details     : Each element of vector in is shifted right logical by
+ *               number of bits respective element holds in vector shift and
+ *               result is in place written to in.
+ *               Here, shift is a vector passed in.
+ * Example     : See LASX_SRL_W(in, shift)
+     */
+#define LASX_SRL_B(in, shift)                                         \
+{                                                                     \
+    in = __lasx_xvsrl_b(in, shift);                                   \
+}
+
+#define LASX_SRL_B_2(in0, in1, shift)                                 \
+{                                                                     \
+    LASX_SRL_B(in0, shift);                                           \
+    LASX_SRL_B(in1, shift);                                           \
+}
+
+#define LASX_SRL_B_4(in0, in1, in2, in3, shift)                       \
+{                                                                     \
+    LASX_SRL_B_2(in0, in1, shift);                                    \
+    LASX_SRL_B_2(in2, in3, shift);                                    \
+}
+
+/* Description : Shift right logical all halfword elements of vector.
+ * Arguments   : Inputs  - in, shift
+ *               Outputs - in (in place)
+ * Details     : Each element of vector in is shifted right logical by
+ *               number of bits respective element holds in vector shift and
+ *               result is in place written to in.
+ *               Here, shift is a vector passed in.
+ * Example     : See LASX_SRL_W(in, shift)
+ */
+#define LASX_SRL_H(in, shift)                                         \
+{                                                                     \
+    in = __lasx_xvsrl_h(in, shift);                                   \
+}
+
+#define LASX_SRL_H_2(in0, in1, shift)                                 \
+{                                                                     \
+    LASX_SRL_H(in0, shift);                                           \
+    LASX_SRL_H(in1, shift);                                           \
+}
+
+#define LASX_SRL_H_4(in0, in1, in2, in3, shift)                       \
+{                                                                     \
+    LASX_SRL_H_2(in0, in1, shift);                                    \
+    LASX_SRL_H_2(in2, in3, shift);                                    \
+}
+
+/* Description : Shift right logical all word elements of vector.
+ * Arguments   : Inputs  - in, shift
+ *               Outputs - in (in place)
+ * Details     : Each element of vector in is shifted right logical by
+ *               number of bits respective element holds in vector shift and
+ *               result is in place written to in.
+ *               Here, shift is a vector passed in.
+ * Example     : LASX_SRL_W(in, shift)
+ *          in : 1, 3, 2, -4,      0, -2, 25, 0
+ *       shift : 1, 1, 1, 1,       2, 2, 2, 2
+ *  in(output) : 0, 1, 1, 32766,   0, 16383, 6, 0
+ */
+#define LASX_SRL_W(in, shift)                                         \
+{                                                                     \
+    in = __lasx_xvsrl_w(in, shift);                                   \
+}
+
+#define LASX_SRL_W_2(in0, in1, shift)                                 \
+{                                                                     \
+    LASX_SRL_W(in0, shift);                                           \
+    LASX_SRL_W(in1, shift);                                           \
+}
+
+#define LASX_SRL_W_4(in0, in1, in2, in3, shift)                       \
+{                                                                     \
+    LASX_SRL_W_2(in0, in1, shift);                                    \
+    LASX_SRL_W_2(in2, in3, shift);                                    \
+}
+
+/* Description : Shift right logical all double word elements of vector.
+ * Arguments   : Inputs  - in, shift
+ *               Outputs - in (in place)
+ * Details     : Each element of vector in is shifted right logical by
+ *               number of bits respective element holds in vector shift and
+ *               result is in place written to in.
+ *               Here, shift is a vector passed in.
+ * Example     : See LASX_SRL_W(in, shift)
+ */
+#define LASX_SRL_D(in, shift)                                         \
+{                                                                     \
+    in = __lasx_xvsrl_d(in, shift);                                   \
+}
+
+#define LASX_SRL_D_2(in0, in1, shift)                                 \
+{                                                                     \
+    LASX_SRL_D(in0, shift);                                           \
+    LASX_SRL_D(in1, shift);                                           \
+}
+
+#define LASX_SRL_D_4(in0, in1, in2, in3, shift)                       \
+{                                                                     \
+    LASX_SRL_D_2(in0, in1, shift);                                    \
+    LASX_SRL_D_2(in2, in3, shift);                                    \
+}
+
+
 /* Description : Shift right arithmetic rounded (immediate)
  * Arguments   : Inputs  - in0, in1, shift
  *               Outputs - in0, in1, (in place)
@@ -1912,8 +2462,8 @@
 
 #define LASX_HSUB_UB_4(in0, in1, in2, in3, out0, out1, out2, out3)    \
 {                                                                     \
-    HSUB_UB2(in0, in1, out0, out1);                                   \
-    HSUB_UB2(in2, in3, out2, out3);                                   \
+    LASX_HSUB_UB_2(in0, in1, out0, out1);                                   \
+    LASX_HSUB_UB_2(in2, in3, out2, out3);                                   \
 }
 
 /* Description : Shuffle byte vector elements as per mask vector
@@ -2123,7 +2673,7 @@
 
 /* Description : Butterfly of 4 input vectors
  * Arguments   : Inputs  - in0, in1, in2, in3
- *                Outputs - out0, out1, out2, out3
+ *               Outputs - out0, out1, out2, out3
  * Details     : Butterfly operationuu
  */
 #define LASX_BUTTERFLY_4(RTYPE, in0, in1, in2, in3, out0, out1, out2, out3)  \
@@ -2152,23 +2702,6 @@
     out5 = (RTYPE)in2 - (RTYPE)in5;                                        \
     out6 = (RTYPE)in1 - (RTYPE)in6;                                        \
     out7 = (RTYPE)in0 - (RTYPE)in7;                                        \
-}
-
-/*
- * Description : print out value in vec.
- * Arguments   : Inputs  - in0
- *                       - RTYPE
- *                       - element_num
- * Details     : Print out value according to the RTYPE
- */
-#define LASX_PRINT(RTYPE, element_num, in0)           \
-{                                                     \
-    RTYPE _tmp0 = (RTYPE)in0;                         \
-    int _i = 0;                                       \
-    printf("LASX_PRINT: ");                           \
-    for(_i = 0; _i < element_num; _i++)               \
-        printf("%u,",_tmp0[_i]);                      \
-    printf("\n");                                     \
 }
 
 #endif /* AVUTIL_LOONGARCH_GENERIC_MACROS_LASX_H */
