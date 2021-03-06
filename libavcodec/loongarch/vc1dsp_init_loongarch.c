@@ -24,6 +24,10 @@
 #include "libavcodec/vc1dsp.h"
 #include "vc1dsp_loongarch.h"
 
+#define FN_ASSIGN(OP, X, Y, INSN) \
+    dsp->OP##vc1_mspel_pixels_tab[1][X+4*Y] = ff_##OP##vc1_mspel_mc##X##Y##INSN; \
+    dsp->OP##vc1_mspel_pixels_tab[0][X+4*Y] = ff_##OP##vc1_mspel_mc##X##Y##_16##INSN
+
 av_cold void ff_vc1dsp_init_loongarch(VC1DSPContext *dsp)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -37,5 +41,14 @@ av_cold void ff_vc1dsp_init_loongarch(VC1DSPContext *dsp)
         dsp->vc1_inv_trans_4x8_dc = ff_vc1_inv_trans_4x8_dc_lasx;
         dsp->vc1_inv_trans_8x4_dc = ff_vc1_inv_trans_8x4_dc_lasx;
         dsp->vc1_inv_trans_4x4_dc = ff_vc1_inv_trans_4x4_dc_lasx;
+        FN_ASSIGN(put_, 1, 1, _lasx);
+        FN_ASSIGN(put_, 1, 2, _lasx);
+        FN_ASSIGN(put_, 1, 3, _lasx);
+        FN_ASSIGN(put_, 2, 1, _lasx);
+        FN_ASSIGN(put_, 2, 2, _lasx);
+        FN_ASSIGN(put_, 2, 3, _lasx);
+        FN_ASSIGN(put_, 3, 1, _lasx);
+        FN_ASSIGN(put_, 3, 2, _lasx);
+        FN_ASSIGN(put_, 3, 3, _lasx);
     }
 }

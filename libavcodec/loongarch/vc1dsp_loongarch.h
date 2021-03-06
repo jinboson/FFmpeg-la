@@ -33,4 +33,23 @@ void ff_vc1_inv_trans_4x8_lasx(uint8_t *dest, ptrdiff_t stride, int16_t *blokc);
 void ff_vc1_inv_trans_4x4_dc_lasx(uint8_t *dest, ptrdiff_t stride, int16_t *block);
 void ff_vc1_inv_trans_4x4_lasx(uint8_t *dest, ptrdiff_t stride, int16_t *block);
 
+#define FF_PUT_VC1_MSPEL_MC_LASX(hmode, vmode)                                \
+void ff_put_vc1_mspel_mc ## hmode ## vmode ## _lasx(uint8_t *dst,             \
+                                                  const uint8_t *src,         \
+                                                  ptrdiff_t stride, int rnd); \
+void ff_put_vc1_mspel_mc ## hmode ## vmode ## _16_lasx(uint8_t *dst,          \
+                                                  const uint8_t *src,         \
+                                                  ptrdiff_t stride, int rnd);
+
+FF_PUT_VC1_MSPEL_MC_LASX(1, 1);
+FF_PUT_VC1_MSPEL_MC_LASX(1, 2);
+FF_PUT_VC1_MSPEL_MC_LASX(1, 3);
+
+FF_PUT_VC1_MSPEL_MC_LASX(2, 1);
+FF_PUT_VC1_MSPEL_MC_LASX(2, 2);
+FF_PUT_VC1_MSPEL_MC_LASX(2, 3);
+
+FF_PUT_VC1_MSPEL_MC_LASX(3, 1);
+FF_PUT_VC1_MSPEL_MC_LASX(3, 2);
+FF_PUT_VC1_MSPEL_MC_LASX(3, 3);
 #endif /* AVCODEC_LOONGARCH_VC1DSP_LOONGARCH_H */
