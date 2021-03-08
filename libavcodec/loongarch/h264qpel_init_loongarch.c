@@ -52,7 +52,9 @@ av_cold void ff_h264qpel_init_loongarch(H264QpelContext *c, int bit_depth)
             c->avg_h264_qpel_pixels_tab[0][5]  = ff_avg_h264_qpel16_mc11_lasx;
             c->avg_h264_qpel_pixels_tab[0][6]  = ff_avg_h264_qpel16_mc21_lasx;
             c->avg_h264_qpel_pixels_tab[0][7]  = ff_avg_h264_qpel16_mc31_lasx;
+            c->avg_h264_qpel_pixels_tab[0][8]  = ff_avg_h264_qpel16_mc02_lasx;
             c->avg_h264_qpel_pixels_tab[0][9]  = ff_avg_h264_qpel16_mc12_lasx;
+            c->avg_h264_qpel_pixels_tab[0][10] = ff_avg_h264_qpel16_mc22_lasx;
             c->avg_h264_qpel_pixels_tab[0][11] = ff_avg_h264_qpel16_mc32_lasx;
             c->avg_h264_qpel_pixels_tab[0][12] = ff_avg_h264_qpel16_mc03_lasx;
             c->avg_h264_qpel_pixels_tab[0][13] = ff_avg_h264_qpel16_mc13_lasx;
@@ -82,7 +84,9 @@ av_cold void ff_h264qpel_init_loongarch(H264QpelContext *c, int bit_depth)
             c->avg_h264_qpel_pixels_tab[1][5]  = ff_avg_h264_qpel8_mc11_lasx;
             c->avg_h264_qpel_pixels_tab[1][6]  = ff_avg_h264_qpel8_mc21_lasx;
             c->avg_h264_qpel_pixels_tab[1][7]  = ff_avg_h264_qpel8_mc31_lasx;
+            c->avg_h264_qpel_pixels_tab[1][8]  = ff_avg_h264_qpel8_mc02_lasx;
             c->avg_h264_qpel_pixels_tab[1][9]  = ff_avg_h264_qpel8_mc12_lasx;
+            c->avg_h264_qpel_pixels_tab[1][10] = ff_avg_h264_qpel8_mc22_lasx;
             c->avg_h264_qpel_pixels_tab[1][11] = ff_avg_h264_qpel8_mc32_lasx;
             c->avg_h264_qpel_pixels_tab[1][13] = ff_avg_h264_qpel8_mc13_lasx;
             c->avg_h264_qpel_pixels_tab[1][14] = ff_avg_h264_qpel8_mc23_lasx;

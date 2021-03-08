@@ -78,7 +78,11 @@ void ff_avg_h264_qpel16_mc21_lasx(uint8_t *dst, const uint8_t *src,
                                   ptrdiff_t dst_stride);
 void ff_avg_h264_qpel16_mc31_lasx(uint8_t *dst, const uint8_t *src,
                                   ptrdiff_t dst_stride);
+void ff_avg_h264_qpel16_mc02_lasx(uint8_t *dst, const uint8_t *src,
+                                  ptrdiff_t dst_stride);
 void ff_avg_h264_qpel16_mc12_lasx(uint8_t *dst, const uint8_t *src,
+                                  ptrdiff_t dst_stride);
+void ff_avg_h264_qpel16_mc22_lasx(uint8_t *dst, const uint8_t *src,
                                   ptrdiff_t dst_stride);
 void ff_avg_h264_qpel16_mc32_lasx(uint8_t *dst, const uint8_t *src,
                                   ptrdiff_t dst_stride);
@@ -137,7 +141,11 @@ void ff_avg_h264_qpel8_mc21_lasx(uint8_t *dst, const uint8_t *src,
                                  ptrdiff_t dst_stride);
 void ff_avg_h264_qpel8_mc31_lasx(uint8_t *dst, const uint8_t *src,
                                  ptrdiff_t dst_stride);
+void ff_avg_h264_qpel8_mc02_lasx(uint8_t *dst, const uint8_t *src,
+                                 ptrdiff_t dst_stride);
 void ff_avg_h264_qpel8_mc12_lasx(uint8_t *dst, const uint8_t *src,
+                                 ptrdiff_t dst_stride);
+void ff_avg_h264_qpel8_mc22_lasx(uint8_t *dst, const uint8_t *src,
                                  ptrdiff_t dst_stride);
 void ff_avg_h264_qpel8_mc32_lasx(uint8_t *dst, const uint8_t *src,
                                  ptrdiff_t dst_stride);
