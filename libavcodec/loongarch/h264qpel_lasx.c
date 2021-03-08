@@ -110,10 +110,8 @@ void avc_luma_hv_qrt_and_aver_dst_16x16_lasx(const uint8_t *src_x,
         hz_out1 = AVC_HORZ_FILTER_SH(src_hz1, src_hz1, mask0, mask1, mask2);
         hz_out2 = AVC_HORZ_FILTER_SH(src_hz2, src_hz2, mask0, mask1, mask2);
         hz_out3 = AVC_HORZ_FILTER_SH(src_hz3, src_hz3, mask0, mask1, mask2);
-        LASX_SRARI_H_4(hz_out0, hz_out1, hz_out2, hz_out3,
-                      hz_out0, hz_out1, hz_out2, hz_out3, 5);
-        LASX_SAT_H_4(hz_out0, hz_out1, hz_out2, hz_out3,
-                      hz_out0, hz_out1, hz_out2, hz_out3, 7);
+        hz_out0 = __lasx_xvssrarni_b_h(hz_out1, hz_out0, 5);
+        hz_out2 = __lasx_xvssrarni_b_h(hz_out3, hz_out2, 5);
 
         LASX_LD_4(src_y, stride, src_vt5, src_vt6, src_vt7, src_vt8);
         src_y += stride_x4;
@@ -133,18 +131,17 @@ void avc_luma_hv_qrt_and_aver_dst_16x16_lasx(const uint8_t *src_x,
                                  filt1, filt2);
         vt_out3 = AVC_DOT_SH3_SH(src_vt43_h, src_vt65_h, src_vt87_h, filt0,
                                  filt1, filt2);
-        LASX_SRARI_H_4(vt_out0, vt_out1, vt_out2, vt_out3,
-                       vt_out0, vt_out1, vt_out2, vt_out3, 5);
-        LASX_SAT_H_4(vt_out0, vt_out1, vt_out2, vt_out3,
-                      vt_out0, vt_out1, vt_out2, vt_out3, 7);
+        vt_out0 = __lasx_xvssrarni_b_h(vt_out1, vt_out0, 5);
+        vt_out2 = __lasx_xvssrarni_b_h(vt_out3, vt_out2, 5);
 
-        LASX_ADD_H_4(hz_out0, vt_out0, hz_out1, vt_out1, hz_out2, vt_out2,
-                     hz_out3, vt_out3, out0, out1, out2, out3);
-        LASX_SRARI_H_4(out0, out1, out2, out3, out0, out1, out2, out3, 1);
-        LASX_SAT_H_4(out0, out1, out2, out3, out0, out1, out2, out3, 7);
+        out0 = __lasx_xvaddwl_h_b(hz_out0, vt_out0);
+        out1 = __lasx_xvaddwh_h_b(hz_out0, vt_out0);
+        out2 = __lasx_xvaddwl_h_b(hz_out2, vt_out2);
+        out3 = __lasx_xvaddwh_h_b(hz_out2, vt_out2);
+        tmp0 = __lasx_xvssrarni_b_h(out1, out0, 1);
+        tmp1 = __lasx_xvssrarni_b_h(out3, out2, 1);
 
-        LASX_PICKEV_XORI128_B(out0, out1, tmp0);
-        LASX_PICKEV_XORI128_B(out2, out3, tmp1);
+        LASX_XORI_B_2_128(tmp0, tmp1);
 
         LASX_LD_4(dst, stride, out0, out1, out2, out3);
         LASX_ILVL_D_2(out1, out0, out3, out2, out0, out1);
@@ -218,10 +215,8 @@ avc_luma_hv_qrt_16x16_lasx(const uint8_t *src_x, const uint8_t *src_y, uint8_t *
         hz_out1 = AVC_HORZ_FILTER_SH(src_hz1, src_hz1, mask0, mask1, mask2);
         hz_out2 = AVC_HORZ_FILTER_SH(src_hz2, src_hz2, mask0, mask1, mask2);
         hz_out3 = AVC_HORZ_FILTER_SH(src_hz3, src_hz3, mask0, mask1, mask2);
-        LASX_SRARI_H_4(hz_out0, hz_out1, hz_out2, hz_out3,
-                       hz_out0, hz_out1, hz_out2, hz_out3, 5);
-        LASX_SAT_H_4(hz_out0, hz_out1, hz_out2, hz_out3,
-                     hz_out0, hz_out1, hz_out2, hz_out3, 7);
+        hz_out0 = __lasx_xvssrarni_b_h(hz_out1, hz_out0, 5);
+        hz_out2 = __lasx_xvssrarni_b_h(hz_out3, hz_out2, 5);
 
         LASX_LD_4(src_y, stride, src_vt5, src_vt6, src_vt7, src_vt8);
         src_y += stride_x4;
@@ -241,18 +236,17 @@ avc_luma_hv_qrt_16x16_lasx(const uint8_t *src_x, const uint8_t *src_y, uint8_t *
                                  filt1, filt2);
         vt_out3 = AVC_DOT_SH3_SH(src_vt43_h, src_vt65_h, src_vt87_h, filt0,
                                  filt1, filt2);
-        LASX_SRARI_H_4(vt_out0, vt_out1, vt_out2, vt_out3,
-                       vt_out0, vt_out1, vt_out2, vt_out3, 5);
-        LASX_SAT_H_4(vt_out0, vt_out1, vt_out2, vt_out3,
-                      vt_out0, vt_out1, vt_out2, vt_out3, 7);
+        vt_out0 = __lasx_xvssrarni_b_h(vt_out1, vt_out0, 5);
+        vt_out2 = __lasx_xvssrarni_b_h(vt_out3, vt_out2, 5);
 
-        LASX_ADD_H_4(hz_out0, vt_out0, hz_out1, vt_out1, hz_out2, vt_out2,
-                     hz_out3, vt_out3, out0, out1, out2, out3);
-        LASX_SRARI_H_4(out0, out1, out2, out3, out0, out1, out2, out3, 1);
-        LASX_SAT_H_4(out0, out1, out2, out3, out0, out1, out2, out3, 7);
+        out0 = __lasx_xvaddwl_h_b(hz_out0, vt_out0);
+        out1 = __lasx_xvaddwh_h_b(hz_out0, vt_out0);
+        out2 = __lasx_xvaddwl_h_b(hz_out2, vt_out2);
+        out3 = __lasx_xvaddwh_h_b(hz_out2, vt_out2);
+        tmp0 = __lasx_xvssrarni_b_h(out1, out0, 1);
+        tmp1 = __lasx_xvssrarni_b_h(out3, out2, 1);
 
-        LASX_PICKEV_XORI128_B(out0, out1, tmp0);
-        LASX_PICKEV_XORI128_B(out2, out3, tmp1);
+        LASX_XORI_B_2_128(tmp0, tmp1);
         *(int64_t*)dst               = __lasx_xvpickve2gr_d(tmp0, 0);
         *(int64_t*)(dst + stride)    = __lasx_xvpickve2gr_d(tmp0, 1);
         *(int64_t*)(dst + stride_x2) = __lasx_xvpickve2gr_d(tmp1, 0);
@@ -1049,12 +1043,9 @@ avg_pixels16_l2_8_lsx(uint8_t *dst, const uint8_t *src, uint8_t *half,
     src03 = __lasx_xvshuf_b(src00, src00, (__m256i)mask3); \
     src04 = __lasx_xvshuf_b(src00, src00, (__m256i)mask4); \
     src05 = __lasx_xvshuf_b(src00, src00, (__m256i)mask5); \
-    src00 = __lasx_xvilvl_b(zero, src00);                  \
-    src01 = __lasx_xvilvl_b(zero, src01);                  \
-    src02 = __lasx_xvilvl_b(zero, src02);                  \
-    src02 = __lasx_xvsaddw_hu_hu_bu(src02, src03);         \
-    src01 = __lasx_xvsaddw_hu_hu_bu(src01, src04);         \
-    src00 = __lasx_xvsaddw_hu_hu_bu(src00, src05);         \
+    src02 = __lasx_xvaddwl_h_bu(src02, src03);             \
+    src01 = __lasx_xvaddwl_h_bu(src01, src04);             \
+    src00 = __lasx_xvaddwl_h_bu(src00, src05);             \
     src02 = __lasx_xvmul_h(src02, h_20);                   \
     src01 = __lasx_xvmul_h(src01, h_5);                    \
     src02 = __lasx_xvssub_h(src02, src01);                 \
@@ -1106,12 +1097,9 @@ put_h264_qpel8_h_lowpass_lasx(uint8_t *dst, const uint8_t *src, int dstStride,
     tmp3 = __lasx_xvpermi_q(src3, src4, 0x02);                    \
     tmp4 = __lasx_xvpermi_q(src4, src5, 0x02);                    \
     tmp5 = __lasx_xvpermi_q(src5, src6, 0x02);                    \
-    tmp0 = __lasx_xvilvl_b(zero, tmp0);                           \
-    tmp1 = __lasx_xvilvl_b(zero, tmp1);                           \
-    tmp2 = __lasx_xvilvl_b(zero, tmp2);                           \
-    tmp2 = __lasx_xvsaddw_hu_hu_bu(tmp2, tmp3);                   \
-    tmp1 = __lasx_xvsaddw_hu_hu_bu(tmp1, tmp4);                   \
-    tmp0 = __lasx_xvsaddw_hu_hu_bu(tmp0, tmp5);                   \
+    tmp2 = __lasx_xvaddwl_h_bu(tmp2, tmp3);                       \
+    tmp1 = __lasx_xvaddwl_h_bu(tmp1, tmp4);                       \
+    tmp0 = __lasx_xvaddwl_h_bu(tmp0, tmp5);                       \
     tmp2 = __lasx_xvmul_h(tmp2, h_20);                            \
     tmp1 = __lasx_xvmul_h(tmp1, h_5);                             \
     tmp2 = __lasx_xvssub_h(tmp2, tmp1);                           \
@@ -1229,12 +1217,9 @@ avg_h264_qpel8_v_lowpass_lasx(uint8_t *dst, const uint8_t *src, int dstStride,
     src03 = __lasx_xvshuf_b(src00, src00, (__m256i)mask3); \
     src04 = __lasx_xvshuf_b(src00, src00, (__m256i)mask4); \
     src05 = __lasx_xvshuf_b(src00, src00, (__m256i)mask5); \
-    src00 = __lasx_xvilvl_b(zero, src00);                  \
-    src01 = __lasx_xvilvl_b(zero, src01);                  \
-    src02 = __lasx_xvilvl_b(zero, src02);                  \
-    src02 = __lasx_xvsaddw_hu_hu_bu(src02, src03);         \
-    src01 = __lasx_xvsaddw_hu_hu_bu(src01, src04);         \
-    src00 = __lasx_xvsaddw_hu_hu_bu(src00, src05);         \
+    src02 = __lasx_xvaddwl_h_bu(src02, src03);             \
+    src01 = __lasx_xvaddwl_h_bu(src01, src04);             \
+    src00 = __lasx_xvaddwl_h_bu(src00, src05);             \
     src02 = __lasx_xvmul_h(src02, h_20);                   \
     src01 = __lasx_xvmul_h(src01, h_5);                    \
     src02 = __lasx_xvssub_h(src02, src01);                 \
@@ -1275,7 +1260,6 @@ put_h264_qpel8_hv_lowpass_lasx(uint8_t *dst, const uint8_t *src,
     __m256i src00, src01, src02, src03, src04, src05, src10;
     __m256i tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6;
     __m256i tmp7, tmp8, tmp9, tmp10, tmp11, tmp12;
-    __m256i zero = __lasx_xvldi(0);
     __m256i h_20 = {20};
     __m256i h_5  = {5};
     __m256i w_20 = {20};
@@ -1379,7 +1363,6 @@ avg_h264_qpel8_hv_lowpass_lasx(uint8_t *dst, const uint8_t *src,
     __m256i src00, src01, src02, src03, src04, src05, src10;
     __m256i tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6;
     __m256i tmp7, tmp8, tmp9, tmp10, tmp11, tmp12;
-    __m256i zero = __lasx_xvldi(0);
     __m256i h_20 = {20};
     __m256i h_5  = {5};
     __m256i w_20 = {20};
