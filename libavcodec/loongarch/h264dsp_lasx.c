@@ -354,6 +354,7 @@ void ff_h264_h_lpf_chroma_8_lasx(uint8_t *data, int img_width,
 
             LASX_LD_8(src, img_width, row0, row1, row2, row3,
                       row4, row5, row6, row7);
+            /* LASX_TRANSPOSE8x4_B */
             LASX_ILVL_B_4(row2, row0, row3, row1, row6, row4, row7, row5,
                           p1_org, p0_org, q0_org, q1_org);
             LASX_ILVL_B_2(p0_org, p1_org, q1_org, q0_org, row0, row1);
@@ -781,6 +782,120 @@ void ff_h264_v_lpf_luma_intra_8_lasx(uint8_t *data, int img_width,
         q0_org = __lasx_xvbitsel_v(q0_org, q0_h, negate_is_less_than_beta);
 
         LASX_ST(q0_org, data);
+    }
+}
+
+void ff_h264_h_lpf_chroma_intra_8_lasx(uint8_t *data, int img_width,
+                                       int alpha_in, int beta_in)
+{
+    uint8_t *src = data - 2;
+    __m256i p1_org, p0_org, q0_org, q1_org;
+    __m256i p0_asub_q0, p1_asub_p0, q1_asub_q0, alpha, beta;
+    __m256i is_less_than, is_less_than_beta, is_less_than_alpha;
+
+    {
+        __m256i row0, row1, row2, row3, row4, row5, row6, row7;
+
+        LASX_LD_8(src, img_width, row0, row1, row2, row3,
+                  row4, row5, row6, row7);
+
+        /* LASX_TRANSPOSE8x4_B */
+        LASX_ILVL_B_4(row2, row0, row3, row1, row6, row4, row7, row5,
+                      p1_org, p0_org, q0_org, q1_org);
+        LASX_ILVL_B_2(p0_org, p1_org, q1_org, q0_org, row0, row1);
+        LASX_ILVLH_W_128SV(row1, row0, row3, row2);
+        p1_org = __lasx_xvpermi_d(row2, 0x00);
+        p0_org = __lasx_xvpermi_d(row2, 0x55);
+        q0_org = __lasx_xvpermi_d(row3, 0x00);
+        q1_org = __lasx_xvpermi_d(row3, 0x55);
+    }
+
+    alpha = __lasx_xvldrepl_b(&alpha_in, 0);
+    beta  = __lasx_xvldrepl_b(&beta_in, 0);
+
+    p0_asub_q0 = __lasx_xvabsd_bu(p0_org, q0_org);
+    p1_asub_p0 = __lasx_xvabsd_bu(p1_org, p0_org);
+    q1_asub_q0 = __lasx_xvabsd_bu(q1_org, q0_org);
+
+    is_less_than_alpha = __lasx_xvslt_bu(p0_asub_q0, alpha);
+    is_less_than_beta  = __lasx_xvslt_bu(p1_asub_p0, beta);
+    is_less_than       = is_less_than_alpha & is_less_than_beta;
+    is_less_than_beta  = __lasx_xvslt_bu(q1_asub_q0, beta);
+    is_less_than       = is_less_than_beta & is_less_than;
+
+    if (__lasx_xbnz_v(is_less_than)) {
+        __m256i p0_h, q0_h, p1_org_h, p0_org_h, q0_org_h, q1_org_h;
+
+        p1_org_h = __lasx_vext2xv_hu_bu(p1_org);
+        p0_org_h = __lasx_vext2xv_hu_bu(p0_org);
+        q0_org_h = __lasx_vext2xv_hu_bu(q0_org);
+        q1_org_h = __lasx_vext2xv_hu_bu(q1_org);
+
+        AVC_LPF_P0_OR_Q0(p0_org_h, q1_org_h, p1_org_h, p0_h);
+        AVC_LPF_P0_OR_Q0(q0_org_h, p1_org_h, q1_org_h, q0_h);
+        LASX_PCKEV_B_2(p0_h, p0_h, q0_h, q0_h, p0_h, q0_h);
+        p0_org = __lasx_xvbitsel_v(p0_org, p0_h, is_less_than);
+        q0_org = __lasx_xvbitsel_v(q0_org, q0_h, is_less_than);
+    }
+    p0_org = __lasx_xvilvl_b(q0_org, p0_org);
+    src = data - 1;
+    __lasx_xvstelm_h(p0_org, src, 0, 0);
+    src += img_width;
+    __lasx_xvstelm_h(p0_org, src, 0, 1);
+    src += img_width;
+    __lasx_xvstelm_h(p0_org, src, 0, 2);
+    src += img_width;
+    __lasx_xvstelm_h(p0_org, src, 0, 3);
+    src += img_width;
+    __lasx_xvstelm_h(p0_org, src, 0, 4);
+    src += img_width;
+    __lasx_xvstelm_h(p0_org, src, 0, 5);
+    src += img_width;
+    __lasx_xvstelm_h(p0_org, src, 0, 6);
+    src += img_width;
+    __lasx_xvstelm_h(p0_org, src, 0, 7);
+}
+
+void ff_h264_v_lpf_chroma_intra_8_lasx(uint8_t *data, int img_width,
+                                       int alpha_in, int beta_in)
+{
+    int img_width_2x = img_width << 1;
+    __m256i p1_org, p0_org, q0_org, q1_org;
+    __m256i p0_asub_q0, p1_asub_p0, q1_asub_q0, alpha, beta;
+    __m256i is_less_than, is_less_than_beta, is_less_than_alpha;
+
+    alpha = __lasx_xvldrepl_b(&alpha_in, 0);
+    beta  = __lasx_xvldrepl_b(&beta_in, 0);
+
+    p1_org = LASX_LD(data - img_width_2x);
+    p0_org = LASX_LD(data - img_width);
+    LASX_LD_2(data, img_width, q0_org, q1_org);
+
+    p0_asub_q0 = __lasx_xvabsd_bu(p0_org, q0_org);
+    p1_asub_p0 = __lasx_xvabsd_bu(p1_org, p0_org);
+    q1_asub_q0 = __lasx_xvabsd_bu(q1_org, q0_org);
+
+    is_less_than_alpha = __lasx_xvslt_bu(p0_asub_q0, alpha);
+    is_less_than_beta  = __lasx_xvslt_bu(p1_asub_p0, beta);
+    is_less_than       = is_less_than_alpha & is_less_than_beta;
+    is_less_than_beta  = __lasx_xvslt_bu(q1_asub_q0, beta);
+    is_less_than       = is_less_than_beta & is_less_than;
+
+    if (__lasx_xbnz_v(is_less_than)) {
+        __m256i p0_h, q0_h, p1_org_h, p0_org_h, q0_org_h, q1_org_h;
+
+        p1_org_h = __lasx_vext2xv_hu_bu(p1_org);
+        p0_org_h = __lasx_vext2xv_hu_bu(p0_org);
+        q0_org_h = __lasx_vext2xv_hu_bu(q0_org);
+        q1_org_h = __lasx_vext2xv_hu_bu(q1_org);
+
+        AVC_LPF_P0_OR_Q0(p0_org_h, q1_org_h, p1_org_h, p0_h);
+        AVC_LPF_P0_OR_Q0(q0_org_h, p1_org_h, q1_org_h, q0_h);
+        LASX_PCKEV_B_2(p0_h, p0_h, q0_h, q0_h, p0_h, q0_h);
+        p0_h = __lasx_xvbitsel_v(p0_org, p0_h, is_less_than);
+        q0_h = __lasx_xvbitsel_v(q0_org, q0_h, is_less_than);
+        LASX_ST_D(p0_h, 0, data - img_width);
+        LASX_ST_D(q0_h, 0, data);
     }
 }
 
