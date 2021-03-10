@@ -38,7 +38,7 @@
  * MICRO version: Comment changes or implementation changes。
  */
 #define LSOM_LASX_VERSION_MAJOR 1
-#define LSOM_LASX_VERSION_MINOR 8
+#define LSOM_LASX_VERSION_MINOR 9
 #define LSOM_LASX_VERSION_MICRO 0
 
 /* Description : Load 256-bit vector data with stride
@@ -1435,6 +1435,45 @@
                    in7_h, in7_l, out4, out5, out6, out7);                      \
 }
 
+/* Description : Pack even byte elements of vector pairs
+ *               (128-bit symmetry version)
+ * Arguments   : Inputs  - in_h, in_l, ~
+ *               Outputs - out0, out1, ~
+ * Details     : Even byte elements of in_l are copied to the low half of
+ *               out0.  Even byte elements of in_h are copied to the high
+ *               half of out0.
+ *               Similar for other pairs.
+ * Example     : see LASX_PCKEV_W_128SV(in_h, in_l, out0)
+ */
+#define LASX_PCKEV_B_128SV(in_h, in_l, out0)                            \
+{                                                                       \
+    out0 = __lasx_xvpickev_b(in_h, in_l);                               \
+}
+
+#define LASX_PCKEV_B_2_128SV(in0_h, in0_l, in1_h, in1_l, out0, out1)    \
+{                                                                       \
+    LASX_PCKEV_B_128SV(in0_h, in0_l, out0);                             \
+    LASX_PCKEV_B_128SV(in1_h, in1_l, out1);                             \
+}
+
+#define LASX_PCKEV_B_4_128SV(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l,  \
+                             in3_h, in3_l, out0, out1, out2, out3)      \
+{                                                                       \
+    LASX_PCKEV_B_2_128SV(in0_h, in0_l, in1_h, in1_l, out0, out1);       \
+    LASX_PCKEV_B_2_128SV(in2_h, in2_l, in3_h, in3_l, out2, out3);       \
+}
+
+#define LASX_PCKEV_B_8_128SV(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l,  \
+                             in3_h, in3_l, in4_h, in4_l, in5_h, in5_l,  \
+                             in6_h, in6_l, in7_h, in7_l, out0, out1,    \
+                             out2, out3, out4, out5, out6, out7)        \
+{                                                                       \
+    LASX_PCKEV_B_4_128SV(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l,      \
+                         in3_h, in3_l, out0, out1, out2, out3);         \
+    LASX_PCKEV_B_4_128SV(in4_h, in4_l, in5_h, in5_l, in6_h, in6_l,      \
+                         in7_h, in7_l, out4, out5, out6, out7);         \
+}
+
 /* Description : Pack even half word elements of vector pairs
  * Arguments   : Inputs  - in_h, in_l, ~
  *               Outputs - out0, out1, ~
@@ -1470,6 +1509,44 @@
                    in3_h, in3_l, out0, out1, out2, out3);                      \
     LASX_PCKEV_H_4(in4_h, in4_l, in5_h, in5_l, in6_h, in6_l,                   \
                    in7_h, in7_l, out4, out5, out6, out7);                      \
+}
+
+/* Description : Pack even half word elements of vector pairs
+ *               (128-bit symmetry version)
+ * Arguments   : Inputs  - in_h, in_l, ~
+ *               Outputs - out0, out1, ~
+ * Details     : Even half word elements of in_l are copied to the  low
+ *               half of out0.  Even  half  word  elements  of in_h are
+ *               copied to the high half of out0.
+ * Example     : see LASX_PCKEV_W_128SV(in_h, in_l, out0)
+ */
+#define LASX_PCKEV_H_128SV(in_h, in_l, out0)                            \
+{                                                                       \
+    out0 = __lasx_xvpickev_h(in_h, in_l);                               \
+}
+
+#define LASX_PCKEV_H_2_128SV(in0_h, in0_l, in1_h, in1_l, out0, out1)    \
+{                                                                       \
+    LASX_PCKEV_H_128SV(in0_h, in0_l, out0);                             \
+    LASX_PCKEV_H_128SV(in1_h, in1_l, out1);                             \
+}
+
+#define LASX_PCKEV_H_4_128SV(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l,  \
+                       in3_h, in3_l, out0, out1, out2, out3)            \
+{                                                                       \
+    LASX_PCKEV_H_2_128SV(in0_h, in0_l, in1_h, in1_l, out0, out1);       \
+    LASX_PCKEV_H_2_128SV(in2_h, in2_l, in3_h, in3_l, out2, out3);       \
+}
+
+#define LASX_PCKEV_H_8_128SV(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l,  \
+                             in3_h, in3_l, in4_h, in4_l, in5_h, in5_l,  \
+                             in6_h, in6_l, in7_h, in7_l, out0, out1,    \
+                             out2, out3, out4, out5, out6, out7)        \
+{                                                                       \
+    LASX_PCKEV_H_4_128SV(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l,      \
+                   in3_h, in3_l, out0, out1, out2, out3);               \
+    LASX_PCKEV_H_4_128SV(in4_h, in4_l, in5_h, in5_l, in6_h, in6_l,      \
+                   in7_h, in7_l, out4, out5, out6, out7);               \
 }
 
 /* Description : Pack even word elements of vector pairs
@@ -1510,6 +1587,47 @@
                    in3_h, in3_l, out0, out1, out2, out3);                      \
     LASX_PCKEV_W_4(in4_h, in4_l, in5_h, in5_l, in6_h, in6_l,                   \
                    in7_h, in7_l, out4, out5, out6, out7);                      \
+}
+
+/* Description : Pack even word elements of vector pairs
+ *               (128-bit symmetry version)
+ * Arguments   : Inputs  - in_h, in_l, ~
+ *               Outputs - out0, out1, ~
+ * Details     : Even word  elements  of  in_l are copied to
+ *               the low  half of out0.  Even word elements
+ *               of in_h are copied to the high half of out0.
+ * Example     : LASX_PCKEV_W_128SV(in_h, in_l, out0)
+ *         in_h: -1, -2, -3, -4, -5, -6, -7, -8
+ *         in_l:  1,  2,  3,  4,  5,  6,  7,  8
+ *         out0:  1,  3, -1, -3,  5,  7, -5, -7
+ */
+#define LASX_PCKEV_W_128SV(in_h, in_l, out0)                           \
+{                                                                      \
+    out0 = __lasx_xvpickev_w(in_h, in_l);                              \
+}
+
+#define LASX_PCKEV_W_2_128SV(in0_h, in0_l, in1_h, in1_l, out0, out1)   \
+{                                                                      \
+    LASX_PCKEV_W_128SV(in0_h, in0_l, out0);                            \
+    LASX_PCKEV_W_128SV(in1_h, in1_l, out1);                            \
+}
+
+#define LASX_PCKEV_W_4_128SV(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l, \
+                             in3_h, in3_l, out0, out1, out2, out3)     \
+{                                                                      \
+    LASX_PCKEV_W_2_128SV(in0_h, in0_l, in1_h, in1_l, out0, out1);      \
+    LASX_PCKEV_W_2_128SV(in2_h, in2_l, in3_h, in3_l, out2, out3);      \
+}
+
+#define LASX_PCKEV_W_8_128SV(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l, \
+                             in3_h, in3_l, in4_h, in4_l, in5_h, in5_l, \
+                             in6_h, in6_l, in7_h, in7_l, out0, out1,   \
+                             out2, out3, out4, out5, out6, out7)       \
+{                                                                      \
+    LASX_PCKEV_W_4_128SV(in0_h, in0_l, in1_h, in1_l, in2_h, in2_l,     \
+                         in3_h, in3_l, out0, out1, out2, out3);        \
+    LASX_PCKEV_W_4_128SV(in4_h, in4_l, in5_h, in5_l, in6_h, in6_l,     \
+                         in7_h, in7_l, out4, out5, out6, out7);        \
 }
 
 /* Description : Pack even half word elements of vector pairs

@@ -73,8 +73,7 @@
 void ff_h264_idct_add_lasx(uint8_t *dst, int16_t *src, int32_t dst_stride)
 {
     __m256i src0_m, src1_m, src2_m, src3_m;
-    __m256i dst0_m = { 0 };
-    __m256i dst1_m = { 0 };
+    __m256i dst0_m, dst1_m;
     __m256i hres0, hres1, hres2, hres3, vres0, vres1, vres2, vres3;
     __m256i inp0_m, inp1_m, res0_m, src1, src3;
     __m256i src0 = LASX_LD(src);
@@ -88,16 +87,16 @@ void ff_h264_idct_add_lasx(uint8_t *dst, int16_t *src, int32_t dst_stride)
                               hres0, hres1, hres2, hres3);
     AVC_ITRANS_H(hres0, hres1, hres2, hres3, vres0, vres1, vres2, vres3);
     LASX_LD_4(dst, dst_stride, src0_m, src1_m, src2_m, src3_m);
-    LASX_SRARI_H_4(vres0, vres1, vres2, vres3, vres0, vres1, vres2, vres3, 6);
     LASX_ILVL_D_2_128SV(vres1, vres0, vres3, vres2, inp0_m, inp1_m);
     LASX_PCKEV_Q(inp1_m, inp0_m, inp0_m);
+    LASX_SRARI_H(inp0_m, inp0_m, 6);
     LASX_ILVL_W_2_128SV(src1_m, src0_m, src3_m, src2_m, dst0_m, dst1_m);
     LASX_ILVL_D_128SV(dst1_m, dst0_m, dst0_m);
-    LASX_ILVL_B(zero, dst0_m, res0_m);
+    LASX_UNPCK_L_HU_BU(dst0_m, res0_m);
     res0_m = __lasx_xvadd_h(res0_m, inp0_m);
     LASX_CLIP_H_0_255(res0_m, res0_m);
-    LASX_PCKEV_B(res0_m, res0_m, dst0_m);
-    LASX_ST_W_4(dst0_m, 0, 1, 2, 3, dst, dst_stride);
+    dst0_m = __lasx_xvpickev_b(res0_m, res0_m);
+    LASX_ST_W_4(dst0_m, 0, 1, 4, 5, dst, dst_stride);
 }
 
 void ff_h264_idct8_addblk_lasx(uint8_t *dst, int16_t *src,
@@ -220,29 +219,27 @@ void ff_h264_idct8_addblk_lasx(uint8_t *dst, int16_t *src,
     res2 = __lasx_xvadd_h(res2, dst2);
     res3 = __lasx_xvadd_h(res3, dst3);
     LASX_CLIP_H_0_255_4(res0, res1, res2, res3, res0, res1, res2, res3);
-    LASX_PCKEV_B_2(res1, res0, res3, res2, res0, res1);
-    LASX_ST_D_4(res0, 0, 1, 2, 3, dst, dst_stride);
-    LASX_ST_D_4(res1, 0, 1, 2, 3, dst + 4 * dst_stride, dst_stride);
+    LASX_PCKEV_B_2_128SV(res1, res0, res3, res2, res0, res1);
+    LASX_ST_D_4(res0, 0, 2, 1, 3, dst, dst_stride);
+    LASX_ST_D_4(res1, 0, 2, 1, 3, dst + 4 * dst_stride, dst_stride);
 }
 
 void ff_h264_idct4x4_addblk_dc_lasx(uint8_t *dst, int16_t *src,
                                     int32_t dst_stride)
 {
-    __m256i pred = { 0 };
-    __m256i out;
-    __m256i src0, src1, src2, src3;
     const int16_t dc = (src[0] + 32) >> 6;
+    __m256i pred, out;
+    __m256i src0, src1, src2, src3;
     __m256i input_dc = __lasx_xvldrepl_h(&dc, 0);
 
     src[0] = 0;
     LASX_LD_4(dst, dst_stride, src0, src1, src2, src3);
     LASX_ILVL_W_2_128SV(src1, src0, src3, src2, src0, src1);
-    LASX_ILVL_D_128SV(src1, src0, pred);
-    LASX_UNPCK_L_HU_BU(pred, pred);
-    pred = __lasx_xvadd_h(pred, input_dc);
+    pred = __lasx_xvpermi_q(src0, src1, 0x02);
+    pred = __lasx_xvaddw_h_h_bu(input_dc, pred);
     LASX_CLIP_H_0_255(pred, pred);
-    LASX_PCKEV_B(pred, pred, out);
-    LASX_ST_W_4(out, 0, 1, 2, 3, dst, dst_stride);
+    out = __lasx_xvpickev_b(pred, pred);
+    LASX_ST_W_4(out, 0, 1, 4, 5, dst, dst_stride);
 }
 
 void ff_h264_idct8_dc_addblk_lasx(uint8_t *dst, int16_t *src,
@@ -267,9 +264,9 @@ void ff_h264_idct8_dc_addblk_lasx(uint8_t *dst, int16_t *src,
     dst2 = __lasx_xvadd_h(dst2, dc);
     dst3 = __lasx_xvadd_h(dst3, dc);
     LASX_CLIP_H_0_255_4(dst0, dst1, dst2, dst3, dst0, dst1, dst2, dst3);
-    LASX_PCKEV_B_2(dst1, dst0, dst3, dst2, dst0, dst1);
-    LASX_ST_D_4(dst0, 0, 1, 2, 3, dst, dst_stride);
-    LASX_ST_D_4(dst1, 0, 1, 2, 3, dst + 4 * dst_stride, dst_stride);
+    LASX_PCKEV_B_2_128SV(dst1, dst0, dst3, dst2, dst0, dst1);
+    LASX_ST_D_4(dst0, 0, 2, 1, 3, dst, dst_stride);
+    LASX_ST_D_4(dst1, 0, 2, 1, 3, dst + 4 * dst_stride, dst_stride);
 }
 
 void ff_h264_idct_add16_lasx(uint8_t *dst,

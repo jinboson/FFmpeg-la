@@ -65,8 +65,8 @@ static av_always_inline void avc_chroma_hv_8x4_lasx(uint8_t *src, uint8_t *dst,
     LASX_SRARI_H_2(res_vt0, res_vt1, res_vt0, res_vt1, 6);
     res_vt0 = __lasx_xvsat_hu(res_vt0, 7);
     res_vt1 = __lasx_xvsat_hu(res_vt1, 7);
-    LASX_PCKEV_B(res_vt1, res_vt0, out);
-    LASX_ST_D_4(out, 0, 1, 2, 3, dst, stride);
+    LASX_PCKEV_B_128SV(res_vt1, res_vt0, out);
+    LASX_ST_D_4(out, 0, 2, 1, 3, dst, stride);
 }
 
 static av_always_inline void avc_chroma_hv_8x8_lasx(uint8_t *src, uint8_t *dst,
@@ -121,9 +121,9 @@ static av_always_inline void avc_chroma_hv_8x8_lasx(uint8_t *src, uint8_t *dst,
     res_vt1 = __lasx_xvsat_hu(res_vt1, 7);
     res_vt2 = __lasx_xvsat_hu(res_vt2, 7);
     res_vt3 = __lasx_xvsat_hu(res_vt3, 7);
-    LASX_PCKEV_B_2(res_vt1, res_vt0, res_vt3, res_vt2, out0, out1);
-    LASX_ST_D_4(out0, 0, 1, 2, 3, dst, stride);
-    LASX_ST_D_4(out1, 0, 1, 2, 3, dst + stride * 4, stride);
+    LASX_PCKEV_B_2_128SV(res_vt1, res_vt0, res_vt3, res_vt2, out0, out1);
+    LASX_ST_D_4(out0, 0, 2, 1, 3, dst, stride);
+    LASX_ST_D_4(out1, 0, 2, 1, 3, dst + stride * 4, stride);
 }
 
 static av_always_inline void avc_chroma_hz_8x4_lasx(uint8_t *src, uint8_t *dst,
@@ -147,8 +147,8 @@ static av_always_inline void avc_chroma_hz_8x4_lasx(uint8_t *src, uint8_t *dst,
     LASX_SRARI_H_2(res0, res1, res0, res1, 6);
     res0 = __lasx_xvsat_hu(res0, 7);
     res1 = __lasx_xvsat_hu(res1, 7);
-    LASX_PCKEV_B(res1, res0, out);
-    LASX_ST_D_4(out, 0, 1, 2, 3, dst, stride);
+    LASX_PCKEV_B_128SV(res1, res0, out);
+    LASX_ST_D_4(out, 0, 2, 1, 3, dst, stride);
 }
 
 static av_always_inline void avc_chroma_hz_8x8_lasx(uint8_t *src, uint8_t *dst,
@@ -182,9 +182,9 @@ static av_always_inline void avc_chroma_hz_8x8_lasx(uint8_t *src, uint8_t *dst,
     res1 = __lasx_xvsat_hu(res1, 7);
     res2 = __lasx_xvsat_hu(res2, 7);
     res3 = __lasx_xvsat_hu(res3, 7);
-    LASX_PCKEV_B_2(res1, res0, res3, res2, out0, out1);
-    LASX_ST_D_4(out0, 0, 1, 2, 3, dst, stride);
-    LASX_ST_D_4(out1, 0, 1, 2, 3, dst + stride * 4, stride)
+    LASX_PCKEV_B_2_128SV(res1, res0, res3, res2, out0, out1);
+    LASX_ST_D_4(out0, 0, 2, 1, 3, dst, stride);
+    LASX_ST_D_4(out1, 0, 2, 1, 3, dst + stride * 4, stride)
 }
 
 static av_always_inline void avc_chroma_hz_nonmult_lasx(uint8_t *src,
@@ -213,8 +213,8 @@ static av_always_inline void avc_chroma_hz_nonmult_lasx(uint8_t *src,
         LASX_SRARI_H_2(res0, res1, res0, res1, 6);
         res0 = __lasx_xvsat_hu(res0, 7);
         res1 = __lasx_xvsat_hu(res1, 7);
-        LASX_PCKEV_B(res1, res0, out);
-        LASX_ST_D_4(out, 0, 1, 2, 3, dst, stride);
+        LASX_PCKEV_B_128SV(res1, res0, out);
+        LASX_ST_D_4(out, 0, 2, 1, 3, dst, stride);
         dst += (stride * 4);
     }
 
@@ -227,7 +227,7 @@ static av_always_inline void avc_chroma_hz_nonmult_lasx(uint8_t *src,
             res0 = __lasx_xvslli_h(res0, 3);
             LASX_SRARI_H(res0, res0, 6);
             res0 = __lasx_xvsat_hu(res0, 7);
-            LASX_PCKEV_B(res0, res0, out);
+            LASX_PCKEV_B_128SV(res0, res0, out);
             LASX_ST_D(out, 0, dst);
             dst += stride;
         }
@@ -255,8 +255,8 @@ static av_always_inline void avc_chroma_vt_8x4_lasx(uint8_t *src, uint8_t *dst,
     LASX_SRARI_H_2(res0, res1, res0, res1, 6);
     res0 = __lasx_xvsat_hu(res0, 7);
     res1 = __lasx_xvsat_hu(res1, 7);
-    LASX_PCKEV_B(res1, res0, out);
-    LASX_ST_D_4(out, 0, 1, 2, 3, dst, stride);
+    LASX_PCKEV_B_128SV(res1, res0, out);
+    LASX_ST_D_4(out, 0, 2, 1, 3, dst, stride);
 }
 
 static av_always_inline void avc_chroma_vt_8x8_lasx(uint8_t *src, uint8_t *dst,
@@ -291,9 +291,9 @@ static av_always_inline void avc_chroma_vt_8x8_lasx(uint8_t *src, uint8_t *dst,
     res1 = __lasx_xvsat_hu(res1, 7);
     res2 = __lasx_xvsat_hu(res2, 7);
     res3 = __lasx_xvsat_hu(res3, 7);
-    LASX_PCKEV_B_2(res1, res0, res3, res2, out0, out1);
-    LASX_ST_D_4(out0, 0, 1, 2, 3, dst, stride);
-    LASX_ST_D_4(out1, 0, 1, 2, 3, dst + stride * 4, stride);
+    LASX_PCKEV_B_2_128SV(res1, res0, res3, res2, out0, out1);
+    LASX_ST_D_4(out0, 0, 2, 1, 3, dst, stride);
+    LASX_ST_D_4(out1, 0, 2, 1, 3, dst + stride * 4, stride);
 }
 
 static av_always_inline void copy_width8x8_lasx(uint8_t *src, uint8_t *dst,
@@ -469,12 +469,12 @@ static av_always_inline void avc_chroma_hv_and_aver_dst_8x4_lasx(uint8_t *src,
     LASX_SRARI_H_2(res_vt0, res_vt1, res_vt0, res_vt1, 6);
     res_vt0 = __lasx_xvsat_hu(res_vt0, 7);
     res_vt1 = __lasx_xvsat_hu(res_vt1, 7);
-    LASX_PCKEV_B(res_vt1, res_vt0, out);
+    LASX_PCKEV_B_128SV(res_vt1, res_vt0, out);
     LASX_LD_4(dst, stride, tp0, tp1, tp2, tp3);
-    LASX_ILVL_D_2_128SV(tp1, tp0, tp3, tp2, tp0, tp2);
+    LASX_ILVL_D_2_128SV(tp2, tp0, tp3, tp1, tp0, tp2);
     LASX_PCKEV_Q(tp2, tp0, tp0);
     out = __lasx_xvavgr_bu(out, tp0);
-    LASX_ST_D_4(out, 0, 1, 2, 3, dst, stride);
+    LASX_ST_D_4(out, 0, 2, 1, 3, dst, stride);
 }
 
 static av_always_inline void avc_chroma_hv_and_aver_dst_8x8_lasx(uint8_t *src,
@@ -530,17 +530,17 @@ static av_always_inline void avc_chroma_hv_and_aver_dst_8x8_lasx(uint8_t *src,
     res_vt1 = __lasx_xvsat_hu(res_vt1, 7);
     res_vt2 = __lasx_xvsat_hu(res_vt2, 7);
     res_vt3 = __lasx_xvsat_hu(res_vt3, 7);
-    LASX_PCKEV_B_2(res_vt1, res_vt0, res_vt3, res_vt2, out0, out1);
+    LASX_PCKEV_B_2_128SV(res_vt1, res_vt0, res_vt3, res_vt2, out0, out1);
     LASX_LD_4(dst, stride, tp0, tp1, tp2, tp3);
-    LASX_ILVL_D_2_128SV(tp1, tp0, tp3, tp2, tp0, tp2);
+    LASX_ILVL_D_2_128SV(tp2, tp0, tp3, tp1, tp0, tp2);
     LASX_PCKEV_Q(tp2, tp0, dst0);
     LASX_LD_4(dst + 4 * stride, stride, tp0, tp1, tp2, tp3);
-    LASX_ILVL_D_2_128SV(tp1, tp0, tp3, tp2, tp0, tp2);
+    LASX_ILVL_D_2_128SV(tp2, tp0, tp3, tp1, tp0, tp2);
     LASX_PCKEV_Q(tp2, tp0, dst1);
     out0 = __lasx_xvavgr_bu(out0, dst0);
     out1 = __lasx_xvavgr_bu(out1, dst1);
-    LASX_ST_D_4(out0, 0, 1, 2, 3, dst, stride);
-    LASX_ST_D_4(out1, 0, 1, 2, 3, dst + stride * 4, stride);
+    LASX_ST_D_4(out0, 0, 2, 1, 3, dst, stride);
+    LASX_ST_D_4(out1, 0, 2, 1, 3, dst + stride * 4, stride);
 }
 
 static av_always_inline void avc_chroma_hz_and_aver_dst_8x4_lasx(uint8_t *src,
@@ -566,12 +566,12 @@ static av_always_inline void avc_chroma_hz_and_aver_dst_8x4_lasx(uint8_t *src,
     LASX_SRARI_H_2(res0, res1, res0, res1, 6);
     res0 = __lasx_xvsat_hu(res0, 7);
     res1 = __lasx_xvsat_hu(res1, 7);
-    LASX_PCKEV_B(res1, res0, out);
+    LASX_PCKEV_B_128SV(res1, res0, out);
     LASX_LD_4(dst, stride, tp0, tp1, tp2, tp3);
-    LASX_ILVL_D_2_128SV(tp1, tp0, tp3, tp2, tp0, tp2);
+    LASX_ILVL_D_2_128SV(tp2, tp0, tp3, tp1, tp0, tp2);
     LASX_PCKEV_Q(tp2, tp0, tp0);
     out = __lasx_xvavgr_bu(out, tp0);
-    LASX_ST_D_4(out, 0, 1, 2, 3, dst, stride);
+    LASX_ST_D_4(out, 0, 2, 1, 3, dst, stride);
 }
 
 static av_always_inline void avc_chroma_hz_and_aver_dst_8x8_lasx(uint8_t *src,
@@ -607,17 +607,17 @@ static av_always_inline void avc_chroma_hz_and_aver_dst_8x8_lasx(uint8_t *src,
     res1 = __lasx_xvsat_hu(res1, 7);
     res2 = __lasx_xvsat_hu(res2, 7);
     res3 = __lasx_xvsat_hu(res3, 7);
-    LASX_PCKEV_B_2(res1, res0, res3, res2, out0, out1);
+    LASX_PCKEV_B_2_128SV(res1, res0, res3, res2, out0, out1);
     LASX_LD_4(dst, stride, tp0, tp1, tp2, tp3);
-    LASX_ILVL_D_2_128SV(tp1, tp0, tp3, tp2, tp0, tp2);
+    LASX_ILVL_D_2_128SV(tp2, tp0, tp3, tp1, tp0, tp2);
     LASX_PCKEV_Q(tp2, tp0, dst0);
     LASX_LD_4(dst + 4 * stride, stride, tp0, tp1, tp2, tp3);
-    LASX_ILVL_D_2_128SV(tp1, tp0, tp3, tp2, tp0, tp2);
+    LASX_ILVL_D_2_128SV(tp2, tp0, tp3, tp1, tp0, tp2);
     LASX_PCKEV_Q(tp2, tp0, dst1);
     out0 = __lasx_xvavgr_bu(out0, dst0);
     out1 = __lasx_xvavgr_bu(out1, dst1);
-    LASX_ST_D_4(out0, 0, 1, 2, 3, dst, stride);
-    LASX_ST_D_4(out1, 0, 1, 2, 3, dst + stride * 4, stride)
+    LASX_ST_D_4(out0, 0, 2, 1, 3, dst, stride);
+    LASX_ST_D_4(out1, 0, 2, 1, 3, dst + stride * 4, stride)
 }
 
 static av_always_inline void avc_chroma_vt_and_aver_dst_8x4_lasx(uint8_t *src,
@@ -643,12 +643,12 @@ static av_always_inline void avc_chroma_vt_and_aver_dst_8x4_lasx(uint8_t *src,
     LASX_SRARI_H_2(res0, res1, res0, res1, 6);
     res0 = __lasx_xvsat_hu(res0, 7);
     res1 = __lasx_xvsat_hu(res1, 7);
-    LASX_PCKEV_B(res1, res0, out);
+    LASX_PCKEV_B_128SV(res1, res0, out);
     LASX_LD_4(dst, stride, tp0, tp1, tp2, tp3);
-    LASX_ILVL_D_2_128SV(tp1, tp0, tp3, tp2, tp0, tp2);
+    LASX_ILVL_D_2_128SV(tp2, tp0, tp3, tp1, tp0, tp2);
     LASX_PCKEV_Q(tp2, tp0, tp0);
     out = __lasx_xvavgr_bu(out, tp0);
-    LASX_ST_D_4(out, 0, 1, 2, 3, dst, stride);
+    LASX_ST_D_4(out, 0, 2, 1, 3, dst, stride);
 }
 
 static av_always_inline void avc_chroma_vt_and_aver_dst_8x8_lasx(uint8_t *src,
@@ -685,17 +685,17 @@ static av_always_inline void avc_chroma_vt_and_aver_dst_8x8_lasx(uint8_t *src,
     res1 = __lasx_xvsat_hu(res1, 7);
     res2 = __lasx_xvsat_hu(res2, 7);
     res3 = __lasx_xvsat_hu(res3, 7);
-    LASX_PCKEV_B_2(res1, res0, res3, res2, out0, out1);
+    LASX_PCKEV_B_2_128SV(res1, res0, res3, res2, out0, out1);
     LASX_LD_4(dst, stride, tp0, tp1, tp2, tp3);
-    LASX_ILVL_D_2_128SV(tp1, tp0, tp3, tp2, tp0, tp2);
+    LASX_ILVL_D_2_128SV(tp2, tp0, tp3, tp1, tp0, tp2);
     LASX_PCKEV_Q(tp2, tp0, dst0);
     LASX_LD_4(dst + 4 * stride, stride, tp0, tp1, tp2, tp3);
-    LASX_ILVL_D_2_128SV(tp1, tp0, tp3, tp2, tp0, tp2);
+    LASX_ILVL_D_2_128SV(tp2, tp0, tp3, tp1, tp0, tp2);
     LASX_PCKEV_Q(tp2, tp0, dst1);
     out0 = __lasx_xvavgr_bu(out0, dst0);
     out1 = __lasx_xvavgr_bu(out1, dst1);
-    LASX_ST_D_4(out0, 0, 1, 2, 3, dst, stride);
-    LASX_ST_D_4(out1, 0, 1, 2, 3, dst + stride * 4, stride);
+    LASX_ST_D_4(out0, 0, 2, 1, 3, dst, stride);
+    LASX_ST_D_4(out1, 0, 2, 1, 3, dst + stride * 4, stride);
 }
 
 static av_always_inline void avg_width8x8_lasx(uint8_t *src, uint8_t *dst,

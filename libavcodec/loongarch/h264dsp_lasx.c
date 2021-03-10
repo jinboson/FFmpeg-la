@@ -955,30 +955,30 @@ void ff_biweight_h264_pixels16_8_lasx(uint8_t *dst, uint8_t *src,
                         tmp0, tmp1, tmp2, tmp3);
     LASX_CLIP_H_0_255_4(tmp4, tmp5, tmp6, tmp7,
                         tmp4, tmp5, tmp6, tmp7);
-    LASX_PCKEV_B_4(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6,
-                   dst0, dst1, dst2, dst3);
+    LASX_PCKEV_B_4_128SV(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6,
+                         dst0, dst1, dst2, dst3);
     __lasx_xvstelm_d(dst0, dst, 0, 0);
-    __lasx_xvstelm_d(dst0, dst, 8, 1);
+    __lasx_xvstelm_d(dst0, dst, 8, 2);
     dst += stride;
-    __lasx_xvstelm_d(dst0, dst, 0, 2);
+    __lasx_xvstelm_d(dst0, dst, 0, 1);
     __lasx_xvstelm_d(dst0, dst, 8, 3);
     dst += stride;
     __lasx_xvstelm_d(dst1, dst, 0, 0);
-    __lasx_xvstelm_d(dst1, dst, 8, 1);
+    __lasx_xvstelm_d(dst1, dst, 8, 2);
     dst += stride;
-    __lasx_xvstelm_d(dst1, dst, 0, 2);
+    __lasx_xvstelm_d(dst1, dst, 0, 1);
     __lasx_xvstelm_d(dst1, dst, 8, 3);
     dst += stride;
     __lasx_xvstelm_d(dst2, dst, 0, 0);
-    __lasx_xvstelm_d(dst2, dst, 8, 1);
+    __lasx_xvstelm_d(dst2, dst, 8, 2);
     dst += stride;
-    __lasx_xvstelm_d(dst2, dst, 0, 2);
+    __lasx_xvstelm_d(dst2, dst, 0, 1);
     __lasx_xvstelm_d(dst2, dst, 8, 3);
     dst += stride;
     __lasx_xvstelm_d(dst3, dst, 0, 0);
-    __lasx_xvstelm_d(dst3, dst, 8, 1);
+    __lasx_xvstelm_d(dst3, dst, 8, 2);
     dst += stride;
-    __lasx_xvstelm_d(dst3, dst, 0, 2);
+    __lasx_xvstelm_d(dst3, dst, 0, 1);
     __lasx_xvstelm_d(dst3, dst, 8, 3);
     dst += stride;
 
@@ -1016,30 +1016,30 @@ void ff_biweight_h264_pixels16_8_lasx(uint8_t *dst, uint8_t *src,
                             tmp0, tmp1, tmp2, tmp3);
         LASX_CLIP_H_0_255_4(tmp4, tmp5, tmp6, tmp7,
                             tmp4, tmp5, tmp6, tmp7);
-        LASX_PCKEV_B_4(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6,
-                       dst0, dst1, dst2, dst3);
+        LASX_PCKEV_B_4_128SV(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6,
+                             dst0, dst1, dst2, dst3);
         __lasx_xvstelm_d(dst0, dst, 0, 0);
-        __lasx_xvstelm_d(dst0, dst, 8, 1);
+        __lasx_xvstelm_d(dst0, dst, 8, 2);
         dst += stride;
-        __lasx_xvstelm_d(dst0, dst, 0, 2);
+        __lasx_xvstelm_d(dst0, dst, 0, 1);
         __lasx_xvstelm_d(dst0, dst, 8, 3);
         dst += stride;
         __lasx_xvstelm_d(dst1, dst, 0, 0);
-        __lasx_xvstelm_d(dst1, dst, 8, 1);
+        __lasx_xvstelm_d(dst1, dst, 8, 2);
         dst += stride;
-        __lasx_xvstelm_d(dst1, dst, 0, 2);
+        __lasx_xvstelm_d(dst1, dst, 0, 1);
         __lasx_xvstelm_d(dst1, dst, 8, 3);
         dst += stride;
         __lasx_xvstelm_d(dst2, dst, 0, 0);
-        __lasx_xvstelm_d(dst2, dst, 8, 1);
+        __lasx_xvstelm_d(dst2, dst, 8, 2);
         dst += stride;
-        __lasx_xvstelm_d(dst2, dst, 0, 2);
+        __lasx_xvstelm_d(dst2, dst, 0, 1);
         __lasx_xvstelm_d(dst2, dst, 8, 3);
         dst += stride;
         __lasx_xvstelm_d(dst3, dst, 0, 0);
-        __lasx_xvstelm_d(dst3, dst, 8, 1);
+        __lasx_xvstelm_d(dst3, dst, 8, 2);
         dst += stride;
-        __lasx_xvstelm_d(dst3, dst, 0, 2);
+        __lasx_xvstelm_d(dst3, dst, 0, 1);
         __lasx_xvstelm_d(dst3, dst, 8, 3);
     }
 }
@@ -1075,8 +1075,8 @@ static void avc_biwgt_8x4_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     tmp0 = __lasx_xvsra_h(tmp0, denom);
     tmp1 = __lasx_xvsra_h(tmp1, denom);
     LASX_CLIP_H_0_255_2(tmp0, tmp1, tmp0, tmp1);
-    LASX_PCKEV_B(tmp1, tmp0, dst0)
-    LASX_ST_D_4(dst0, 0, 1, 2, 3, dst, stride);
+    LASX_PCKEV_B_128SV(tmp1, tmp0, dst0)
+    LASX_ST_D_4(dst0, 0, 2, 1, 3, dst, stride);
 }
 
 static void avc_biwgt_8x8_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
@@ -1126,10 +1126,10 @@ static void avc_biwgt_8x8_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     tmp2 = __lasx_xvsra_h(tmp2, denom);
     tmp3 = __lasx_xvsra_h(tmp3, denom);
     LASX_CLIP_H_0_255_4(tmp0, tmp1, tmp2, tmp3, tmp0, tmp1, tmp2, tmp3);
-    LASX_PCKEV_B_2(tmp1, tmp0, tmp3, tmp2, dst0, dst1)
-    LASX_ST_D_4(dst0, 0, 1, 2, 3, dst, stride);
+    LASX_PCKEV_B_2_128SV(tmp1, tmp0, tmp3, tmp2, dst0, dst1)
+    LASX_ST_D_4(dst0, 0, 2, 1, 3, dst, stride);
     dst += stride_4x;
-    LASX_ST_D_4(dst1, 0, 1, 2, 3, dst, stride);
+    LASX_ST_D_4(dst1, 0, 2, 1, 3, dst, stride);
 }
 
 static void avc_biwgt_8x16_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
@@ -1205,15 +1205,15 @@ static void avc_biwgt_8x16_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     tmp7 = __lasx_xvsra_h(tmp7, denom);
     LASX_CLIP_H_0_255_4(tmp0, tmp1, tmp2, tmp3, tmp0, tmp1, tmp2, tmp3);
     LASX_CLIP_H_0_255_4(tmp4, tmp5, tmp6, tmp7, tmp4, tmp5, tmp6, tmp7);
-    LASX_PCKEV_B_4(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6,
-                   dst0, dst1, dst2, dst3)
-    LASX_ST_D_4(dst0, 0, 1, 2, 3, dst, stride);
+    LASX_PCKEV_B_4_128SV(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6,
+                         dst0, dst1, dst2, dst3)
+    LASX_ST_D_4(dst0, 0, 2, 1, 3, dst, stride);
     dst += stride_4x;
-    LASX_ST_D_4(dst1, 0, 1, 2, 3, dst, stride);
+    LASX_ST_D_4(dst1, 0, 2, 1, 3, dst, stride);
     dst += stride_4x;
-    LASX_ST_D_4(dst2, 0, 1, 2, 3, dst, stride);
+    LASX_ST_D_4(dst2, 0, 2, 1, 3, dst, stride);
     dst += stride_4x;
-    LASX_ST_D_4(dst3, 0, 1, 2, 3, dst, stride);
+    LASX_ST_D_4(dst3, 0, 2, 1, 3, dst, stride);
 }
 
 void ff_biweight_h264_pixels8_8_lasx(uint8_t *dst, uint8_t *src,
@@ -1260,7 +1260,7 @@ static void avc_biwgt_4x2_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     tmp0 = __lasx_xvdp2add_h_b(offset, wgt, vec0);
     tmp0 = __lasx_xvsra_h(tmp0, denom);
     LASX_CLIP_H_0_255(tmp0, tmp0);
-    LASX_PCKEV_B(tmp0, tmp0, tmp0);
+    LASX_PCKEV_B_128SV(tmp0, tmp0, tmp0);
     LASX_ST_W_2(tmp0, 0, 1, dst, stride);
 }
 
@@ -1293,8 +1293,8 @@ static void avc_biwgt_4x4_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     tmp0 = __lasx_xvdp2add_h_b(offset, wgt, vec0);
     tmp0 = __lasx_xvsra_h(tmp0, denom);
     LASX_CLIP_H_0_255(tmp0, tmp0);
-    LASX_PCKEV_B(tmp0, tmp0, tmp0);
-    LASX_ST_W_4(tmp0, 0, 1, 2, 3, dst, stride);
+    LASX_PCKEV_B_128SV(tmp0, tmp0, tmp0);
+    LASX_ST_W_4(tmp0, 0, 1, 4, 5, dst, stride);
 }
 
 static void avc_biwgt_4x8_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
@@ -1332,8 +1332,8 @@ static void avc_biwgt_4x8_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     tmp0 = __lasx_xvsra_h(tmp0, denom);
     tmp1 = __lasx_xvsra_h(tmp1, denom);
     LASX_CLIP_H_0_255_2(tmp0, tmp1, tmp0, tmp1);
-    LASX_PCKEV_B(tmp1, tmp0, tmp0);
-    LASX_ST_W_8(tmp0, 0, 1, 2, 3, 4, 5, 6, 7, dst, stride);
+    LASX_PCKEV_B_128SV(tmp1, tmp0, tmp0);
+    LASX_ST_W_8(tmp0, 0, 1, 4, 5, 2, 3, 6, 7, dst, stride);
 }
 
 void ff_biweight_h264_pixels4_8_lasx(uint8_t *dst, uint8_t *src,
@@ -1685,7 +1685,7 @@ static void avc_wgt_4x4_lasx(uint8_t *src, ptrdiff_t stride,
                              int32_t offset_in)
 {
     uint32_t offset_val;
-    __m256i wgt, zero = __lasx_xvldi(0);
+    __m256i wgt;
     __m256i src0, tmp0, tmp1, tmp2, tmp3, denom, offset;
 
     offset_val = (unsigned) offset_in << log2_denom;
@@ -1697,7 +1697,7 @@ static void avc_wgt_4x4_lasx(uint8_t *src, ptrdiff_t stride,
     LASX_LD_4(src, stride, tmp0, tmp1, tmp2, tmp3);
     LASX_ILVL_W_2_128SV(tmp2, tmp0, tmp3, tmp1, tmp0, tmp1);
     LASX_ILVL_W_128SV(tmp1, tmp0, src0);
-    LASX_ILVL_B(zero, src0, src0);
+    LASX_UNPCK_L_HU_BU(src0, src0);
     src0 = __lasx_xvmul_h(wgt, src0);
     src0 = __lasx_xvsadd_h(src0, offset);
     src0 = __lasx_xvmaxi_h(src0, 0);
