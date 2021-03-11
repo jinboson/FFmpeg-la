@@ -20,13 +20,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libswscale/rgb2rgb.h"
-#include "libavutil/loongarch/cpu.h"
+#include "swscale_loongarch.h"
 #include "libavutil/loongarch/generic_macros_lasx.h"
 
-static void ff_interleave_bytes_lasx(const uint8_t *src1, const uint8_t *src2,
-                                     uint8_t *dest, int width, int height,
-                                     int src1Stride, int src2Stride, int dstStride)
+void ff_interleave_bytes_lasx(const uint8_t *src1, const uint8_t *src2,
+                              uint8_t *dest, int width, int height,
+                              int src1Stride, int src2Stride, int dstStride)
 {
     int h;
     int len = width & (0xFFFFFFF0);
@@ -52,14 +51,4 @@ static void ff_interleave_bytes_lasx(const uint8_t *src1, const uint8_t *src2,
         src1 += src1Stride;
         src2 += src2Stride;
     }
-}
-
-
-av_cold void rgb2rgb_init_loongarch(void)
-{
-    int cpu_flags = av_get_cpu_flags();
-#if HAVE_LASX
-    if (have_lasx(cpu_flags))
-        interleaveBytes = ff_interleave_bytes_lasx;
-#endif /* #if HAVE_LASX */
 }

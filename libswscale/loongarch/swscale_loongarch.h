@@ -45,6 +45,16 @@ void ff_yuv2planeX_8_lasx(const int16_t *filter, int filterSize,
                           const int16_t **src, uint8_t *dest, int dstW,
                           const uint8_t *dither, int offset);
 
+int yuv420_rgb24_lasx(SwsContext *c, const uint8_t *src[], int srcStride[],
+                      int srcSliceY, int srcSliceH, uint8_t *dst[], int dstStride[]);
+
+int yuv420_bgr24_lasx(SwsContext *c, const uint8_t *src[], int srcStride[],
+                      int srcSliceY, int srcSliceH, uint8_t *dst[], int dstStride[]);
+
+void ff_interleave_bytes_lasx(const uint8_t *src1, const uint8_t *src2,
+                              uint8_t *dest, int width, int height,
+                              int src1Stride, int src2Stride, int dstStride);
+
 av_cold void ff_sws_init_output_loongarch(SwsContext *c);
 
 void planar_rgb_to_uv_lasx(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[4],

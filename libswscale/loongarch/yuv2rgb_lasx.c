@@ -20,10 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "swscale_loongarch.h"
 #include "libavutil/loongarch/generic_macros_lasx.h"
-#include "libswscale/rgb2rgb.h"
-#include "libswscale/swscale_internal.h"
-#include "libavutil/loongarch/cpu.h"
 
 #define YUV2RGB_LOAD_COE                                      \
     /* Load x_offset */                                       \
@@ -91,7 +89,7 @@
 }
 
 #define YUV2RGBFUNC(func_name, dst_type, alpha)                                     \
-    static int func_name(SwsContext *c, const uint8_t *src[],                       \
+           int func_name(SwsContext *c, const uint8_t *src[],                       \
                          int srcStride[], int srcSliceY, int srcSliceH,             \
                          uint8_t *dst[], int dstStride[])                           \
 {                                                                                   \
@@ -124,34 +122,16 @@
     return srcSliceH;                                                               \
 }
 
-YUV2RGBFUNC(yuv420_rgb24, uint8_t, 0)
+YUV2RGBFUNC(yuv420_rgb24_lasx, uint8_t, 0)
     LOAD_YUV_16
     YUV2RGB
     RGB_PACK_16(r, g, b, rgb_l, rgb_h);
     RGB_STORE(rgb_l, rgb_h, image, w);
     END_FUNC()
 
-YUV2RGBFUNC(yuv420_bgr24, uint8_t, 0)
+YUV2RGBFUNC(yuv420_bgr24_lasx, uint8_t, 0)
     LOAD_YUV_16
     YUV2RGB
     RGB_PACK_16(b, g, r, rgb_l, rgb_h);
     RGB_STORE(rgb_l, rgb_h, image, w);
     END_FUNC()
-
-
-av_cold SwsFunc ff_yuv2rgb_init_loongarch(SwsContext *c)
-{
-    int cpu_flags = av_get_cpu_flags();
-#if HAVE_LASX
-    if (have_lasx(cpu_flags)) {
-        switch (c->dstFormat) {
-            case AV_PIX_FMT_RGB24:
-                return yuv420_rgb24;
-            case AV_PIX_FMT_BGR24:
-                return yuv420_bgr24;
-        }
-    }
-#endif  /* #if HAVE_LASX */
-    return NULL;
-}
-

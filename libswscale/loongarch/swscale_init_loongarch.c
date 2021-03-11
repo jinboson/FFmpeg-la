@@ -20,6 +20,8 @@
  */
 
 #include "swscale_loongarch.h"
+#include "libswscale/swscale_internal.h"
+#include "libswscale/rgb2rgb.h"
 #include "libavutil/loongarch/cpu.h"
 
 av_cold void ff_sws_init_swscale_loongarch(SwsContext *c)
@@ -49,4 +51,25 @@ av_cold void ff_sws_init_swscale_loongarch(SwsContext *c)
         if (c->dstBpc == 8)
             c->yuv2planeX = ff_yuv2planeX_8_lasx;
     }
+}
+
+av_cold void rgb2rgb_init_loongarch(void)
+{
+    int cpu_flags = av_get_cpu_flags();
+    if (have_lasx(cpu_flags))
+        interleaveBytes = ff_interleave_bytes_lasx;
+}
+
+av_cold SwsFunc ff_yuv2rgb_init_loongarch(SwsContext *c)
+{
+    int cpu_flags = av_get_cpu_flags();
+    if (have_lasx(cpu_flags)) {
+        switch (c->dstFormat) {
+            case AV_PIX_FMT_RGB24:
+                return yuv420_rgb24_lasx;
+            case AV_PIX_FMT_BGR24:
+                return yuv420_bgr24_lasx;
+        }
+    }
+    return NULL;
 }
