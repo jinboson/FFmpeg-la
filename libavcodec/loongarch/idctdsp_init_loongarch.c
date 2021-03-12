@@ -38,5 +38,8 @@ av_cold void ff_idctdsp_init_loongarch(IDCTDSPContext *c, AVCodecContext *avctx,
                     c->idct = ff_simple_idct_lasx;
                     c->perm_type = FF_IDCT_PERM_NONE;
         }
+        c->put_pixels_clamped = ff_put_pixels_clamped_lasx;
+        c->put_signed_pixels_clamped = ff_put_signed_pixels_clamped_lasx;
+        c->add_pixels_clamped = ff_add_pixels_clamped_lasx;
     }
 }

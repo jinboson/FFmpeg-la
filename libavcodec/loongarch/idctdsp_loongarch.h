@@ -24,10 +24,19 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "libavcodec/h264.h"
+#include "../mpegvideo.h"
 
 void ff_simple_idct_lasx(int16_t *block);
 void ff_simple_idct_put_lasx(uint8_t *dest, ptrdiff_t stride_dst, int16_t *block);
 void ff_simple_idct_add_lasx(uint8_t *dest, ptrdiff_t stride_dst, int16_t *block);
+void ff_put_pixels_clamped_lasx(const int16_t *block,
+                                uint8_t *av_restrict pixels,
+                                ptrdiff_t line_size);
+void ff_put_signed_pixels_clamped_lasx(const int16_t *block,
+                                       uint8_t *av_restrict pixels,
+                                       ptrdiff_t line_size);
+void ff_add_pixels_clamped_lasx(const int16_t *block,
+                                uint8_t *av_restrict pixels,
+                                ptrdiff_t line_size);
 
 #endif /* AVCODEC_LOONGARCH_IDCTDSP_LOONGARCH_H */
