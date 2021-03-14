@@ -3,6 +3,7 @@ OBJS-$(CONFIG_H264CHROMA)             += loongarch/h264chroma_init_loongarch.o
 OBJS-$(CONFIG_H264DSP)                += loongarch/h264dsp_init_loongarch.o
 OBJS-$(CONFIG_IDCTDSP)                += loongarch/idctdsp_init_loongarch.o
 OBJS-$(CONFIG_VC1DSP)                 += loongarch/vc1dsp_init_loongarch.o
+OBJS-$(CONFIG_HPELDSP)                += loongarch/hpeldsp_init_loongarch.o
 LASX-OBJS-$(CONFIG_H264DSP)           += loongarch/h264dsp_lasx.o  \
                                          loongarch/h264idct_lasx.o \
                                          loongarch/h264_deblock_lasx.o
@@ -11,3 +12,4 @@ LASX-OBJS-$(CONFIG_H264CHROMA)        += loongarch/h264qpel_lasx.o
 LASX-OBJS-$(CONFIG_IDCTDSP)           += loongarch/simple_idct_lasx.o  \
                                          loongarch/idctdsp_lasx.o
 LASX-OBJS-$(CONFIG_VC1_DECODER)       += loongarch/vc1dsp_lasx.o
+LASX-OBJS-$(CONFIG_HPELDSP)           += loongarch/hpeldsp_lasx.o
