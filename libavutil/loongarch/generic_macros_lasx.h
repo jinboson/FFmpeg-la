@@ -29,6 +29,24 @@
 #ifndef AVUTIL_LOONGARCH_GENERIC_MACROS_LASX_H
 #define AVUTIL_LOONGARCH_GENERIC_MACROS_LASX_H
 
+/*
+ * Copyright (c) 2020 Loongson Technology Corporation Limited
+ * All rights reserved.
+ * Contributed by Shiyou Yin   <yinshiyou-hf@loongson.cn>
+ *                Xiwei Gu     <guxiwei-hf@loongson.cn>
+ *                Jin Bo       <jinbo@loongson.cn>
+ *                Hao Chen     <chenhao@loongson.cn>
+ *                Lu Wang      <wanglu@loongson.cn>
+ *                Peng Zhou    <zhoupeng@loongson.cn>
+ *
+ * This file is maintained in LSOM project, don't change it directly.
+ * You can get the latest version of this header from: ***
+ *
+ */
+
+#ifndef GENERIC_MACROS_LASX_H
+#define GENERIC_MACROS_LASX_H
+
 #include <stdint.h>
 #include <lasxintrin.h>
 
@@ -37,8 +55,8 @@
  * MINOR version: Add new macros, or bug fix.
  * MICRO version: Comment changes or implementation changes。
  */
-#define LSOM_LASX_VERSION_MAJOR 1
-#define LSOM_LASX_VERSION_MINOR 9
+#define LSOM_LASX_VERSION_MAJOR 2
+#define LSOM_LASX_VERSION_MINOR 0
 #define LSOM_LASX_VERSION_MICRO 0
 
 /* Description : Load 256-bit vector data with stride
@@ -95,6 +113,37 @@
     LASX_ST_4(in0, in1, in2, in3, (pdst), stride);                          \
     LASX_ST_4(in4, in5, in6, in7, (pdst) + 4 * stride, stride);             \
 }
+
+/* Description : Store half word elements of vector with stride
+ * Arguments   : Inputs  - in   source vector
+ *                       - idx, idx0, idx1,  ~
+ *                       - pdst    (destination pointer to store to)
+ *                       - stride
+ * Details     : Store half word 'idx0' from 'in' to (pdst)
+ *               Store half word 'idx1' from 'in' to (pdst + stride)
+ *               Similar for other elements
+ * Example     : LASX_ST_H(in, idx, pdst)
+ *          in : 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
+ *        idx0 : 0x01
+ *        out0 : 2
+ */
+#define LASX_ST_H(in, idx, pdst)                                          \
+{                                                                         \
+    __lasx_xvstelm_h(in, pdst, 0, idx);                                   \
+}
+
+#define LASX_ST_H_2(in, idx0, idx1, pdst, stride)                         \
+{                                                                         \
+    LASX_ST_H(in, idx0, (pdst));                                          \
+    LASX_ST_H(in, idx1, (pdst) + stride);                                 \
+}
+
+#define LASX_ST_H_4(in, idx0, idx1, idx2, idx3, pdst, stride)             \
+{                                                                         \
+    LASX_ST_H_2(in, idx0, idx1, (pdst), stride);                          \
+    LASX_ST_H_2(in, idx2, idx3, (pdst) + 2 * stride, stride);             \
+}
+
 
 /* Description : Store word elements of vector with stride
  * Arguments   : Inputs  - in   source vector
@@ -158,6 +207,788 @@
 {                                                                        \
     LASX_ST_D_2(in, idx0, idx1, (pdst), stride);                         \
     LASX_ST_D_2(in, idx2, idx3, (pdst) + 2 * stride, stride);            \
+}
+
+/* Description : Store quad word elements of vector with stride
+ * Arguments   : Inputs  - in   source vector
+ *                       - idx, idx0, idx1, ~
+ *                       - pdst    (destination pointer to store to)
+ *                       - stride
+ * Details     : Store quad word 'idx0' from 'in' to (pdst)
+ *               Store quad word 'idx1' from 'in' to (pdst + stride)
+ *               Similar for other elements
+ * Example     : See LASX_ST_W(in, idx, pdst)
+ */
+#define LASX_ST_Q(in, idx, pdst)                                         \
+{                                                                        \
+    LASX_ST_D(in, (idx << 1), pdst);                                     \
+    LASX_ST_D(in, (( idx << 1) + 1), (char*)(pdst) + 8);                 \
+}
+
+#define LASX_ST_Q_2(in, idx0, idx1, pdst, stride)                        \
+{                                                                        \
+    LASX_ST_Q(in, idx0, (pdst));                                         \
+    LASX_ST_Q(in, idx1, (pdst) + stride);                                \
+}
+
+#define LASX_ST_Q_4(in, idx0, idx1, idx2, idx3, pdst, stride)            \
+{                                                                        \
+    LASX_ST_Q_2(in, idx0, idx1, (pdst), stride);                         \
+    LASX_ST_Q_2(in, idx2, idx3, (pdst) + 2 * stride, stride);            \
+}
+
+/* Description : Dot product of byte vector elements
+ * Arguments   : Inputs  - in0, in1
+ *               Outputs - out0, out1
+ *               Return Type - unsigned halfword
+ * Details     : Unsigned byte elements from in0 are iniplied with
+ *               unsigned byte elements from in0 producing a result
+ *               twice the size of input i.e. unsigned halfword.
+ *               Then this iniplication results of adjacent odd-even elements
+ *               are added together and stored to the out vector
+ *               (2 unsigned halfword results)
+ * Example     : see LASX_DP2_W_H
+ */
+#define LASX_DP2_H_BU(in0, in1, out0)                   \
+{                                                       \
+    __m256i _tmp0_m ;                                   \
+                                                        \
+    _tmp0_m = __lasx_xvmulwev_h_bu( in0, in1 );         \
+    out0 = __lasx_xvmaddwod_h_bu( _tmp0_m, in0, in1 );  \
+}
+#define LASX_DP2_H_BU_2(in0, in1, in2, in3, out0, out1) \
+{                                                       \
+    LASX_DP2_H_BU(in0, in1, out0);                      \
+    LASX_DP2_H_BU(in2, in3, out1);                      \
+}
+#define LASX_DP2_H_BU_4(in0, in1, in2, in3,             \
+                        in4, in5, in6, in7,             \
+                        out0, out1, out2, out3)         \
+{                                                       \
+    LASX_DP2_H_BU_2(in0, in1, in0, in1, out0, out1);    \
+    LASX_DP2_H_BU_2(in4, in5, in6, in7, out2, out3);    \
+}
+
+/* Description : Dot product of byte vector elements
+ * Arguments   : Inputs  - in0, in1
+ *               Outputs - out0, out1
+ *               Return Type - signed halfword
+ * Details     : Signed byte elements from in0 are iniplied with
+ *               signed byte elements from in0 producing a result
+ *               twice the size of input i.e. signed halfword.
+ *               Then this iniplication results of adjacent odd-even elements
+ *               are added together and stored to the out vector
+ *               (2 signed halfword results)
+ * Example     : see LASX_DP2_W_H
+ */
+#define LASX_DP2_H_B(in0, in1, out0)                      \
+{                                                         \
+    __m256i _tmp0_m ;                                     \
+                                                          \
+    _tmp0_m = __lasx_xvmulwev_h_b( in0, in1 );            \
+    out0 = __lasx_xvmaddwod_h_b( _tmp0_m, in0, in1 );     \
+}
+#define LASX_DP2_H_B_2(in0, in1, in2, in3, out0, out1)    \
+{                                                         \
+    LASX_DP2_H_B(in0, in1, out0);                         \
+    LASX_DP2_H_B(in2, in3, out1);                         \
+}
+#define LASX_DP2_H_B_4(in0, in1, in2, in3,                \
+                       in4, in5, in6, in7,                \
+                       out0, out1, out2, out3)            \
+{                                                         \
+    LASX_DP2_H_B_2(in0, in1, in2, in3, out0, out1);       \
+    LASX_DP2_H_B_2(in4, in5, in6, in7, out2, out3);       \
+}
+
+/* Description : Dot product of half word vector elements
+ * Arguments   : Inputs  - in0, in1, ~
+ *               Outputs - out0,  out1,  ~
+ *               Return Type - signed word
+ * Details     : Signed half word elements from in* are iniplied with
+ *               signed half word elements from in* producing a result
+ *               twice the size of input i.e. signed word.
+ *               Then this iniplication results of adjacent odd-even elements
+ *               are added together and stored to the out vector.
+ * Exampe      : LASX_DP2_W_H(in0, in1, out0)
+ *               in0:   1,2,3,4, 5,6,7,8, 1,2,3,4, 5,6,7,8,
+ *               in0:   8,7,6,5, 4,3,2,1, 8,7,6,5, 4,3,2,1,
+ *               out0:  22,38,38,22, 22,38,38,22
+ */
+#define LASX_DP2_W_H(in0, in1, out0)                   \
+{                                                      \
+    __m256i _tmp0_m ;                                  \
+                                                       \
+    _tmp0_m = __lasx_xvmulwev_w_h( in0, in1 );         \
+    out0 = __lasx_xvmaddwod_w_h( _tmp0_m, in0, in1 );  \
+}
+#define LASX_DP2_W_H_2(in0, in1, in2, in3, out0, out1)             \
+{                                                                  \
+    LASX_DP2_W_H(in0, in1, out0);                                  \
+    LASX_DP2_W_H(in2, in3, out1);                                  \
+}
+#define LASX_DP2_W_H_4(in0, in1, in2, in3,                         \
+                       in4, in5, in6, in7, out0, out1, out2, out3) \
+{                                                                  \
+    LASX_DP2_W_H_2(in0, in1, in2, in3, out0, out1);                \
+    LASX_DP2_W_H_2(in4, in5, in6, in7, out2, out3);                \
+}
+#define LASX_DP2_W_H_8(in0, in1, in2, in3, in4, in5, in6, in7,         \
+                       in8, in9, in10, in11, in12, in13, in14, in15,   \
+                       out0, out1, out2, out3, out4, out5, out6, out7) \
+{                                                                      \
+    LASX_DP2_W_H_4(in0, in1, in2, in3, in4, in5, in6, in7,             \
+                   out0, out1, out2, out3);                            \
+    LASX_DP2_W_H_4(in8, in9, in10, in11, in12, in13, in14, in15,       \
+                   out4, out5, out6, out7);                            \
+}
+
+/* Description : Dot product of word vector elements
+ * Arguments   : Inputs  - in0, in1, ~
+ *               Outputs - out0,  out1,  ~
+ *               Retrun Type - signed double
+ * Details     : Signed word elements from in* are iniplied with
+ *               signed word elements from in* producing a result
+ *               twice the size of input i.e. signed double word.
+ *               Then this iniplication results of adjacent odd-even elements
+ *               are added together and stored to the out vector.
+ * Example     : see LASX_DP2_W_H
+ */
+#define LASX_DP2_D_W(in0, in1, out0)                    \
+{                                                       \
+    __m256i _tmp0_m ;                                   \
+                                                        \
+    _tmp0_m = __lasx_xvmulwev_d_w( in0, in1 );          \
+    out0 = __lasx_xvmaddwod_d_w( _tmp0_m, in0, in1 );   \
+}
+#define LASX_DP2_D_W_2(in0, in1, in2, in3, out0, out1)  \
+{                                                       \
+    LASX_DP2_D_W(in0, in1, out0);                       \
+    LASX_DP2_D_W(in2, in3, out1);                       \
+}
+#define LASX_DP2_D_W_4(in0, in1, in2, in3,                             \
+                       in4, in5, in6, in7, out0, out1, out2, out3)     \
+{                                                                      \
+    LASX_DP2_D_W_2(in0, in1, in2, in3, out0, out1);                    \
+    LASX_DP2_D_W_2(in4, in5, in6, in7, out2, out3);                    \
+}
+#define LASX_DP2_D_W_8(in0, in1, in2, in3, in4, in5, in6, in7,         \
+                       in8, in9, in10, in11, in12, in13, in14, in15,   \
+                       out0, out1, out2, out3, out4, out5, out6, out7) \
+{                                                                      \
+    LASX_DP2_D_W_4(in0, in1, in2, in3, in4, in5, in6, in7,             \
+                   out0, out1, out2, out3);                            \
+    LASX_DP2_D_W_4(in8, in9, in10, in11, in12, in13, in14, in15,       \
+                   out4, out5, out6, out7);                            \
+}
+
+/* Description : Dot product of halfword vector elements
+ * Arguments   : Inputs  - in0, in1
+ *               Outputs - out0, out1
+ *               Return Type - as per RTYPE
+ * Details     : Unsigned halfword elements from 'in0' are iniplied with
+ *               halfword elements from 'in0' producing a result
+ *               twice the size of input i.e. unsigned word.
+ *               Multiplication result of adjacent odd-even elements
+ *               are added together and written to the 'out0' vector
+ *               __lasx_xvdp2_w_hu_h
+ */
+#define LASX_DP2_W_HU_H(in0, in1, out0)                   \
+{                                                         \
+    __m256i _tmp0_m;                                      \
+                                                          \
+    _tmp0_m = __lasx_xvmulwev_w_hu_h( in0, in1 );         \
+    out0 = __lasx_xvmaddwod_w_hu_h( _tmp0_m, in0, in1 );  \
+}
+
+#define LASX_DP2_W_HU_H_2(in0, in1, in2, in3, out0, out1) \
+{                                                         \
+    LASX_DP2_W_HU_H(in0, in1, out0);                      \
+    LASX_DP2_W_HU_H(in2, in3, out1);                      \
+}
+
+#define LASX_DP2_W_HU_H_4(in0, in1, in2, in3,             \
+                          in4, in5, in6, in7,             \
+                          out0, out1, out2, out3)         \
+{                                                         \
+    LASX_DP2_W_HU_H_2(in0, in1, in2, in3, out0, out1);    \
+    LASX_DP2_W_HU_H_2(in4, in5, in6, in7, out2, out3);    \
+}
+
+/* Description : Dot product & addition of byte vector elements
+ * Arguments   : Inputs  - in0, in1
+ *               Outputs - out0, out1
+ *               Retrun Type - halfword
+ * Details     : Signed byte elements from in0 are iniplied with
+ *               signed byte elements from in0 producing a result
+ *               twice the size of input i.e. signed halfword.
+ *               Then this iniplication results of adjacent odd-even elements
+ *               are added to the out vector
+ *               (2 signed halfword results)
+ * Example     : LASX_DP2ADD_H_B(in0, in1, in2, out0)
+ *               in0:  1,2,3,4, 1,2,3,4, 1,2,3,4, 1,2,3,4,
+ *               in1:  1,2,3,4, 5,6,7,8, 1,2,3,4, 5,6,7,8,
+ *                     1,2,3,4, 5,6,7,8, 1,2,3,4, 5,6,7,8
+ *               in2:  8,7,6,5, 4,3,2,1, 8,7,6,5, 4,3,2,1,
+ *                     8,7,6,5, 4,3,2,1, 8,7,6,5, 4,3,2,1
+ *               out0: 23,40,41,26, 23,40,41,26, 23,40,41,26, 23,40,41,26
+ */
+#define LASX_DP2ADD_H_B(in0, in1, in2, out0)                 \
+{                                                            \
+    __m256i _tmp0_m;                                         \
+                                                             \
+    _tmp0_m = __lasx_xvmaddwev_h_b( in0, in1, in2 );         \
+    out0 = __lasx_xvmaddwod_h_b( _tmp0_m, in1, in2 );        \
+}
+#define LASX_DP2ADD_H_B_2(in0, in1, in2, in3, in4, in5, out0, out1)  \
+{                                                                    \
+    LASX_DP2ADD_H_B(in0, in1, in2, out0);                            \
+    LASX_DP2ADD_H_B(in3, in4, in5, out1);                            \
+}
+#define LASX_DP2ADD_H_B_4(in0, in1, in2, in3, in4, in5,                \
+                          in6, in7, in8, in9, in10, in11,              \
+                          out0, out1, out2, out3)                      \
+{                                                                      \
+    LASX_DP2ADD_H_B_2(in0, in1, in2, in3, in4, in5, out0, out1);       \
+    LASX_DP2ADD_H_B_2(in6, in7, in8, in9, in10, in11, out2, out3);     \
+}
+
+/* Description : Dot product of halfword vector elements
+ * Arguments   : Inputs  - in0, in1
+ *               Outputs - out0, out1
+ *               Return Type - as per RTYPE
+ * Details     : Signed halfword elements from 'in0' are iniplied with
+ *               signed halfword elements from 'in0' producing a result
+ *               twice the size of input i.e. signed word.
+ *               Multiplication result of adjacent odd-even elements
+ *               are added together and written to the 'out0' vector
+ */
+#define LASX_DP2ADD_W_H(in0, in1, in2, out0)                 \
+{                                                            \
+    __m256i _tmp0_m;                                         \
+                                                             \
+    _tmp0_m = __lasx_xvmaddwev_w_h( in0, in1, in2 );         \
+    out0 = __lasx_xvmaddwod_w_h( _tmp0_m, in1, in2 );        \
+}
+#define LASX_DP2ADD_W_H_2(in0, in1, in2, in3, in4, in5, out0, out1 ) \
+{                                                                    \
+    LASX_DP2ADD_W_H(in0, in1, in2, out0);                            \
+    LASX_DP2ADD_W_H(in3, in4, in5, out1);                            \
+}
+#define LASX_DP2ADD_W_H_4(in0, in1, in2, in3, in4, in5,              \
+                          in6, in7, in8, in9, in10, in11,            \
+                          out0, out1, out2, out3)                    \
+{                                                                    \
+    LASX_DP2ADD_W_H_2(in0, in1, in2, in3, in4, in5, out0, out1);     \
+    LASX_DP2ADD_W_H_2(in6, in7, in8, in9, in10, in11, out2, out3);   \
+}
+
+/* Description : Dot product of halfword vector elements
+ * Arguments   : Inputs  - in0, in1
+ *               Outputs - out0, out1
+ *               Return Type - as per RTYPE
+ * Details     : Unsigned halfword elements from 'in0' are iniplied with
+ *               unsigned halfword elements from 'in0' producing a result
+ *               twice the size of input i.e. unsigned word.
+ *               Multiplication result of adjacent odd-even elements
+ *               are added together and written to the 'out0' vector
+ */
+#define LASX_DP2ADD_W_HU(in0, in1, in2, out0)          \
+{                                                      \
+    __m256i _tmp0_m;                                   \
+                                                       \
+    _tmp0_m = __lasx_xvmaddwev_w_hu( in0, in1, in2 );  \
+    out0 = __lasx_xvmaddwod_w_hu( _tmp0_m, in1, in2 ); \
+}
+#define LASX_DP2ADD_W_HU_2(in0, in1, in2, in3, in4, in5, out0, out1) \
+{                                                                    \
+    LASX_DP2ADD_W_HU(in0, in1, in2, out0);                           \
+    LASX_DP2ADD_W_HU(in3, in4, in5, out1);                           \
+}
+#define LASX_DP2ADD_W_HU_4(in0, in1, in2, in3, in4, in5,             \
+                           in6, in7, in8, in9, in10, in11,           \
+                           out0, out1, out2, out3)                   \
+{                                                                    \
+    LASX_DP2ADD_W_HU_2(in0, in1, in2, in3, in4, in5, out0, out1);    \
+    LASX_DP2ADD_W_HU_2(in6, in7, in8, in9, in10, in11, out2, out3);  \
+}
+
+/* Description : Dot product of halfword vector elements
+ * Arguments   : Inputs  - in0, in1
+ *               Outputs - out0, out1
+ *               Return Type - as per RTYPE
+ * Details     : Unsigned halfword elements from 'in0' are iniplied with
+ *               halfword elements from 'in0' producing a result
+ *               twice the size of input i.e. unsigned word.
+ *               Multiplication result of adjacent odd-even elements
+ *               are added together and written to the 'out0' vector
+ */
+#define LASX_DP2ADD_W_HU_H(in0, in1, in2, out0)           \
+{                                                         \
+    __m256i _tmp0_m;                                      \
+                                                          \
+    _tmp0_m = __lasx_xvmaddwev_w_hu_h( in0, in1, in2 );   \
+    out0 = __lasx_xvmaddwod_w_hu_h( _tmp0_m, in1, in2 );  \
+}
+
+#define LASX_DP2ADD_W_HU_H_2(in0, in1, in2, in3, in4, in5, out0, out1) \
+{                                                                      \
+    LASX_DP2ADD_W_HU_H(in0, in1, in2, out0);                           \
+    LASX_DP2ADD_W_HU_H(in3, in4, in5, out1);                           \
+}
+
+#define LASX_DP2ADD_W_HU_H_4(in0, in1, in2, in3, in4, in5,             \
+                             in6, in7, in8, in9, in10, in11,           \
+                             out0, out1, out2, out3)                   \
+{                                                                      \
+    LASX_DP2ADD_W_HU_H_2(in0, in1, in2, in3, in4, in5, out0, out1);    \
+    LASX_DP2ADD_W_HU_H_2(in6, in7, in8, in9, in10, in11, out2, out3);  \
+}
+
+/* Description : Vector Unsigned Dot Product and Subtract.
+ * Arguments   : Inputs  - in0, in1
+ *               Outputs - out0, out1
+ *               Return Type - as per RTYPE
+ * Details     : Unsigned byte elements from 'in0' are iniplied with
+ *               unsigned byte elements from 'in0' producing a result
+ *               twice the size of input i.e. signed word.
+ *               Multiplication result of adjacent odd-even elements
+ *               are added together and subtract from double width elements,
+ *               then written to the 'out0' vector.
+ */
+#define LASX_DP2SUB_H_BU(in0, in1, in2, out0)             \
+{                                                         \
+    __m256i _tmp0_m;                                      \
+                                                          \
+    _tmp0_m = __lasx_xvmulwev_h_bu( in1, in2 );           \
+    _tmp0_m = __lasx_xvmaddwod_h_bu( _tmp0_m, in1, in2 ); \
+    out0 = __lasx_xvsub_h( in0, _tmp0_m );                \
+}
+
+#define LASX_DP2SUB_H_BU_2(in0, in1, in2, in3, in4, in5, out0, out1) \
+{                                                                    \
+    LASX_DP2SUB_H_BU(in0, in1, in2, out0);                           \
+    LASX_DP2SUB_H_BU(in0, in1, in2, out0);                           \
+}
+
+#define LASX_DP2SUB_H_BU_4(in0, in1, in2, in3, in4, in5,             \
+                           in6, in7, in8, in9, in10, in11,           \
+                           out0, out1, out2, out3)                   \
+{                                                                    \
+    LASX_DP2SUB_H_BU_2(in0, in1, in2, in3, in4, in5, out0, out1);    \
+    LASX_DP2SUB_H_BU_2(in6, in7, in8, in9, in10, in11, out2, out3);  \
+}
+
+/* Description : Vector Signed Dot Product and Subtract.
+ * Arguments   : Inputs  - in0, in1
+ *               Outputs - out0, out1
+ *               Return Type - as per RTYPE
+ * Details     : Signed halfword elements from 'in0' are iniplied with
+ *               signed halfword elements from 'in0' producing a result
+ *               twice the size of input i.e. signed word.
+ *               Multiplication result of adjacent odd-even elements
+ *               are added together and subtract from double width elements,
+ *               then written to the 'out0' vector.
+ */
+#define LASX_DP2SUB_W_H(in0, in1, in2, out0)             \
+{                                                        \
+    __m256i _tmp0_m;                                     \
+                                                         \
+    _tmp0_m = __lasx_xvmulwev_w_h( in1, in2 );           \
+    _tmp0_m = __lasx_xvmaddwod_w_h( _tmp0_m, in1, in2 ); \
+    out0 = __lasx_xvsub_w( in0, _tmp0_m );               \
+}
+
+#define LASX_DP2SUB_W_H_2(in0, in1, in2, in3, in4, in5, out0, out1) \
+{                                                                   \
+    LASX_DP2SUB_W_H(in0, in1, in2, out0);                           \
+    LASX_DP2SUB_W_H(in3, in4, in5, out1);                           \
+}
+
+#define LASX_DP2SUB_W_H_4(in0, in1, in2, in3, in4, in5,             \
+                          in6, in7, in8, in9, in10, in11,           \
+                          out0, out1, out2, out3)                   \
+{                                                                   \
+    LASX_DP2SUB_W_H_2(in0, in1, in2, in3, in4, in5, out0, out1);    \
+    LASX_DP2SUB_W_H_2(in6, in7, in8, in9, in10, in11, out2, out3);  \
+}
+
+/* Description : Dot product of half word vector elements
+ * Arguments   : Inputs  - in0, in1, ~
+ *               Outputs - out0,  out1,  ~
+ *               Return Type - signed word
+ * Details     : Signed half word elements from in* are iniplied with
+ *               signed half word elements from in* producing a result
+ *               twice the size of input i.e. signed word.
+ *               Then this iniplication results of four adjacent elements
+ *               are added together and stored to the out vector.
+ * Exampe      : LASX_DP2_W_H(in0, in0, out0)
+ *               in0:   3,1,3,0, 0,0,0,1, 0,0,1,-1, 0,0,0,1,
+ *               in0:   -2,1,1,0, 1,0,0,0, 0,0,1,0, 1,0,0,1,
+ *               out0:  -2,0,1,1,
+ */
+#define LASX_DP4_D_H(in0, in1, out0)                         \
+{                                                            \
+    __m256i _tmp0_m ;                                        \
+                                                             \
+    _tmp0_m = __lasx_xvmulwev_w_h( in0, in1 );               \
+    _tmp0_m = __lasx_xvmaddwod_w_h( _tmp0_m, in0, in1 );     \
+    out0  = __lasx_xvhaddw_d_w( _tmp0_m, _tmp0_m );          \
+}
+#define LASX_DP4_D_H_2(in0, in1, in2, in3, out0, out1)       \
+{                                                            \
+    LASX_DP4_D_H(in0, in1, out0);                            \
+    LASX_DP4_D_H(in2, in3, out1);                            \
+}
+#define LASX_DP4_D_H_4(in0, in1, in2, in3,                            \
+                       in4, in5, in6, in7, out0, out1, out2, out3)    \
+{                                                                     \
+    LASX_DP4_D_H_2(in0, in1, in2, in3, out0, out1);                   \
+    LASX_DP4_D_H_2(in4, in5, in6, in7, out2, out3);                   \
+}
+
+/* Description : The high half of the vector elements are expanded and
+ *               added after being doubled
+ * Arguments   : Inputs  - in0, in1, ~
+ *               Outputs - out0,  out1,  ~
+ * Details     : The in0 vector and the in1 vector are added after the
+ *               higher half of the two-fold sign extension ( signed byte
+ *               to signed half word ) and stored to the out vector.
+ * Exampe      : see LASX_ADDWL_W_H_128SV
+ */
+#define LASX_ADDWH_H_B_128SV(in0, in1, out0)                                  \
+{                                                                             \
+    __m256i _tmp0_m, _tmp1_m;                                                 \
+                                                                              \
+    _tmp0_m = __lasx_xvilvh_b( in0, in0 );                                    \
+    _tmp1_m = __lasx_xvilvh_b( in1, in1 );                                    \
+    out0 = __lasx_xvaddwev_h_b( _tmp0_m, _tmp1_m );                           \
+}
+#define LASX_ADDWH_H_B_2_128SV(in0, in1, in2, in3, out0, out1)                \
+{                                                                             \
+    LASX_ADDWH_H_B_128SV(in0, in0, out0);                                     \
+    LASX_ADDWH_H_B_128SV(in2, in3, out1);                                     \
+}
+#define LASX_ADDWH_H_B_4_128SV(in0, in1, in2, in3,                            \
+                               in4, in5, in6, in7, out0, out1, out2, out3)    \
+{                                                                             \
+    LASX_ADDWH_H_B_2_128SV(in0, in1, in2, in3, out0, out1);                   \
+    LASX_ADDWH_H_B_2_128SV(in4, in5, in6, in7, out2, out3);                   \
+}
+
+/* Description : The high half of the vector elements are expanded and
+ *               added after being doubled
+ * Arguments   : Inputs  - in0, in1, ~
+ *               Outputs - out0,  out1,  ~
+ * Details     : The in0 vector and the in1 vector are added after the
+ *               higher half of the two-fold sign extension ( signed half word
+ *               to signed word ) and stored to the out vector.
+ * Exampe      : see LASX_ADDWL_W_H_128SV
+ */
+#define LASX_ADDWH_W_H_128SV(in0, in1, out0)                                  \
+{                                                                             \
+    __m256i _tmp0_m, _tmp1_m;                                                 \
+                                                                              \
+    _tmp0_m = __lasx_xvilvh_h( in0, in0 );                                    \
+    _tmp1_m = __lasx_xvilvh_h( in1, in1 );                                    \
+    out0 = __lasx_xvaddwev_w_h( _tmp0_m, _tmp1_m );                           \
+}
+#define LASX_ADDWH_W_H_2_128SV(in0, in1, in2, in3, out0, out1)                \
+{                                                                             \
+    LASX_ADDWH_W_H_128SV(in0, in1, out0);                                     \
+    LASX_ADDWH_W_H_128SV(in2, in3, out1);                                     \
+}
+#define LASX_ADDWH_W_H_4_128SV(in0, in1, in2, in3,                            \
+                               in4, in5, in6, in7, out0, out1, out2, out3)    \
+{                                                                             \
+    LASX_ADDWH_W_H_2_128SV(in0, in1, in2, in3, out0, out1);                   \
+    LASX_ADDWH_W_H_2_128SV(in4, in5, in6, in7, out2, out3);                   \
+}
+
+/* Description : The low half of the vector elements are expanded and
+ *               added after being doubled
+ * Arguments   : Inputs  - in0, in1, ~
+ *               Outputs - out0,  out1,  ~
+ * Details     : The in0 vector and the in1 vector are added after the
+ *               lower half of the two-fold sign extension ( signed byte
+ *               to signed half word ) and stored to the out vector.
+ * Exampe      : see LASX_ADDWL_W_H_128SV
+ */
+#define LASX_ADDWL_H_B_128SV(in0, in1, out0)                                  \
+{                                                                             \
+    __m256i _tmp0_m, _tmp1_m;                                                 \
+                                                                              \
+    _tmp0_m = __lasx_xvsllwil_h_b( in0, 0 );                                  \
+    _tmp1_m = __lasx_xvsllwil_h_b( in1, 0 );                                  \
+    out0 = __lasx_xvadd_h( _tmp0_m, _tmp1_m );                                \
+}
+#define LASX_ADDWL_H_B_2_128SV(in0, in1, in2, in3, out0, out1)                \
+{                                                                             \
+    LASX_ADDWL_H_B_128SV(in0, in1, out0);                                     \
+    LASX_ADDWL_H_B_128SV(in2, in3, out1);                                     \
+}
+#define LASX_ADDWL_H_B_4_128SV(in0, in1, in2, in3,                            \
+                               in4, in5, in6, in7, out0, out1, out2, out3)    \
+{                                                                             \
+    LASX_ADDWL_H_B_2_128SV(in0, in1, in2, in3, out0, out1);                   \
+    LASX_ADDWL_H_B_2_128SV(in4, in5, in6, in7, out2, out3);                   \
+}
+
+/* Description : The low half of the vector elements are expanded and
+ *               added after being doubled
+ * Arguments   : Inputs  - in0, in1, ~
+ *                         in0, in1, ~
+ *               Outputs - out0,  out1,  ~
+ * Details     : The in0 vector and the in1 vector are added after the
+ *               lower half of the two-fold sign extension ( signed half word
+ *               to signed word ) and stored to the out vector.
+ * Exampe      : LASX_ADDWL_W_H_128SV(in0, in1, out0)
+ *               in0   3,0,3,0, 0,0,0,-1, 0,0,1,-1, 0,0,0,1,
+ *               in1   2,-1,1,2, 1,0,0,0, 1,0,1,0, 1,0,0,1,
+ *               out0  5,-1,4,2, 1,0,2,-1,
+ */
+#define LASX_ADDWL_W_H_128SV(in0, in1, out0)                                  \
+{                                                                             \
+    __m256i _tmp0_m, _tmp1_m;                                                 \
+                                                                              \
+    _tmp0_m = __lasx_xvsllwil_w_h( in0, 0 );                                  \
+    _tmp1_m = __lasx_xvsllwil_w_h( in1, 0 );                                  \
+    out0 = __lasx_xvadd_w( _tmp0_m, _tmp1_m );                                \
+}
+#define LASX_ADDWL_W_H_2_128SV(in0, in1, in2, in3, out0, out1)                \
+{                                                                             \
+    LASX_ADDWL_W_H_128SV(in0, in1, out0);                                     \
+    LASX_ADDWL_W_H_128SV(in2, in3, out1);                                     \
+}
+#define LASX_ADDWL_W_H_4_128SV(in0, in1, in2, in3,                            \
+                               in4, in5, in6, in7, out0, out1, out2, out3)    \
+{                                                                             \
+    LASX_ADDWL_W_H_2_128SV(in0, in1, in2, in3, out0, out1);                   \
+    LASX_ADDWL_W_H_2_128SV(in4, in5, in6, in7, out2, out3);                   \
+}
+
+/* Description : The low half of the vector elements are expanded and
+ *               added after being doubled
+ * Arguments   : Inputs  - in0, in1, ~
+ *               Outputs - out0,  out1,  ~
+ * Details     : The in0 vector and the in1 vector are added after the
+ *               lower half of the two-fold zero extension ( unsigned byte
+ *               to unsigned half word ) and stored to the out vector.
+ */
+#define LASX_ADDWL_H_BU_128SV(in0, in1, out0)                                 \
+{                                                                             \
+    __m256i _tmp0_m, _tmp1_m;                                                 \
+    __m256i _zero_m = { 0 };                                                  \
+                                                                              \
+    _tmp0_m = __lasx_xvilvl_b( _zero_m, in0 );                                \
+    _tmp1_m = __lasx_xvilvl_b( _zero_m, in1 );                                \
+    out0 = __lasx_xvadd_h( _tmp0_m, _tmp1_m );                                \
+}
+#define LASX_ADDWL_H_BU_2_128SV(in0, in1, in2, in3, out0, out1)                \
+{                                                                              \
+    LASX_ADDWL_H_BU_128SV(in0, in1, out0);                                     \
+    LASX_ADDWL_H_BU_128SV(in2, in3, out1);                                     \
+}
+#define LASX_ADDWL_H_BU_4_128SV(in0, in1, in2, in3,                            \
+                                in4, in5, in6, in7, out0, out1, out2, out3)    \
+{                                                                              \
+    LASX_ADDWL_H_BU_2_128SV(in0, in1, in2, in3, out0, out1);                   \
+    LASX_ADDWL_H_BU_2_128SV(in4, in5, in6, in7, out2, out3);                   \
+}
+
+/* Description : The low half of the vector elements are expanded and
+ *               added after being doubled
+ * Arguments   : Inputs  - in0, in1, ~
+ *                         in0, in1, ~
+ *               Outputs - out0,  out1,  ~
+ * Details     : In1 vector plus in0 vector after double sign extension
+ *               ( signed half word to word ),add and stored to the out vector.
+ * Exampe      : LASX_ADDW_W_W_H_128SV(in0, in1, out0)
+ *               in0   0,1,0,0, -1,0,0,1,
+ *               in1   2,-1,1,2, 1,0,0,0, 0,0,1,0, 1,0,0,1,
+ *               out0  2,0,1,2, -1,0,1,1,
+ */
+#define LASX_ADDW_W_W_H_128SV(in0, in1, out0)                                 \
+{                                                                             \
+    __m256i _tmp1_m;                                                          \
+                                                                              \
+    _tmp1_m = __lasx_xvsllwil_w_h( in1, 0 );                                  \
+    out0 = __lasx_xvadd_w( in0, _tmp1_m );                                    \
+}
+#define LASX_ADDW_W_W_H_2_128SV(in0, in1, in2, in3, out0, out1)               \
+{                                                                             \
+    LASX_ADDW_W_W_H_128SV(in0, in1, out0);                                    \
+    LASX_ADDW_W_W_H_128SV(in2, in3, out1);                                    \
+}
+#define LASX_ADDW_W_W_H_4_128SV(in0, in1, in2, in3,                           \
+                                in4, in5, in6, in7, out0, out1, out2, out3)   \
+{                                                                             \
+    LASX_ADDW_W_W_H_2_128SV(in0, in1, in2, in3, out0, out1);                  \
+    LASX_ADDW_W_W_H_2_128SV(in4, in5, in6, in7, out2, out3);                  \
+}
+
+/* Description : Multiplication and addition calculation after expansion
+ *               of the lower half of the vector
+ * Arguments   : Inputs  - in0, in1, ~
+ *                         in0, in1, ~
+ *               Outputs - out0,  out1,  ~
+ * Details     : The in1 vector and the in0 vector are multiplied after
+ *               the lower half of the two-fold sign extension ( signed
+ *               half word to signed word ) , and the result is added to
+ *               the vector in0, the stored to the out vector.
+ * Exampe      : LASX_MADDWL_W_H_128SV(in0, in1, in2, out0)
+ *               in0   1,2,3,4, 5,6,7 8
+ *               in1   1,2,3,4, 1,2,3,4, 5,6,7,8, 5,6,7,8
+ *               in2   200,300,400,500, 2000,3000,4000,5000,
+ *                     -200,-300,-400,-500, -2000,-3000,-4000,-5000
+ *               out0  5,-1,4,2, 1,0,2,-1,
+ */
+#define LASX_MADDWL_W_H_128SV(in0, in1, in2, out0)                            \
+{                                                                             \
+    __m256i _tmp0_m, _tmp1_m;                                                 \
+                                                                              \
+    _tmp0_m = __lasx_xvsllwil_w_h( in1, 0 );                                  \
+    _tmp1_m = __lasx_xvsllwil_w_h( in2, 0 );                                  \
+    _tmp0_m = __lasx_xvmul_w( _tmp0_m, _tmp1_m );                             \
+    out0 = __lasx_xvadd_w( _tmp0_m, in0 );                                    \
+}
+#define LASX_MADDWL_W_H_2_128SV(in0, in1, in2, in3, in4, in5, out0, out1)     \
+{                                                                             \
+    LASX_MADDWL_W_H_128SV(in0, in1, in2, out0);                               \
+    LASX_MADDWL_W_H_128SV(in3, in4, in5, out1);                               \
+}
+#define LASX_MADDWL_W_H_4_128SV(in0, in1, in2, in3, in4, in5,                \
+                                in6, in7, in8, in9, in10, in11,              \
+                                out0, out1, out2, out3)                      \
+{                                                                            \
+    LASX_MADDWL_W_H_2_128SV(in0, in1, in2, in3, in4, in5, out0, out1);       \
+    LASX_MADDWL_W_H_2_128SV(in6, in7, in8, in9, in10, in11, out2, out3);     \
+}
+
+/* Description : Multiplication and addition calculation after expansion
+ *               of the higher half of the vector
+ * Arguments   : Inputs  - in0, in1, ~
+ *               Outputs - out0,  out1,  ~
+ * Details     : The in1 vector and the in0 vector are multiplied after
+ *               the higher half of the two-fold sign extension ( signed
+ *               half word to signed word ) , and the result is added to
+ *               the vector in0, the stored to the out vector.
+ * Exampe      : see LASX_MADDWL_W_H_128SV
+ */
+#define LASX_MADDWH_W_H_128SV(in0, in1, in2, out0)                            \
+{                                                                             \
+    __m256i _tmp0_m, _tmp1_m;                                                 \
+                                                                              \
+    _tmp0_m = __lasx_xvilvh_h( in1, in1 );                                    \
+    _tmp1_m = __lasx_xvilvh_h( in2, in2 );                                    \
+    _tmp0_m = __lasx_xvmulwev_w_h( _tmp0_m, _tmp1_m );                        \
+    out0 = __lasx_xvadd_w( _tmp0_m, in0 );                                    \
+}
+#define LASX_MADDWH_W_H_2_128SV(in0, in1, in2, in3, in4, in5, out0, out1)     \
+{                                                                             \
+    LASX_MADDWH_W_H_128SV(in0, in1, in2, out0);                               \
+    LASX_MADDWH_W_H_128SV(in3, in4, in5, out1);                               \
+}
+#define LASX_MADDWH_W_H_4_128SV(in0, in1, in2, in3, in4, in5,                \
+                                in6, in7, in8, in9, in10, in11,              \
+                                out0, out1, out2, out3)                      \
+{                                                                            \
+    LASX_MADDWH_W_H_2_128SV(in0, in1, in2, in3, in4, in5, out0, out1);       \
+    LASX_MADDWH_W_H_2_128SV(in6, in7, in8, in9, in10, in11, out2, out3);     \
+}
+
+/* Description : Multiplication calculation after expansion
+ *               of the lower half of the vector
+ * Arguments   : Inputs  - in0, in1, ~
+ *                         in0, in1, ~
+ *               Outputs - out0,  out1,  ~
+ * Details     : The in1 vector and the in0 vector are multiplied after
+ *               the lower half of the two-fold sign extension ( signed
+ *               half word to signed word ) , the stored to the out vector.
+ * Exampe      : LASX_MULWL_W_H_128SV(in0, in1, out0)
+ *               in0   3,-1,3,0, 0,0,0,-1, 0,0,1,-1, 0,0,0,1,
+ *               in1   2,-1,1,2, 1,0,0,0,  0,0,1,0, 1,0,0,1,
+ *               out0  6,1,3,0, 0,0,1,0,
+ */
+#define LASX_MULWL_W_H_128SV(in0, in1, out0)                    \
+{                                                               \
+    __m256i _tmp0_m, _tmp1_m;                                   \
+                                                                \
+    _tmp0_m = __lasx_xvsllwil_w_h( in0, 0 );                    \
+    _tmp1_m = __lasx_xvsllwil_w_h( in1, 0 );                    \
+    out0 = __lasx_xvmul_w( _tmp0_m, _tmp1_m );                  \
+}
+#define LASX_MULWL_W_H_2_128SV(in0, in1, in2, in3, out0, out1)  \
+{                                                               \
+    LASX_MULWL_W_H_128SV(in0, in1, out0);                       \
+    LASX_MULWL_W_H_128SV(in2, in3, out1);                       \
+}
+#define LASX_MULWL_W_H_4_128SV(in0, in1, in2, in3,              \
+                               in4, in5, in6, in7,              \
+                               out0, out1, out2, out3)          \
+{                                                               \
+    LASX_MULWL_W_H_2_128SV(in0, in1, in2, in3, out0, out1);     \
+    LASX_MULWL_W_H_2_128SV(in4, in5, in6, in7, out2, out3);     \
+}
+
+/* Description : Multiplication calculation after expansion
+ *               of the lower half of the vector
+ * Arguments   : Inputs  - in0, in1, ~
+ *                         in0, in1, ~
+ *               Outputs - out0,  out1,  ~
+ * Details     : The in1 vector and the in0 vector are multiplied after
+ *               the lower half of the two-fold sign extension ( signed
+ *               half word to signed word ) , the stored to the out vector.
+ * Exampe      : see LASX_MULWL_W_H_128SV
+ */
+#define LASX_MULWH_W_H_128SV(in0, in1, out0)                    \
+{                                                               \
+    __m256i _tmp0_m, _tmp1_m;                                   \
+                                                                \
+    _tmp0_m = __lasx_xvilvh_h( in0, in0 );                      \
+    _tmp1_m = __lasx_xvilvh_h( in1, in1 );                      \
+    out0 = __lasx_xvmulwev_w_h( _tmp0_m, _tmp1_m );             \
+}
+#define LASX_MULWH_W_H_2_128SV(in0, in1, in2, in3, out0, out1)  \
+{                                                               \
+    LASX_MULWH_W_H_128SV(in0, in1, out0);                       \
+    LASX_MULWH_W_H_128SV(in2, in3, out1);                       \
+}
+#define LASX_MULWH_W_H_4_128SV(in0, in1, in2, in3,              \
+                               in4, in5, in6, in7,              \
+                               out0, out1, out2, out3)          \
+{                                                               \
+    LASX_MULWH_W_H_2_128SV(in0, in1, in2, in3, out0, out1);     \
+    LASX_MULWH_W_H_2_128SV(in4, in5, in6, in7, out2, out3);     \
+}
+
+/* Description : The low half of the vector elements are expanded and
+ *               added after being doubled
+ * Arguments   : Inputs  - in0, in1, ~
+ *               Outputs - out0,  out1,  ~
+ * Details     : The in1 vector add the in0 vector after the
+ *               lower half of the two-fold zero extension ( unsigned byte
+ *               to unsigned half word ) and stored to the out vector.
+ */
+#define LASX_SADDW_HU_HU_BU_128SV(in0, in1, out0)                    \
+{                                                                    \
+    __m256i _tmp1_m;                                                 \
+    __m256i _zero_m = { 0 };                                         \
+                                                                     \
+    _tmp1_m = __lasx_xvilvl_b( _zero_m, in1 );                       \
+    out0 = __lasx_xvsadd_hu( in0, _tmp1_m );                         \
+}
+#define LASX_SADDW_HU_HU_BU_2_128SV(in0, in1, in2, in3, out0, out1)  \
+{                                                                    \
+    LASX_SADDW_HU_HU_BU_128SV(in0, in1, out0);                       \
+    LASX_SADDW_HU_HU_BU_128SV(in2, in3, out1);                       \
+}
+#define LASX_SADDW_HU_HU_BU_4_128SV(in0, in1, in2, in3,              \
+                                    in4, in5, in6, in7,              \
+                                    out0, out1, out2, out3)          \
+{                                                                    \
+    LASX_SADDW_HU_HU_BU_2_128SV(in0, in1, in2, in3, out0, out1);     \
+    LASX_SADDW_HU_HU_BU_2_128SV(in4, in5, in6, in7, out2, out3);     \
 }
 
 /* Description : Low 8-bit vector elements unsigned extension to halfword
@@ -1942,46 +2773,46 @@
  * Arguments   : Inputs  - in0, in1, ~
  *               Outputs - out0, out1, ~
  * Details     : The rows of the matrix become columns, and the columns become rows.
- * Example     : LASX_TRANSPOSE8x8_H
- *         in0 : 1,2,3,4, 5,6,7,8, 0,0,0,0, 0,0,0,0
- *         in1 : 8,2,3,4, 5,6,7,8, 0,0,0,0, 0,0,0,0
- *         in2 : 8,2,3,4, 5,6,7,8, 0,0,0,0, 0,0,0,0
- *         in3 : 1,2,3,4, 5,6,7,8, 0,0,0,0, 0,0,0,0
- *         in4 : 9,2,3,4, 5,6,7,8, 0,0,0,0, 0,0,0,0
- *         in5 : 1,2,3,4, 5,6,7,8, 0,0,0,0, 0,0,0,0
- *         in6 : 1,2,3,4, 5,6,7,8, 0,0,0,0, 0,0,0,0
- *         in7 : 9,2,3,4, 5,6,7,8, 0,0,0,0, 0,0,0,0
+ * Example     : LASX_TRANSPOSE8x8_H_128SV
+ *         in0 : 1,2,3,4, 5,6,7,8, 1,2,3,4, 5,6,7,8
+ *         in1 : 8,2,3,4, 5,6,7,8, 8,2,3,4, 5,6,7,8
+ *         in2 : 8,2,3,4, 5,6,7,8, 8,2,3,4, 5,6,7,8
+ *         in3 : 1,2,3,4, 5,6,7,8, 1,2,3,4, 5,6,7,8
+ *         in4 : 9,2,3,4, 5,6,7,8, 9,2,3,4, 5,6,7,8
+ *         in5 : 1,2,3,4, 5,6,7,8, 1,2,3,4, 5,6,7,8
+ *         in6 : 1,2,3,4, 5,6,7,8, 1,2,3,4, 5,6,7,8
+ *         in7 : 9,2,3,4, 5,6,7,8, 9,2,3,4, 5,6,7,8
  *
- *        out0 : 1,8,8,1, 9,1,1,9, 0,0,0,0, 0,0,0,0
- *        out1 : 2,2,2,2, 2,2,2,2, 0,0,0,0, 0,0,0,0
- *        out2 : 3,3,3,3, 3,3,3,3, 0,0,0,0, 0,0,0,0
- *        out3 : 4,4,4,4, 4,4,4,4, 0,0,0,0, 0,0,0,0
- *        out4 : 5,5,5,5, 5,5,5,5, 0,0,0,0, 0,0,0,0
- *        out5 : 6,6,6,6, 6,6,6,6, 0,0,0,0, 0,0,0,0
- *        out6 : 7,7,7,7, 7,7,7,7, 0,0,0,0, 0,0,0,0
- *        out7 : 8,8,8,8, 8,8,8,8, 0,0,0,0, 0,0,0,0
+ *        out0 : 1,8,8,1, 9,1,1,9, 1,8,8,1, 9,1,1,9
+ *        out1 : 2,2,2,2, 2,2,2,2, 2,2,2,2, 2,2,2,2
+ *        out2 : 3,3,3,3, 3,3,3,3, 3,3,3,3, 3,3,3,3
+ *        out3 : 4,4,4,4, 4,4,4,4, 4,4,4,4, 4,4,4,4
+ *        out4 : 5,5,5,5, 5,5,5,5, 5,5,5,5, 5,5,5,5
+ *        out5 : 6,6,6,6, 6,6,6,6, 6,6,6,6, 6,6,6,6
+ *        out6 : 7,7,7,7, 7,7,7,7, 7,7,7,7, 7,7,7,7
+ *        out7 : 8,8,8,8, 8,8,8,8, 8,8,8,8, 8,8,8,8
  */
-#define LASX_TRANSPOSE8x8_H(in0, in1, in2, in3, in4, in5, in6, in7,           \
-                            out0, out1, out2, out3, out4, out5, out6, out7)   \
-{                                                                             \
-    __m256i s0_m, s1_m;                                                       \
-    __m256i tmp0_m, tmp1_m, tmp2_m, tmp3_m;                                   \
-    __m256i tmp4_m, tmp5_m, tmp6_m, tmp7_m;                                   \
-                                                                              \
-    LASX_ILVL_H_2_128SV(in6, in4, in7, in5, s0_m, s1_m);                      \
-    LASX_ILVLH_H_128SV(s1_m, s0_m, tmp1_m, tmp0_m);                           \
-    LASX_ILVH_H_2_128SV(in6, in4, in7, in5, s0_m, s1_m);                      \
-    LASX_ILVLH_H_128SV(s1_m, s0_m, tmp3_m, tmp2_m);                           \
-                                                                              \
-    LASX_ILVL_H_2_128SV(in2, in0, in3, in1, s0_m, s1_m);                      \
-    LASX_ILVLH_H_128SV(s1_m, s0_m, tmp5_m, tmp4_m);                           \
-    LASX_ILVH_H_2_128SV(in2, in0, in3, in1, s0_m, s1_m);                      \
-    LASX_ILVLH_H_128SV(s1_m, s0_m, tmp7_m, tmp6_m);                           \
-                                                                              \
-    LASX_PCKEV_D_4_128SV(tmp0_m, tmp4_m, tmp1_m, tmp5_m, tmp2_m, tmp6_m,      \
-                         tmp3_m, tmp7_m, out0, out2, out4, out6);             \
-    LASX_PCKOD_D_4_128SV(tmp0_m, tmp4_m, tmp1_m, tmp5_m, tmp2_m, tmp6_m,      \
-                         tmp3_m, tmp7_m, out1, out3, out5, out7);             \
+#define LASX_TRANSPOSE8x8_H_128SV(in0, in1, in2, in3, in4, in5, in6, in7,           \
+                                  out0, out1, out2, out3, out4, out5, out6, out7)   \
+{                                                                                   \
+    __m256i s0_m, s1_m;                                                             \
+    __m256i tmp0_m, tmp1_m, tmp2_m, tmp3_m;                                         \
+    __m256i tmp4_m, tmp5_m, tmp6_m, tmp7_m;                                         \
+                                                                                    \
+    LASX_ILVL_H_2_128SV(in6, in4, in7, in5, s0_m, s1_m);                            \
+    LASX_ILVLH_H_128SV(s1_m, s0_m, tmp1_m, tmp0_m);                                 \
+    LASX_ILVH_H_2_128SV(in6, in4, in7, in5, s0_m, s1_m);                            \
+    LASX_ILVLH_H_128SV(s1_m, s0_m, tmp3_m, tmp2_m);                                 \
+                                                                                    \
+    LASX_ILVL_H_2_128SV(in2, in0, in3, in1, s0_m, s1_m);                            \
+    LASX_ILVLH_H_128SV(s1_m, s0_m, tmp5_m, tmp4_m);                                 \
+    LASX_ILVH_H_2_128SV(in2, in0, in3, in1, s0_m, s1_m);                            \
+    LASX_ILVLH_H_128SV(s1_m, s0_m, tmp7_m, tmp6_m);                                 \
+                                                                                    \
+    LASX_PCKEV_D_4_128SV(tmp0_m, tmp4_m, tmp1_m, tmp5_m, tmp2_m, tmp6_m,            \
+                         tmp3_m, tmp7_m, out0, out2, out4, out6);                   \
+    LASX_PCKOD_D_4_128SV(tmp0_m, tmp4_m, tmp1_m, tmp5_m, tmp2_m, tmp6_m,            \
+                         tmp3_m, tmp7_m, out1, out3, out5, out7);                   \
 }
 
 /* Description : Transposes 8x8 block with word elements in vectors
@@ -2241,9 +3072,9 @@
  */
 #define LASX_DP2ADD_H_B_3(in0, in1, in2, out0_m, coeff0, coeff1, coeff2) \
 {                                                                        \
-    out0_m = __lasx_xvdp2_h_b(in0, coeff0);                              \
-    out0_m = __lasx_xvdp2add_h_b(out0_m, in1, coeff1);                   \
-    out0_m = __lasx_xvdp2add_h_b(out0_m, in2, coeff2);                   \
+    LASX_DP2_H_B(in0, coeff0, out0_m);                                   \
+    LASX_DP2ADD_H_B(out0_m, in1, coeff1, out0_m);                        \
+    LASX_DP2ADD_H_B(out0_m, in2, coeff2, out0_m);                        \
 }
 
 /* Description : Each byte element is logically xor'ed with immediate 128
@@ -2649,144 +3480,67 @@
     LASX_SADD_H_2(in4, in5, in6, in7, out2, out3);             \
 }
 
-/* Description : Dot product of byte vector elements
- * Arguments   : Inputs  - mult0, mult1
- *                         cnst0, cnst1
+/* Description : Average with rounding (in0 + in1 + 1) / 2.
+ * Arguments   : Inputs  - in0, in1, in2, in3,
  *               Outputs - out0, out1
- *               Return Type - signed halfword
- * Details     : Signed byte elements from mult0 are multiplied with
- *               signed byte elements from cnst0 producing a result
- *               twice the size of input i.e. signed halfword.
- *               Then this multiplication results of adjacent odd-even elements
- *               are added together and stored to the out vector
- *               (2 signed halfword results)
- * Example     : see LASX_DP2_W_H(mult0, cnst0, out0)
+ * Details     : Each unsigned byte element from 'in0' vector is added with
+ *               each unsigned byte element from 'in1' vector.
+ *               Average with rounding is calculated and written to 'out0'
  */
-#define LASX_DP2_H_B(mult0, cnst0, out0)                          \
-{                                                                 \
-    out0 = __lasx_xvdp2_h_b(mult0, cnst0);                        \
-}
-#define LASX_DP2_H_B_2(mult0, mult1, cnst0, cnst1, out0, out1)    \
-{                                                                 \
-    LASX_DP2_H_B(mult0, cnst0, out0);                             \
-    LASX_DP2_H_B(mult1, cnst1, out1);                             \
-}
-#define LASX_DP2_H_B_4(mult0, mult1, mult2, mult3,                \
-                       cnst0, cnst1, cnst2, cnst3,                \
-                       out0, out1, out2, out3)                    \
-{                                                                 \
-    LASX_DP2_H_B_2(mult0, mult1, cnst0, cnst1, out0, out1);       \
-    LASX_DP2_H_B_2(mult2, mult3, cnst2, cnst3, out2, out3);       \
+#define LASX_AVER_BU( in0, in1, out0 )   \
+{                                        \
+    out0 = __lasx_xvavgr_bu( in0, in1 ); \
 }
 
-/* Description : Dot product of half word vector elements
- * Arguments   : Inputs  - mult0, mult1, ~
- *                         cnst0, cnst1, ~
- *               Outputs - out0,  out1,  ~
- *               Return Type - signed word
- * Details     : Signed half word elements from mult* are multiplied with
- *               signed half word elements from cnst* producing a result
- *               twice the size of input i.e. signed word.
- *               Then this multiplication results of adjacent odd-even elements
- *               are added together and stored to the out vector.
- * Exampe      : LASX_DP2_W_H(mult0, cnst0, out0)
- *               mult0:   1,2,3,4, 5,6,7,8, 1,2,3,4, 5,6,7,8,
- *               cnst0:   8,7,6,5, 4,3,2,1, 8,7,6,5, 4,3,2,1,
- *               out0:     22, 38,  38, 22,  22, 38,  38, 22
- */
-#define LASX_DP2_W_H(mult0, cnst0, out0)                                      \
-{                                                                             \
-    out0 = __lasx_xvdp2_w_h(mult0, cnst0);                                    \
-}
-#define LASX_DP2_W_H_2(mult0, mult1, cnst0, cnst1, out0, out1)                \
-{                                                                             \
-    LASX_DP2_W_H(mult0, cnst0, out0);                                         \
-    LASX_DP2_W_H(mult1, cnst1, out1);                                         \
-}
-#define LASX_DP2_W_H_4(mult0, mult1, mult2, mult3,                            \
-                       cnst0, cnst1, cnst2, cnst3, out0, out1, out2, out3)    \
-{                                                                             \
-    LASX_DP2_W_H_2(mult0, mult1, cnst0, cnst1, out0, out1);                   \
-    LASX_DP2_W_H_2(mult2, mult3, cnst2, cnst3, out2, out3);                   \
-}
-#define LASX_DP2_W_H_8(mult0, mult1, mult2, mult3, mult4, mult5, mult6, mult7, \
-                       cnst0, cnst1, cnst2, cnst3, cnst4, cnst5, cnst6, cnst7, \
-                       out0, out1, out2, out3, out4, out5, out6, out7)         \
-{                                                                              \
-    LASX_DP2_W_H_4(mult0, mult1, mult2, mult3, cnst0, cnst1, cnst2, cnst3      \
-                   out0, out1, out2, out3);                                    \
-    LASX_DP2_W_H_4(mult4, mult5, mult6, mult7, cnst4, cnst5, cnst6, cnst7      \
-                   out4, out5, out6, out7);                                    \
+#define LASX_AVER_BU_2( in0, in1, in2, in3, out0, out1 )  \
+{                                                         \
+    LASX_AVER_BU( in0, in1, out0 );                       \
+    LASX_AVER_BU( in2, in3, out1 );                       \
 }
 
-/* Description : Dot product of word vector elements
- * Arguments   : Inputs  - mult0, mult1, ~
- *                         cnst0, cnst1, ~
- *               Outputs - out0,  out1,  ~
- *               Retrun Type - signed double
- * Details     : Signed word elements from mult* are multiplied with
- *               signed word elements from cnst* producing a result
- *               twice the size of input i.e. signed double word.
- *               Then this multiplication results of adjacent odd-even elements
- *               are added together and stored to the out vector.
- * Example     : see LASX_DP2_W_H(mult0, cnst0, out0)
- */
-#define LASX_DP2_D_W(mult0, cnst0, out0)                                  \
-{                                                                         \
-    out0 = __lasx_xvdp2_d_w(mult0, cnst0);                                \
-}
-#define LASX_DP2_D_W_2(mult0, mult1, cnst0, cnst1, out0, out1)            \
-{                                                                         \
-    LASX_DP2_D_W(mult0, cnst0, out0);                                     \
-    LASX_DP2_D_W(mult1, cnst1, out1);                                     \
-}
-#define LASX_DP2_D_W_4(mult0, mult1, mult2, mult3,                             \
-                       cnst0, cnst1, cnst2, cnst3, out0, out1, out2, out3)     \
-{                                                                              \
-    LASX_DP2_D_W_2(mult0, mult1, cnst0, cnst1, out0, out1);                    \
-    LASX_DP2_D_W_2(mult2, mult3, cnst2, cnst3, out2, out3);                    \
-}
-#define LASX_DP2_D_W_8(mult0, mult1, mult2, mult3, mult4, mult5, mult6, mult7,  \
-                       cnst0, cnst1, cnst2, cnst3, cnst4, cnst5, cnst6, cnst7,  \
-                       out0, out1, out2, out3, out4, out5, out6, out7)          \
-{                                                                               \
-    LASX_DP2_D_W_4(mult0, mult1, mult2, mult3, cnst0, cnst1, cnst2, cnst3,      \
-                   out0, out1, out2, out3);                                     \
-    LASX_DP2_D_W_4(mult4, mult5, mult6, mult7, cnst4, cnst5, cnst6, cnst7,      \
-                   out4, out5, out6, out7);                                     \
+#define LASX_AVER_BU_4( in0, in1, in2, in3, in4, in5, in6, in7,  \
+                        out0, out1, out2, out3 )                 \
+{                                                                \
+    LASX_AVER_BU_2( in0, in1, in2, in3, out0, out1 );            \
+    LASX_AVER_BU_2( in4, in5, in6, in7, out2, out3 );            \
 }
 
-/* Description : Dot product & addition of byte vector elements
- * Arguments   : Inputs  - mult0, mult1
- *                         cnst0, cnst1
+/* Description : Immediate number of elements to slide
+ * Arguments   : Inputs  - in0_0, in0_1, in1_0, in1_1, slide_val
  *               Outputs - out0, out1
- *               Retrun Type - halfword
- * Details     : Signed byte elements from mult0 are multiplied with
- *               signed byte elements from cnst0 producing a result
- *               twice the size of input i.e. signed halfword.
- *               Then this multiplication results of adjacent odd-even elements
- *               are added to the out vector
- *               (2 signed halfword results)
- * Example     : LASX_DP2ADD_H_B(mult0, cnst0, out0)
- *               out0:   1,2,3,4, 1,2,3,4, 1,2,3,4, 1,2,3,4,
- *               mult0:  1,2,3,4, 5,6,7,8, 1,2,3,4, 5,6,7,8, 1,2,3,4, 5,6,7,8, 1,2,3,4, 5,6,7,8
- *               cnst0:  8,7,6,5, 4,3,2,1, 8,7,6,5, 4,3,2,1, 8,7,6,5, 4,3,2,1, 8,7,6,5, 4,3,2,1
- *               out0:    23, 40,  41, 26,  23, 40,  41, 26,  23, 40,  41, 26,  23, 40,  41, 26
- */
-#define LASX_DP2ADD_H_B(mult0, cnst0, out0)                              \
-{                                                                        \
-    out0 = __lasx_xvdp2add_h_b(out0, mult0, cnst0);                      \
+ *               Return Type - as per RTYPE
+ * Details     : Byte elements from 'in0_0' vector are slide into 'in1_0' by
+ *               value specified in 'slide_val'
+ * Example     : LASX_SLDI_B_128SV( in0_0, in1_0, out0, slide_val )
+ *               in0_0:  1,2,3,4, 5,6,7,8, 9,10,11,12, 13,14,15,16
+ *                       17,18,19,20, 21,22,23,24, 25,26,27,28, 29,30,31,32
+ *               in1_0:  33,34,35,36, 37,38,39,40, 41,42,43,44, 45,46,47,48
+ *                       49,50,51,52, 53,54,55,56, 57,58,59,60, 61,62,63,64
+ *               slide_val:  1
+ *               out0:   2,3,4, 5,6,7,8, 9,10,11,12, 13,14,15,16,33
+ *                       18,19,20, 21,22,23,24, 25,26,27,28, 29,30,31,32,49
+*/
+#define LASX_SLDI_B_128SV( in0_0, in1_0, out0, slide_val ) \
+{                                                          \
+    out0 = __lasx_xvextrcoli_b( in0_0, in1_0, slide_val ); \
 }
-#define LASX_DP2ADD_H_B_2(mult0, mult1, cnst0, cnst1, out0, out1)        \
-{                                                                        \
-    LASX_DP2ADD_H_B(mult0, cnst0, out0);                                 \
-    LASX_DP2ADD_H_B(mult1, cnst1, out1);                                 \
+
+#define LASX_SLDI_B_2_128SV( in0_0, in0_1, in1_0, in1_1,   \
+                             out0, out1, slide_val )       \
+{                                                          \
+    LASX_SLDI_B_128SV( in0_0, in1_0, out0, slide_val );    \
+    LASX_SLDI_B_128SV( in0_1, in1_1, out1, slide_val );    \
 }
-#define LASX_DP2ADD_H_B_4(mult0, mult1, mult2, mult3,                          \
-                          cnst0, cnst1, cnst2, cnst3, out0, out1, out2, out3)  \
-{                                                                              \
-    LASX_DP2ADD_H_B_2(mult0, mult1, cnst0, cnst1, out0, out1);                 \
-    LASX_DP2ADD_H_B_2(mult2, mult3, cnst2, cnst3, out2, out3);                 \
+
+#define LASX_SLDI_B_4_128SV( in0_0, in0_1, in0_2, in0_3,   \
+                             in1_0, in1_1, in1_2, in1_3,   \
+                             out0, out1, out2, out3,       \
+                             slide_val )                   \
+{                                                          \
+    LASX_SLDI_B_2_128SV( in0_0, in0_1, in1_0, in1_1,       \
+                         out0, out1, slide_val );          \
+    LASX_SLDI_B_2_128SV( in0_2, in0_3, in1_2, in1_3,       \
+                         out2, out3, slide_val );          \
 }
 
 /* Description : Butterfly of 4 input vectors
@@ -2796,11 +3550,11 @@
  */
 #define LASX_BUTTERFLY_4(RTYPE, in0, in1, in2, in3, out0, out1, out2, out3)  \
 {                                                                            \
-    out0 = (RTYPE)in0 + (RTYPE)in3;                                          \
-    out1 = (RTYPE)in1 + (RTYPE)in2;                                          \
+    out0 = (__m256i)( (RTYPE)in0 + (RTYPE)in3 );                             \
+    out1 = (__m256i)( (RTYPE)in1 + (RTYPE)in2 );                             \
                                                                              \
-    out2 = (RTYPE)in1 - (RTYPE)in2;                                          \
-    out3 = (RTYPE)in0 - (RTYPE)in3;                                          \
+    out2 = (__m256i)( (RTYPE)in1 - (RTYPE)in2 );                             \
+    out3 = (__m256i)( (RTYPE)in0 - (RTYPE)in3 );                             \
 }
 
 /* Description : Butterfly of 8 input vectors
@@ -2811,15 +3565,16 @@
 #define LASX_BUTTERFLY_8(RTYPE, in0, in1, in2, in3, in4, in5, in6, in7,    \
                          out0, out1, out2, out3, out4, out5, out6, out7)   \
 {                                                                          \
-    out0 = (RTYPE)in0 + (RTYPE)in7;                                        \
-    out1 = (RTYPE)in1 + (RTYPE)in6;                                        \
-    out2 = (RTYPE)in2 + (RTYPE)in5;                                        \
-    out3 = (RTYPE)in3 + (RTYPE)in4;                                        \
+    out0 = (__m256i)( (RTYPE)in0 + (RTYPE)in7 );                           \
+    out1 = (__m256i)( (RTYPE)in1 + (RTYPE)in6 );                           \
+    out2 = (__m256i)( (RTYPE)in2 + (RTYPE)in5 );                           \
+    out3 = (__m256i)( (RTYPE)in3 + (RTYPE)in4 );                           \
                                                                            \
-    out4 = (RTYPE)in3 - (RTYPE)in4;                                        \
-    out5 = (RTYPE)in2 - (RTYPE)in5;                                        \
-    out6 = (RTYPE)in1 - (RTYPE)in6;                                        \
-    out7 = (RTYPE)in0 - (RTYPE)in7;                                        \
+    out4 = (__m256i)( (RTYPE)in3 - (RTYPE)in4 );                           \
+    out5 = (__m256i)( (RTYPE)in2 - (RTYPE)in5 );                           \
+    out6 = (__m256i)( (RTYPE)in1 - (RTYPE)in6 );                           \
+    out7 = (__m256i)( (RTYPE)in0 - (RTYPE)in7 );                           \
 }
 
+#endif /* GENERIC_MACROS_LASX_H */
 #endif /* AVUTIL_LOONGARCH_GENERIC_MACROS_LASX_H */

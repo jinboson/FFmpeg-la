@@ -36,7 +36,7 @@
     src0    = __lasx_xvpermi_q(src0, src1, 0x02);                 \
     src2    = __lasx_xvpermi_q(src2, src3, 0x02);                 \
     LASX_ILVL_B_2_128SV(zero, src0, zero, src2, src0, src2);      \
-    LASX_DP2_W_H_2(filter0, filter1, src0, src2, out0, out1);     \
+    LASX_DP2_W_H_2(filter0, src0, filter1, src2, out0, out1);     \
     src0    = __lasx_xvhaddw_d_w(out0, out0);                     \
     src1    = __lasx_xvhaddw_d_w(out1, out1);                     \
     out0    = __lasx_xvpackev_d(src1, src0);                      \

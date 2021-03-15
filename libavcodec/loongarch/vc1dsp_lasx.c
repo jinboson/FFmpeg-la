@@ -636,8 +636,8 @@ static void put_vc1_mspel_mc_h_v_lasx(uint8_t *dst, const uint8_t *src,
     t5    = __lasx_xvsra_h(t5, const_sh);
     t6    = __lasx_xvsra_h(t6, const_sh);
     t7    = __lasx_xvsra_h(t7, const_sh);
-    LASX_TRANSPOSE8x8_H(t0, t1, t2, t3, t4, t5, t6, t7,
-                        t0, t1, t2, t3, t4, t5, t6, t7);
+    LASX_TRANSPOSE8x8_H_128SV(t0, t1, t2, t3, t4, t5, t6, t7,
+                              t0, t1, t2, t3, t4, t5, t6, t7);
     para_v  = para_value[hmode - 1];
     const_para0_3 = __lasx_xvldrepl_h(para_v, 0);
     const_para1_2 = __lasx_xvldrepl_h(para_v, 2);

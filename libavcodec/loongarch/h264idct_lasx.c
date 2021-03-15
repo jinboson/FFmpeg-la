@@ -153,8 +153,8 @@ void ff_h264_idct8_addblk_lasx(uint8_t *dst, int16_t *src,
 
     BUTTERFLY_8_H(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7,
                   res0, res1, res2, res3, res4, res5, res6, res7);
-    LASX_TRANSPOSE8x8_H(res0, res1, res2, res3, res4, res5, res6, res7,
-                        res0, res1, res2, res3, res4, res5, res6, res7);
+    LASX_TRANSPOSE8x8_H_128SV(res0, res1, res2, res3, res4, res5, res6, res7,
+                              res0, res1, res2, res3, res4, res5, res6, res7);
 
     LASX_UNPCK_L_W_H_8(res0, res1, res2, res3, res4, res5, res6, res7,
                        tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7);
