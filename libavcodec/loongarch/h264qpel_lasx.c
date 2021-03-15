@@ -43,9 +43,9 @@ static const uint8_t luma_mask_arr[16 * 6] __attribute__((aligned(0x40))) = {
     tmp0_m = __lasx_xvshuf_b(in1, in0, mask0);             \
     out0_m = __lasx_xvhaddw_h_b(tmp0_m, tmp0_m);           \
     tmp0_m = __lasx_xvshuf_b(in1, in0, mask1);             \
-    out0_m = __lasx_xvdp2add_h_b(out0_m, minus5b, tmp0_m); \
+    LASX_DP2ADD_H_B(out0_m, minus5b, tmp0_m, out0_m);      \
     tmp0_m = __lasx_xvshuf_b(in1, in0, mask2);             \
-    out0_m = __lasx_xvdp2add_h_b(out0_m, plus20b, tmp0_m); \
+    LASX_DP2ADD_H_B(out0_m, plus20b, tmp0_m, out0_m);      \
                                                            \
     out0_m;                                                \
 } )
@@ -55,8 +55,8 @@ static const uint8_t luma_mask_arr[16 * 6] __attribute__((aligned(0x40))) = {
     __m256i out0_m;                                            \
                                                                \
     out0_m = __lasx_xvdp2_h_b(in0, coeff0);                    \
-    out0_m = __lasx_xvdp2add_h_b(out0_m, in1, coeff1);         \
-    out0_m = __lasx_xvdp2add_h_b(out0_m, in2, coeff2);         \
+    LASX_DP2ADD_H_B(out0_m, in1, coeff1, out0_m);              \
+    LASX_DP2ADD_H_B(out0_m, in2, coeff2, out0_m);              \
                                                                \
     out0_m;                                                    \
 } )
@@ -134,10 +134,8 @@ void avc_luma_hv_qrt_and_aver_dst_16x16_lasx(const uint8_t *src_x,
         vt_out0 = __lasx_xvssrarni_b_h(vt_out1, vt_out0, 5);
         vt_out2 = __lasx_xvssrarni_b_h(vt_out3, vt_out2, 5);
 
-        out0 = __lasx_xvaddwl_h_b(hz_out0, vt_out0);
-        out1 = __lasx_xvaddwh_h_b(hz_out0, vt_out0);
-        out2 = __lasx_xvaddwl_h_b(hz_out2, vt_out2);
-        out3 = __lasx_xvaddwh_h_b(hz_out2, vt_out2);
+        LASX_ADDWL_H_B_2_128SV(hz_out0, vt_out0, hz_out2, vt_out2, out0, out2);
+        LASX_ADDWH_H_B_2_128SV(hz_out0, vt_out0, hz_out2, vt_out2, out1, out3);
         tmp0 = __lasx_xvssrarni_b_h(out1, out0, 1);
         tmp1 = __lasx_xvssrarni_b_h(out3, out2, 1);
 
@@ -239,10 +237,8 @@ avc_luma_hv_qrt_16x16_lasx(const uint8_t *src_x, const uint8_t *src_y, uint8_t *
         vt_out0 = __lasx_xvssrarni_b_h(vt_out1, vt_out0, 5);
         vt_out2 = __lasx_xvssrarni_b_h(vt_out3, vt_out2, 5);
 
-        out0 = __lasx_xvaddwl_h_b(hz_out0, vt_out0);
-        out1 = __lasx_xvaddwh_h_b(hz_out0, vt_out0);
-        out2 = __lasx_xvaddwl_h_b(hz_out2, vt_out2);
-        out3 = __lasx_xvaddwh_h_b(hz_out2, vt_out2);
+        LASX_ADDWL_H_B_2_128SV(hz_out0, vt_out0, hz_out2, vt_out2, out0, out2);
+        LASX_ADDWH_H_B_2_128SV(hz_out0, vt_out0, hz_out2, vt_out2, out1, out3);
         tmp0 = __lasx_xvssrarni_b_h(out1, out0, 1);
         tmp1 = __lasx_xvssrarni_b_h(out3, out2, 1);
 
@@ -1032,26 +1028,25 @@ avg_pixels16_l2_8_lsx(uint8_t *dst, const uint8_t *src, uint8_t *half,
     );
 }
 
-#define QPEL8_H_LOWPASS(out_v)                             \
-    src00 = LASX_LD(src - 2);                              \
-    src += srcStride;                                      \
-    src10 = LASX_LD(src - 2);                              \
-    src += srcStride;                                      \
-    src00 = __lasx_xvpermi_q(src00, src10, 0x02);          \
-    src01 = __lasx_xvshuf_b(src00, src00, (__m256i)mask1); \
-    src02 = __lasx_xvshuf_b(src00, src00, (__m256i)mask2); \
-    src03 = __lasx_xvshuf_b(src00, src00, (__m256i)mask3); \
-    src04 = __lasx_xvshuf_b(src00, src00, (__m256i)mask4); \
-    src05 = __lasx_xvshuf_b(src00, src00, (__m256i)mask5); \
-    src02 = __lasx_xvaddwl_h_bu(src02, src03);             \
-    src01 = __lasx_xvaddwl_h_bu(src01, src04);             \
-    src00 = __lasx_xvaddwl_h_bu(src00, src05);             \
-    src02 = __lasx_xvmul_h(src02, h_20);                   \
-    src01 = __lasx_xvmul_h(src01, h_5);                    \
-    src02 = __lasx_xvssub_h(src02, src01);                 \
-    src02 = __lasx_xvsadd_h(src02, src00);                 \
-    src02 = __lasx_xvsadd_h(src02, h_16);                  \
-    out_v = __lasx_xvssrani_bu_h(src02, src02, 5);         \
+#define QPEL8_H_LOWPASS(out_v)                                          \
+    src00 = LASX_LD(src - 2);                                           \
+    src += srcStride;                                                   \
+    src10 = LASX_LD(src - 2);                                           \
+    src += srcStride;                                                   \
+    src00 = __lasx_xvpermi_q(src00, src10, 0x02);                       \
+    src01 = __lasx_xvshuf_b(src00, src00, (__m256i)mask1);              \
+    src02 = __lasx_xvshuf_b(src00, src00, (__m256i)mask2);              \
+    src03 = __lasx_xvshuf_b(src00, src00, (__m256i)mask3);              \
+    src04 = __lasx_xvshuf_b(src00, src00, (__m256i)mask4);              \
+    src05 = __lasx_xvshuf_b(src00, src00, (__m256i)mask5);              \
+    LASX_ADDWL_H_BU_2_128SV(src02, src03, src01, src04, src02, src01);  \
+    LASX_ADDWL_H_BU_128SV(src00, src05, src00);                         \
+    src02 = __lasx_xvmul_h(src02, h_20);                                \
+    src01 = __lasx_xvmul_h(src01, h_5);                                 \
+    src02 = __lasx_xvssub_h(src02, src01);                              \
+    src02 = __lasx_xvsadd_h(src02, src00);                              \
+    src02 = __lasx_xvsadd_h(src02, h_16);                               \
+    out_v = __lasx_xvssrani_bu_h(src02, src02, 5);                      \
 
 static av_always_inline void
 put_h264_qpel8_h_lowpass_lasx(uint8_t *dst, const uint8_t *src, int dstStride,
@@ -1088,24 +1083,23 @@ put_h264_qpel8_h_lowpass_lasx(uint8_t *dst, const uint8_t *src, int dstStride,
     LASX_ST_D_2(out3, 0, 2, dst, dstStride);
 }
 
-#define QPEL8_V_LOWPASS(src0, src1, src2, src3, src4, src5, src6, \
-                        tmp0, tmp1, tmp2, tmp3, tmp4, tmp5)       \
-{                                                                 \
-    tmp0 = __lasx_xvpermi_q(src0, src1, 0x02);                    \
-    tmp1 = __lasx_xvpermi_q(src1, src2, 0x02);                    \
-    tmp2 = __lasx_xvpermi_q(src2, src3, 0x02);                    \
-    tmp3 = __lasx_xvpermi_q(src3, src4, 0x02);                    \
-    tmp4 = __lasx_xvpermi_q(src4, src5, 0x02);                    \
-    tmp5 = __lasx_xvpermi_q(src5, src6, 0x02);                    \
-    tmp2 = __lasx_xvaddwl_h_bu(tmp2, tmp3);                       \
-    tmp1 = __lasx_xvaddwl_h_bu(tmp1, tmp4);                       \
-    tmp0 = __lasx_xvaddwl_h_bu(tmp0, tmp5);                       \
-    tmp2 = __lasx_xvmul_h(tmp2, h_20);                            \
-    tmp1 = __lasx_xvmul_h(tmp1, h_5);                             \
-    tmp2 = __lasx_xvssub_h(tmp2, tmp1);                           \
-    tmp2 = __lasx_xvsadd_h(tmp2, tmp0);                           \
-    tmp2 = __lasx_xvsadd_h(tmp2, h_16);                           \
-    tmp2 = __lasx_xvssrani_bu_h(tmp2, tmp2, 5);                   \
+#define QPEL8_V_LOWPASS(src0, src1, src2, src3, src4, src5, src6,       \
+                        tmp0, tmp1, tmp2, tmp3, tmp4, tmp5)             \
+{                                                                       \
+    tmp0 = __lasx_xvpermi_q(src0, src1, 0x02);                          \
+    tmp1 = __lasx_xvpermi_q(src1, src2, 0x02);                          \
+    tmp2 = __lasx_xvpermi_q(src2, src3, 0x02);                          \
+    tmp3 = __lasx_xvpermi_q(src3, src4, 0x02);                          \
+    tmp4 = __lasx_xvpermi_q(src4, src5, 0x02);                          \
+    tmp5 = __lasx_xvpermi_q(src5, src6, 0x02);                          \
+    LASX_ADDWL_H_BU_2_128SV(tmp2, tmp3, tmp1, tmp4, tmp2, tmp1);  \
+    LASX_ADDWL_H_BU_128SV(tmp0, tmp5, tmp0);                         \
+    tmp2 = __lasx_xvmul_h(tmp2, h_20);                                  \
+    tmp1 = __lasx_xvmul_h(tmp1, h_5);                                   \
+    tmp2 = __lasx_xvssub_h(tmp2, tmp1);                                 \
+    tmp2 = __lasx_xvsadd_h(tmp2, tmp0);                                 \
+    tmp2 = __lasx_xvsadd_h(tmp2, h_16);                                 \
+    tmp2 = __lasx_xvssrani_bu_h(tmp2, tmp2, 5);                         \
 }
 
 static av_always_inline void
@@ -1205,52 +1199,49 @@ avg_h264_qpel8_v_lowpass_lasx(uint8_t *dst, const uint8_t *src, int dstStride,
     LASX_ST_D_2(tmp09, 0, 2, dst, dstStride);
 }
 
-#define QPEL8_HV_LOWPASS_H(tmp)                            \
-{                                                          \
-    src00 = LASX_LD(src - 2);                              \
-    src += srcStride;                                      \
-    src10 = LASX_LD(src - 2);                              \
-    src += srcStride;                                      \
-    src00 = __lasx_xvpermi_q(src00, src10, 0x02);          \
-    src01 = __lasx_xvshuf_b(src00, src00, (__m256i)mask1); \
-    src02 = __lasx_xvshuf_b(src00, src00, (__m256i)mask2); \
-    src03 = __lasx_xvshuf_b(src00, src00, (__m256i)mask3); \
-    src04 = __lasx_xvshuf_b(src00, src00, (__m256i)mask4); \
-    src05 = __lasx_xvshuf_b(src00, src00, (__m256i)mask5); \
-    src02 = __lasx_xvaddwl_h_bu(src02, src03);             \
-    src01 = __lasx_xvaddwl_h_bu(src01, src04);             \
-    src00 = __lasx_xvaddwl_h_bu(src00, src05);             \
-    src02 = __lasx_xvmul_h(src02, h_20);                   \
-    src01 = __lasx_xvmul_h(src01, h_5);                    \
-    src02 = __lasx_xvssub_h(src02, src01);                 \
-    tmp  = __lasx_xvsadd_h(src02, src00);                  \
+#define QPEL8_HV_LOWPASS_H(tmp)                                         \
+{                                                                       \
+    src00 = LASX_LD(src - 2);                                           \
+    src += srcStride;                                                   \
+    src10 = LASX_LD(src - 2);                                           \
+    src += srcStride;                                                   \
+    src00 = __lasx_xvpermi_q(src00, src10, 0x02);                       \
+    src01 = __lasx_xvshuf_b(src00, src00, (__m256i)mask1);              \
+    src02 = __lasx_xvshuf_b(src00, src00, (__m256i)mask2);              \
+    src03 = __lasx_xvshuf_b(src00, src00, (__m256i)mask3);              \
+    src04 = __lasx_xvshuf_b(src00, src00, (__m256i)mask4);              \
+    src05 = __lasx_xvshuf_b(src00, src00, (__m256i)mask5);              \
+    LASX_ADDWL_H_BU_2_128SV(src02, src03, src01, src04, src02, src01);  \
+    LASX_ADDWL_H_BU_128SV(src00, src05, src00);                         \
+    src02 = __lasx_xvmul_h(src02, h_20);                                \
+    src01 = __lasx_xvmul_h(src01, h_5);                                 \
+    src02 = __lasx_xvssub_h(src02, src01);                              \
+    tmp  = __lasx_xvsadd_h(src02, src00);                               \
 }
 
-#define QPEL8_HV_LOWPASS_V(src0, src1, src2, src3,     \
-                           src4, src5, temp0, temp1,   \
-                           temp2, temp3, temp4, temp5, \
-                           out)                        \
-{                                                      \
-    temp0 = __lasx_xvaddwl_w_h(src2, src3);            \
-    temp1 = __lasx_xvaddwh_w_h(src2, src3);            \
-    temp2 = __lasx_xvaddwl_w_h(src1, src4);            \
-    temp3 = __lasx_xvaddwh_w_h(src1, src4);            \
-    temp4 = __lasx_xvaddwl_w_h(src0, src5);            \
-    temp5 = __lasx_xvaddwh_w_h(src0, src5);            \
-    temp0 = __lasx_xvmul_w(temp0, w_20);               \
-    temp1 = __lasx_xvmul_w(temp1, w_20);               \
-    temp2 = __lasx_xvmul_w(temp2, w_5);                \
-    temp3 = __lasx_xvmul_w(temp3, w_5);                \
-    temp0 = __lasx_xvssub_w(temp0, temp2);             \
-    temp1 = __lasx_xvssub_w(temp1, temp3);             \
-    temp0 = __lasx_xvsadd_w(temp0, temp4);             \
-    temp1 = __lasx_xvsadd_w(temp1, temp5);             \
-    temp0 = __lasx_xvsadd_w(temp0, w_512);             \
-    temp1 = __lasx_xvsadd_w(temp1, w_512);             \
-    temp0 = __lasx_xvssrani_hu_w(temp0, temp0, 10);    \
-    temp1 = __lasx_xvssrani_hu_w(temp1, temp1, 10);    \
-    temp0 = __lasx_xvpackev_d(temp1, temp0);           \
-    out   = __lasx_xvssrani_bu_h(temp0, temp0, 0);     \
+#define QPEL8_HV_LOWPASS_V(src0, src1, src2, src3,                     \
+                           src4, src5, temp0, temp1,                   \
+                           temp2, temp3, temp4, temp5,                 \
+                           out)                                        \
+{                                                                      \
+    LASX_ADDWL_W_H_2_128SV(src2, src3, src1, src4, temp0, temp2);      \
+    LASX_ADDWH_W_H_2_128SV(src2, src3, src1, src4, temp1, temp3);      \
+    LASX_ADDWL_W_H_128SV(src0, src5, temp4);                           \
+    LASX_ADDWH_W_H_128SV(src0, src5, temp5);                           \
+    temp0 = __lasx_xvmul_w(temp0, w_20);                               \
+    temp1 = __lasx_xvmul_w(temp1, w_20);                               \
+    temp2 = __lasx_xvmul_w(temp2, w_5);                                \
+    temp3 = __lasx_xvmul_w(temp3, w_5);                                \
+    temp0 = __lasx_xvssub_w(temp0, temp2);                             \
+    temp1 = __lasx_xvssub_w(temp1, temp3);                             \
+    temp0 = __lasx_xvsadd_w(temp0, temp4);                             \
+    temp1 = __lasx_xvsadd_w(temp1, temp5);                             \
+    temp0 = __lasx_xvsadd_w(temp0, w_512);                             \
+    temp1 = __lasx_xvsadd_w(temp1, w_512);                             \
+    temp0 = __lasx_xvssrani_hu_w(temp0, temp0, 10);                    \
+    temp1 = __lasx_xvssrani_hu_w(temp1, temp1, 10);                    \
+    temp0 = __lasx_xvpackev_d(temp1, temp0);                           \
+    out   = __lasx_xvssrani_bu_h(temp0, temp0, 0);                     \
 }
 
 static av_always_inline void

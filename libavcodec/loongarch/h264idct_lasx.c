@@ -236,7 +236,7 @@ void ff_h264_idct4x4_addblk_dc_lasx(uint8_t *dst, int16_t *src,
     LASX_LD_4(dst, dst_stride, src0, src1, src2, src3);
     LASX_ILVL_W_2_128SV(src1, src0, src3, src2, src0, src1);
     pred = __lasx_xvpermi_q(src0, src1, 0x02);
-    pred = __lasx_xvaddw_h_h_bu(input_dc, pred);
+    LASX_ADDW_H_H_BU_128SV(input_dc, pred, pred);
     LASX_CLIP_H_0_255(pred, pred);
     out = __lasx_xvpickev_b(pred, pred);
     LASX_ST_W_4(out, 0, 1, 4, 5, dst, dst_stride);

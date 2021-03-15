@@ -933,14 +933,14 @@ void ff_biweight_h264_pixels16_8_lasx(uint8_t *dst, uint8_t *src,
     LASX_ILVLH_B_4(dst0, src0, dst1, src1, dst2, src2, dst3, src3,
                    vec1, vec0, vec3, vec2, vec5, vec4, vec7, vec6);
 
-    tmp0 = __lasx_xvdp2add_h_b(offset, wgt, vec0);
-    tmp1 = __lasx_xvdp2add_h_b(offset, wgt, vec1);
-    tmp2 = __lasx_xvdp2add_h_b(offset, wgt, vec2);
-    tmp3 = __lasx_xvdp2add_h_b(offset, wgt, vec3);
-    tmp4 = __lasx_xvdp2add_h_b(offset, wgt, vec4);
-    tmp5 = __lasx_xvdp2add_h_b(offset, wgt, vec5);
-    tmp6 = __lasx_xvdp2add_h_b(offset, wgt, vec6);
-    tmp7 = __lasx_xvdp2add_h_b(offset, wgt, vec7);
+    LASX_DP2ADD_H_B(offset, wgt, vec0, tmp0);
+    LASX_DP2ADD_H_B(offset, wgt, vec1, tmp1);
+    LASX_DP2ADD_H_B(offset, wgt, vec2, tmp2);
+    LASX_DP2ADD_H_B(offset, wgt, vec3, tmp3);
+    LASX_DP2ADD_H_B(offset, wgt, vec4, tmp4);
+    LASX_DP2ADD_H_B(offset, wgt, vec5, tmp5);
+    LASX_DP2ADD_H_B(offset, wgt, vec6, tmp6);
+    LASX_DP2ADD_H_B(offset, wgt, vec7, tmp7);
 
     tmp0 = __lasx_xvsra_h(tmp0, denom);
     tmp1 = __lasx_xvsra_h(tmp1, denom);
@@ -994,14 +994,14 @@ void ff_biweight_h264_pixels16_8_lasx(uint8_t *dst, uint8_t *src,
         LASX_ILVLH_B_4(dst0, src0, dst1, src1, dst2, src2, dst3, src3,
                        vec1, vec0, vec3, vec2, vec5, vec4, vec7, vec6);
 
-        tmp0 = __lasx_xvdp2add_h_b(offset, wgt, vec0);
-        tmp1 = __lasx_xvdp2add_h_b(offset, wgt, vec1);
-        tmp2 = __lasx_xvdp2add_h_b(offset, wgt, vec2);
-        tmp3 = __lasx_xvdp2add_h_b(offset, wgt, vec3);
-        tmp4 = __lasx_xvdp2add_h_b(offset, wgt, vec4);
-        tmp5 = __lasx_xvdp2add_h_b(offset, wgt, vec5);
-        tmp6 = __lasx_xvdp2add_h_b(offset, wgt, vec6);
-        tmp7 = __lasx_xvdp2add_h_b(offset, wgt, vec7);
+        LASX_DP2ADD_H_B(offset, wgt, vec0, tmp0);
+        LASX_DP2ADD_H_B(offset, wgt, vec1, tmp1);
+        LASX_DP2ADD_H_B(offset, wgt, vec2, tmp2);
+        LASX_DP2ADD_H_B(offset, wgt, vec3, tmp3);
+        LASX_DP2ADD_H_B(offset, wgt, vec4, tmp4);
+        LASX_DP2ADD_H_B(offset, wgt, vec5, tmp5);
+        LASX_DP2ADD_H_B(offset, wgt, vec6, tmp6);
+        LASX_DP2ADD_H_B(offset, wgt, vec7, tmp7);
 
         tmp0 = __lasx_xvsra_h(tmp0, denom);
         tmp1 = __lasx_xvsra_h(tmp1, denom);
@@ -1070,8 +1070,8 @@ static void avc_biwgt_8x4_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     LASX_PCKEV_Q(tmp1, tmp0, dst0);
     LASX_XORI_B_2_128(src0, dst0);
     LASX_ILVLH_B(dst0, src0, vec1, vec0);
-    tmp0 = __lasx_xvdp2add_h_b(offset, wgt, vec0);
-    tmp1 = __lasx_xvdp2add_h_b(offset, wgt, vec1);
+    LASX_DP2ADD_H_B(offset, wgt, vec0, tmp0);
+    LASX_DP2ADD_H_B(offset, wgt, vec1, tmp1);
     tmp0 = __lasx_xvsra_h(tmp0, denom);
     tmp1 = __lasx_xvsra_h(tmp1, denom);
     LASX_CLIP_H_0_255_2(tmp0, tmp1, tmp0, tmp1);
@@ -1117,10 +1117,10 @@ static void avc_biwgt_8x8_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
 
     LASX_XORI_B_4_128(src0, src1, dst0, dst1);
     LASX_ILVLH_B_2(dst0, src0, dst1, src1, vec1, vec0, vec3, vec2);
-    tmp0 = __lasx_xvdp2add_h_b(offset, wgt, vec0);
-    tmp1 = __lasx_xvdp2add_h_b(offset, wgt, vec1);
-    tmp2 = __lasx_xvdp2add_h_b(offset, wgt, vec2);
-    tmp3 = __lasx_xvdp2add_h_b(offset, wgt, vec3);
+    LASX_DP2ADD_H_B(offset, wgt, vec0, tmp0);
+    LASX_DP2ADD_H_B(offset, wgt, vec1, tmp1);
+    LASX_DP2ADD_H_B(offset, wgt, vec2, tmp2);
+    LASX_DP2ADD_H_B(offset, wgt, vec3, tmp3);
     tmp0 = __lasx_xvsra_h(tmp0, denom);
     tmp1 = __lasx_xvsra_h(tmp1, denom);
     tmp2 = __lasx_xvsra_h(tmp2, denom);
@@ -1187,14 +1187,14 @@ static void avc_biwgt_8x16_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     LASX_XORI_B_8_128(src0, src1, src2, src3, dst0, dst1, dst2, dst3);
     LASX_ILVLH_B_4(dst0, src0, dst1, src1, dst2, src2, dst3, src3,
                   vec1, vec0, vec3, vec2, vec5, vec4, vec7, vec6);
-    tmp0 = __lasx_xvdp2add_h_b(offset, wgt, vec0);
-    tmp1 = __lasx_xvdp2add_h_b(offset, wgt, vec1);
-    tmp2 = __lasx_xvdp2add_h_b(offset, wgt, vec2);
-    tmp3 = __lasx_xvdp2add_h_b(offset, wgt, vec3);
-    tmp4 = __lasx_xvdp2add_h_b(offset, wgt, vec4);
-    tmp5 = __lasx_xvdp2add_h_b(offset, wgt, vec5);
-    tmp6 = __lasx_xvdp2add_h_b(offset, wgt, vec6);
-    tmp7 = __lasx_xvdp2add_h_b(offset, wgt, vec7);
+    LASX_DP2ADD_H_B(offset, wgt, vec0, tmp0);
+    LASX_DP2ADD_H_B(offset, wgt, vec1, tmp1);
+    LASX_DP2ADD_H_B(offset, wgt, vec2, tmp2);
+    LASX_DP2ADD_H_B(offset, wgt, vec3, tmp3);
+    LASX_DP2ADD_H_B(offset, wgt, vec4, tmp4);
+    LASX_DP2ADD_H_B(offset, wgt, vec5, tmp5);
+    LASX_DP2ADD_H_B(offset, wgt, vec6, tmp6);
+    LASX_DP2ADD_H_B(offset, wgt, vec7, tmp7);
     tmp0 = __lasx_xvsra_h(tmp0, denom);
     tmp1 = __lasx_xvsra_h(tmp1, denom);
     tmp2 = __lasx_xvsra_h(tmp2, denom);
@@ -1257,7 +1257,7 @@ static void avc_biwgt_4x2_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     LASX_ILVL_W_128SV(tmp1, tmp0, dst0);
     LASX_XORI_B_2_128(src0, dst0);
     LASX_ILVL_B_128SV(dst0, src0, vec0);
-    tmp0 = __lasx_xvdp2add_h_b(offset, wgt, vec0);
+    LASX_DP2ADD_H_B(offset, wgt, vec0, tmp0);
     tmp0 = __lasx_xvsra_h(tmp0, denom);
     LASX_CLIP_H_0_255(tmp0, tmp0);
     LASX_PCKEV_B_128SV(tmp0, tmp0, tmp0);
@@ -1290,7 +1290,7 @@ static void avc_biwgt_4x4_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     LASX_ILVL_W_128SV(tmp1, tmp0, dst0);
     LASX_XORI_B_2_128(src0, dst0);
     LASX_ILVL_B(dst0, src0, vec0);
-    tmp0 = __lasx_xvdp2add_h_b(offset, wgt, vec0);
+    LASX_DP2ADD_H_B(offset, wgt, vec0, tmp0);
     tmp0 = __lasx_xvsra_h(tmp0, denom);
     LASX_CLIP_H_0_255(tmp0, tmp0);
     LASX_PCKEV_B_128SV(tmp0, tmp0, tmp0);
@@ -1327,8 +1327,8 @@ static void avc_biwgt_4x8_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     LASX_PCKEV_Q(tmp1, tmp0, dst0);
     LASX_XORI_B_2_128(src0, dst0);
     LASX_ILVLH_B(dst0, src0, vec1, vec0);
-    tmp0 = __lasx_xvdp2add_h_b(offset, wgt, vec0);
-    tmp1 = __lasx_xvdp2add_h_b(offset, wgt, vec1);
+    LASX_DP2ADD_H_B(offset, wgt, vec0, tmp0);
+    LASX_DP2ADD_H_B(offset, wgt, vec1, tmp1);
     tmp0 = __lasx_xvsra_h(tmp0, denom);
     tmp1 = __lasx_xvsra_h(tmp1, denom);
     LASX_CLIP_H_0_255_2(tmp0, tmp1, tmp0, tmp1);
