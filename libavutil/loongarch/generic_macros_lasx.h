@@ -666,7 +666,7 @@
 }
 #define LASX_ADDWH_H_B_2_128SV(in0, in1, in2, in3, out0, out1)                \
 {                                                                             \
-    LASX_ADDWH_H_B_128SV(in0, in0, out0);                                     \
+    LASX_ADDWH_H_B_128SV(in0, in1, out0);                                     \
     LASX_ADDWH_H_B_128SV(in2, in3, out1);                                     \
 }
 #define LASX_ADDWH_H_B_4_128SV(in0, in1, in2, in3,                            \
@@ -794,6 +794,34 @@
 {                                                                              \
     LASX_ADDWL_H_BU_2_128SV(in0, in1, in2, in3, out0, out1);                   \
     LASX_ADDWL_H_BU_2_128SV(in4, in5, in6, in7, out2, out3);                   \
+}
+
+/* Description : The low half of the vector elements are expanded and
+ *               added after being doubled
+ * Arguments   : Inputs  - in0, in1, ~
+ *                         in0, in1, ~
+ *               Outputs - out0,  out1,  ~
+ * Details     : In1 vector plus in0 vector after double zero extension
+ *               ( unsigned byte to half word ),add and stored to the out vector.
+ * Example     : reference to LASX_ADDW_W_W_H_128SV(in0, in1, out0)
+ */
+#define LASX_ADDW_H_H_BU_128SV(in0, in1, out0)                                \
+{                                                                             \
+    __m256i _tmp1_m;                                                          \
+                                                                              \
+    _tmp1_m = __lasx_xvsllwil_hu_bu( in1, 0 );                                \
+    out0 = __lasx_xvadd_h( in0, _tmp1_m );                                    \
+}
+#define LASX_ADDW_H_H_BU_2_128SV(in0, in1, in2, in3, out0, out1)              \
+{                                                                             \
+    LASX_ADDW_H_H_BU_128SV(in0, in1, out0);                                   \
+    LASX_ADDW_H_H_BU_128SV(in2, in3, out1);                                   \
+}
+#define LASX_ADDW_H_H_BU_4_128SV(in0, in1, in2, in3,                          \
+                                 in4, in5, in6, in7, out0, out1, out2, out3)  \
+{                                                                             \
+    LASX_ADDW_H_H_BU_2_128SV(in0, in1, in2, in3, out0, out1);                 \
+    LASX_ADDW_H_H_BU_2_128SV(in4, in5, in6, in7, out2, out3);                 \
 }
 
 /* Description : The low half of the vector elements are expanded and
