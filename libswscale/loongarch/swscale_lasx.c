@@ -365,8 +365,7 @@ void ff_hscale_8_to_19_lasx(SwsContext *c, int16_t *_dst, int dstW,
     filter1 = LASX_LD(filter + 16);                                  \
     src0    = __lasx_xvpermi_q(src0, src1, 0x02);                    \
     src2    = __lasx_xvpermi_q(src2, src3, 0x02);                    \
-    out0    = __lasx_xvdp2_w_hu_h(src0, filter0);                    \
-    out1    = __lasx_xvdp2_w_hu_h(src2, filter1);                    \
+    LASX_DP2_W_HU_H_2(src0, filter0, src2, filter1, out0, out1);     \
     src0    = __lasx_xvhaddw_d_w(out0, out0);                        \
     src1    = __lasx_xvhaddw_d_w(out1, out1);                        \
     out0    = __lasx_xvpackev_d(src1, src0);                         \
@@ -400,8 +399,7 @@ void ff_hscale_8_to_19_lasx(SwsContext *c, int16_t *_dst, int dstW,
     src1     = __lasx_xvpermi_q(src2, src3, 0x02);                   \
     filter0  = __lasx_xvpermi_q(filter0, filter1, 0x02);             \
     filter1  = __lasx_xvpermi_q(filter2, filter3, 0x02);             \
-    out0     = __lasx_xvdp2_w_hu_h(src0, filter0);                   \
-    out1     = __lasx_xvdp2_w_hu_h(src1, filter1);                   \
+    LASX_DP2_W_HU_H_2(src0, filter0, src1, filter1, out0, out1);     \
     src0     = __lasx_xvhaddw_d_w(out0, out0);                       \
     src1     = __lasx_xvhaddw_d_w(out1, out1);                       \
     out0     = __lasx_xvpackev_d(src1, src0);                        \
@@ -441,7 +439,7 @@ void ff_hscale_16_to_15_lasx(SwsContext *c, int16_t *dst, int dstW,
 
             src0    = LASX_LD(src + filterPos[i]);
             filter0 = LASX_LD(filter);
-            out0    = __lasx_xvdp2_w_hu_h(src0, filter0);
+            LASX_DP2_W_HU_H(src0, filter0, out0);
             out0    = __lasx_xvhaddw_d_w(out0, out0);
             out0    = __lasx_xvhaddw_q_d(out0, out0);
             val     = __lasx_xvpickve2gr_w(out0, 0);
@@ -460,7 +458,7 @@ void ff_hscale_16_to_15_lasx(SwsContext *c, int16_t *dst, int dstW,
             src1 = __lasx_xvextrins_d(src1, src2, 0x10);
             src3 = __lasx_xvextrins_d(src3, src4, 0x10);
             src0 = __lasx_xvpermi_q(src1, src3, 0x02);
-            out0 = __lasx_xvdp2_w_hu_h(src0, filter0);
+            LASX_DP2_W_HU_H(src0, filter0, out0);
             out0 = __lasx_xvhaddw_d_w(out0, out0);
             out0 = __lasx_xvsra_w(out0, shift);
             dst[0] = FFMIN((__lasx_xvpickve2gr_w(out0, 0)), max);
@@ -527,7 +525,7 @@ void ff_hscale_16_to_15_lasx(SwsContext *c, int16_t *dst, int dstW,
             for (j = 0; j < filterlen; j += 8) {
                 src0    = LASX_LD(srcPos + j);
                 filter0 = LASX_LD(filter + j);
-                out0    = __lasx_xvdp2_w_hu_h(src0, filter0);
+                LASX_DP2_W_HU_H(src0, filter0, out0);
                 out0    = __lasx_xvhaddw_d_w(out0, out0);
                 out0    = __lasx_xvhaddw_q_d(out0, out0);
                 val    += __lasx_xvpickve2gr_w(out0, 0);
@@ -584,7 +582,7 @@ void ff_hscale_16_to_19_lasx(SwsContext *c, int16_t *_dst, int dstW,
 
             src0 = LASX_LD(src + filterPos[i]);
             filter0 = LASX_LD(filter);
-            out0 = __lasx_xvdp2_w_hu_h(src0, filter0);
+            LASX_DP2_W_HU_H(src0, filter0, out0);
             out0 = __lasx_xvhaddw_d_w(out0, out0);
             out0 = __lasx_xvhaddw_q_d(out0, out0);
             val  = __lasx_xvpickve2gr_w(out0, 0);
@@ -603,7 +601,7 @@ void ff_hscale_16_to_19_lasx(SwsContext *c, int16_t *_dst, int dstW,
             src1 = __lasx_xvextrins_d(src1, src2, 0x10);
             src3 = __lasx_xvextrins_d(src3, src4, 0x10);
             src0 = __lasx_xvpermi_q(src1, src3, 0x02);
-            out0 = __lasx_xvdp2_w_hu_h(src0, filter0);
+            LASX_DP2_W_HU_H(src0, filter0, out0);
             out0 = __lasx_xvhaddw_d_w(out0, out0);
             out0 = __lasx_xvsra_w(out0, shift);
             dst[0] = FFMIN((__lasx_xvpickve2gr_w(out0, 0)), max);
@@ -670,7 +668,7 @@ void ff_hscale_16_to_19_lasx(SwsContext *c, int16_t *_dst, int dstW,
             for (j = 0; j < filterlen; j += 8) {
                 src0    = LASX_LD(srcPos + j);
                 filter0 = LASX_LD(filter + j);
-                out0    = __lasx_xvdp2_w_hu_h(src0, filter0);
+                LASX_DP2_W_HU_H(src0, filter0, out0);
                 out0    = __lasx_xvhaddw_d_w(out0, out0);
                 out0    = __lasx_xvhaddw_q_d(out0, out0);
                 val    += __lasx_xvpickve2gr_w(out0, 0);
