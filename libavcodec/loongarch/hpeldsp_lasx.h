@@ -37,4 +37,21 @@ void ff_put_pixels16_x2_8_lasx(uint8_t *block, const uint8_t *pixels,
                                ptrdiff_t line_size, int32_t h);
 void ff_put_pixels16_y2_8_lasx(uint8_t *block, const uint8_t *pixels,
                                ptrdiff_t line_size, int32_t h);
+void ff_put_no_rnd_pixels16_x2_8_lasx(uint8_t *block, const uint8_t *pixels,
+                                      ptrdiff_t line_size, int h);
+void ff_put_no_rnd_pixels16_y2_8_lasx(uint8_t *block, const uint8_t *pixels,
+                                      ptrdiff_t line_size, int h);
+void ff_put_no_rnd_pixels16_xy2_8_lasx(uint8_t *block,
+                                       const uint8_t *pixels,
+                                       ptrdiff_t line_size, int h);
+void ff_put_no_rnd_pixels8_x2_8_lasx(uint8_t *block, const uint8_t *pixels,
+                                     ptrdiff_t line_size, int h);
+void ff_put_no_rnd_pixels8_y2_8_lasx(uint8_t *block, const uint8_t *pixels,
+                                     ptrdiff_t line_size, int h);
+void ff_put_no_rnd_pixels8_xy2_8_lasx(uint8_t *block, const uint8_t *pixels,
+                                      ptrdiff_t line_size, int h);
+void ff_put_pixels8_xy2_8_lasx(uint8_t *block, const uint8_t *pixels,
+                               ptrdiff_t line_size, int h);
+void ff_put_pixels16_xy2_8_lasx(uint8_t *block, const uint8_t *pixels,
+                                ptrdiff_t line_size, int h);
 #endif
