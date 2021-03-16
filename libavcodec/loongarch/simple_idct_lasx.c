@@ -207,7 +207,7 @@ static void simple_idct_lasx(int16_t *block)
     __m256i a0, a1, a2, a3;
     __m256i b0, b1, b2, b3;
     __m256i temp0, temp1, temp2, temp3;
-    __m256i const_val0 = __lasx_xvldrepl_w(&const_val, 0);
+    __m256i const_val0 = __lasx_xvreplgr2vr_w(const_val);
     __m256i const_val1, select_vec, temp;
 
     LASX_IDCTROWCONDDC
@@ -229,7 +229,7 @@ static void simple_idct_put_lasx(uint8_t *dst, int32_t dst_stride,
     __m256i a0, a1, a2, a3;
     __m256i b0, b1, b2, b3;
     __m256i temp0, temp1, temp2, temp3;
-    __m256i const_val0 = __lasx_xvldrepl_w(&const_val, 0);
+    __m256i const_val0 = __lasx_xvreplgr2vr_w(const_val);
     __m256i const_val1, select_vec, temp;
 
     LASX_IDCTROWCONDDC
@@ -257,7 +257,7 @@ static void simple_idct_add_lasx(uint8_t *dst, int32_t dst_stride,
     __m256i a0, a1, a2, a3;
     __m256i b0, b1, b2, b3;
     __m256i temp0, temp1, temp2, temp3;
-    __m256i const_val0 = __lasx_xvldrepl_w(&const_val, 0);
+    __m256i const_val0 = __lasx_xvreplgr2vr_w(const_val);
     __m256i const_val1, select_vec, temp;
 
     LASX_IDCTROWCONDDC

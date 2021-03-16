@@ -48,7 +48,7 @@ void ff_vc1_inv_trans_8x8_lasx(int16_t block[64])
     in3 = __lasx_xvpermi_d(in3, 0xD8);
     /* first loops */
     LASX_ILVL_H_2_128SV(in2, in0, in3, in1, temp0, temp1);
-    t2 = __lasx_xvldrepl_w(&con_4, 0);
+    t2 = __lasx_xvreplgr2vr_w(con_4);
     LASX_DP2ADD_W_H(t2, temp0, const_1, t1);
     LASX_DP2ADD_W_H(t2, temp0, const_2, t2);
     LASX_DP2_W_H(temp1, const_3, t3);
@@ -92,7 +92,7 @@ void ff_vc1_inv_trans_8x8_lasx(int16_t block[64])
     in2   = __lasx_xvpermi_q(t4, t2, 0x20);
     in3   = __lasx_xvpermi_q(t4, t2, 0x31);
     LASX_ILVL_H_2_128SV(in1, in0, in3, in2, temp0, temp1);
-    t3    = __lasx_xvldrepl_w(&con_64, 0);
+    t3    = __lasx_xvreplgr2vr_w(con_64);
     LASX_DP2ADD_W_H(t3, temp0, const_1, t1);
     LASX_DP2ADD_W_H(t3, temp0, const_2, t2);
     LASX_DP2_W_H(temp1, const_3, t3);
@@ -148,7 +148,7 @@ void ff_vc1_inv_trans_8x8_dc_lasx(uint8_t *dest, ptrdiff_t stride, int16_t *bloc
     dc = (3 * dc +  1) >> 1;
     dc = (3 * dc + 16) >> 5;
 
-    const_dc = __lasx_xvldrepl_h(&dc, 0);
+    const_dc = __lasx_xvreplgr2vr_h(dc);
     in0   = __lasx_xvldrepl_d(dest, 0);
     in1   = __lasx_xvldrepl_d(dst, 0);
     in0   = __lasx_xvpermi_q(in1, in0, 0x20);
@@ -290,7 +290,7 @@ void ff_vc1_inv_trans_8x4_dc_lasx(uint8_t *dest, ptrdiff_t stride, int16_t *bloc
 
     dc = (3  * dc + 1) >> 1;
     dc = (17 * dc + 64) >> 7;
-    const_dc = __lasx_xvldrepl_h(&dc, 0);
+    const_dc = __lasx_xvreplgr2vr_h(dc);
 
     in0   = __lasx_xvldrepl_d(dest, 0);
     in1   = __lasx_xvldrepl_d(dst, 0);
@@ -325,7 +325,7 @@ void ff_vc1_inv_trans_4x8_dc_lasx(uint8_t *dest, ptrdiff_t stride, int16_t *bloc
 
     dc = (17 * dc +  4) >> 3;
     dc = (12 * dc + 64) >> 7;
-    const_dc = __lasx_xvldrepl_h(&dc, 0);
+    const_dc = __lasx_xvreplgr2vr_h(dc);
 
     in0   = __lasx_xvldrepl_w(dest, 0);
     in1   = __lasx_xvldrepl_w(dst1, 0);
@@ -482,7 +482,7 @@ void ff_vc1_inv_trans_4x4_dc_lasx(uint8_t *dest, ptrdiff_t stride, int16_t *bloc
 
     dc = (17 * dc +  4) >> 3;
     dc = (17 * dc + 64) >> 7;
-    const_dc = __lasx_xvldrepl_h(&dc, 0);
+    const_dc = __lasx_xvreplgr2vr_h(dc);
 
     in0   = __lasx_xvldrepl_w(dest, 0);
     in1   = __lasx_xvldrepl_w(dst1, 0);
@@ -570,8 +570,8 @@ static void put_vc1_mspel_mc_h_v_lasx(uint8_t *dst, const uint8_t *src,
     int r     = (1 << (shift - 1)) + rnd - 1;
     const uint8_t *para_v = para_value[vmode - 1];
 
-    const_r  = __lasx_xvldrepl_h(&r, 0);
-    const_sh = __lasx_xvldrepl_h(&shift, 0);
+    const_r  = __lasx_xvreplgr2vr_h(r);
+    const_sh = __lasx_xvreplgr2vr_h(shift);
     src -= 1, src -= stride;
     const_para0_3 = __lasx_xvldrepl_h(para_v, 0);
     const_para1_2 = __lasx_xvldrepl_h(para_v, 2);
@@ -644,7 +644,7 @@ static void put_vc1_mspel_mc_h_v_lasx(uint8_t *dst, const uint8_t *src,
     const_para0_3 = __lasx_vext2xv_h_b(const_para0_3);
     const_para1_2 = __lasx_vext2xv_h_b(const_para1_2);
     r       = 64 - rnd;
-    const_r = __lasx_xvldrepl_w(&r, 0);
+    const_r = __lasx_xvreplgr2vr_w(r);
     in0     = __lasx_xvpermi_d(t0, 0x72);
     in1     = __lasx_xvpermi_d(t1, 0x72);
     in2     = __lasx_xvpermi_d(t2, 0x72);

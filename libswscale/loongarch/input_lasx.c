@@ -36,15 +36,15 @@ void planar_rgb_to_uv_lasx(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[4]
     const uint8_t *src0 = src[0], *src1 = src[1], *src2 = src[2];
     __m256i ru, gu, bu, rv, gv, bv;
     __m256i mask = {0x0D0C090805040100, 0x1D1C191815141110, 0x0D0C090805040100, 0x1D1C191815141110};
-    __m256i temp = __lasx_xvldrepl_w(&set, 0);
-    __m256i sra  = __lasx_xvldrepl_w(&shift, 0);
+    __m256i temp = __lasx_xvreplgr2vr_w(set);
+    __m256i sra  = __lasx_xvreplgr2vr_w(shift);
 
-    ru = __lasx_xvldrepl_w(&tem_ru, 0);
-    gu = __lasx_xvldrepl_w(&tem_gu, 0);
-    bu = __lasx_xvldrepl_w(&tem_bu, 0);
-    rv = __lasx_xvldrepl_w(&tem_rv, 0);
-    gv = __lasx_xvldrepl_w(&tem_gv, 0);
-    bv = __lasx_xvldrepl_w(&tem_bv, 0);
+    ru = __lasx_xvreplgr2vr_w(tem_ru);
+    gu = __lasx_xvreplgr2vr_w(tem_gu);
+    bu = __lasx_xvreplgr2vr_w(tem_bu);
+    rv = __lasx_xvreplgr2vr_w(tem_rv);
+    gv = __lasx_xvreplgr2vr_w(tem_gv);
+    bv = __lasx_xvreplgr2vr_w(tem_bv);
     for (i = 0; i < len; i += 16) {
         __m256i _g, _b, _r;
         __m256i g_l, g_h, b_l, b_h, r_l, r_h;
@@ -129,11 +129,11 @@ void planar_rgb_to_y_lasx(uint8_t *_dst, const uint8_t *src[4], int width,
     int32_t tem_by   = rgb2yuv[BY_IDX];
     const uint8_t *src0 = src[0], *src1 = src[1], *src2 = src[2];
     __m256i mask = {0x0D0C090805040100, 0x1D1C191815141110, 0x0D0C090805040100, 0x1D1C191815141110};
-    __m256i temp = __lasx_xvldrepl_w(&set, 0);
-    __m256i sra  = __lasx_xvldrepl_w(&shift, 0);
-    __m256i ry   = __lasx_xvldrepl_w(&tem_ry, 0);
-    __m256i gy   = __lasx_xvldrepl_w(&tem_gy, 0);
-    __m256i by   = __lasx_xvldrepl_w(&tem_by, 0);
+    __m256i temp = __lasx_xvreplgr2vr_w(set);
+    __m256i sra  = __lasx_xvreplgr2vr_w(shift);
+    __m256i ry   = __lasx_xvreplgr2vr_w(tem_ry);
+    __m256i gy   = __lasx_xvreplgr2vr_w(tem_gy);
+    __m256i by   = __lasx_xvreplgr2vr_w(tem_by);
 
     for (i = 0; i < len; i += 16) {
         __m256i _g, _b, _r;

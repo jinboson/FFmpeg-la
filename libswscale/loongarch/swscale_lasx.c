@@ -427,7 +427,7 @@ void ff_hscale_16_to_15_lasx(SwsContext *c, int16_t *dst, int dstW,
     } else if (desc->flags && AV_PIX_FMT_FLAG_FLOAT) {
         sh = 15;
     }
-    shift = __lasx_xvldrepl_w(&sh, 0);
+    shift = __lasx_xvreplgr2vr_w(sh);
 
     if (filterSize == 8) {
         for (i = 0; i < len; i++) {
@@ -570,7 +570,7 @@ void ff_hscale_16_to_19_lasx(SwsContext *c, int16_t *_dst, int dstW,
     } else if (desc->flags & AV_PIX_FMT_FLAG_FLOAT) {
         sh = 11;
     }
-    shift = __lasx_xvldrepl_w(&sh, 0);
+    shift = __lasx_xvreplgr2vr_w(sh);
 
     if (filterSize == 8) {
         for (i = 0; i < len; i++) {

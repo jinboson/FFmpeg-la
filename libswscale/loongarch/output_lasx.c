@@ -413,14 +413,14 @@ yuv2rgb_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
     int len_count = (dstW + 1) >> 1;
     const void *r, *g, *b;
     int head = YUVRGB_TABLE_HEADROOM;
-    __m256i headroom  = __lasx_xvldrepl_w(&head, 0);
+    __m256i headroom  = __lasx_xvreplgr2vr_w(head);
 
     for (i = 0; i < len; i += 16) {
         int Y1, Y2, U, V;
         __m256i l_src, u_src, v_src;
         __m256i y_l, y_h, u, v, temp;
 
-        y_l = __lasx_xvldrepl_w(&t, 0);
+        y_l = __lasx_xvreplgr2vr_w(t);
         y_h = y_l;
         u   = y_l;
         v   = y_l;
@@ -451,7 +451,7 @@ yuv2rgb_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
         __m256i l_src, u_src, v_src;
         __m256i y_l, u, v, temp;
 
-        y_l = __lasx_xvldrepl_w(&t, 0);
+        y_l = __lasx_xvreplgr2vr_w(t);
         u   = y_l;
         v   = y_l;
         for (j = 0; j < lumFilterSize; j++) {
@@ -520,11 +520,11 @@ yuv2rgb_2_template_lasx(SwsContext *c, const int16_t *buf[2],
     int len_count = (dstW + 1) >> 1;
     const void *r, *g, *b;
     int head  = YUVRGB_TABLE_HEADROOM;
-    __m256i v_yalpha1  = __lasx_xvldrepl_w(&yalpha1, 0);
-    __m256i v_uvalpha1 = __lasx_xvldrepl_w(&uvalpha1, 0);
-    __m256i v_yalpha   = __lasx_xvldrepl_w(&yalpha, 0);
-    __m256i v_uvalpha  = __lasx_xvldrepl_w(&uvalpha, 0);
-    __m256i headroom   = __lasx_xvldrepl_w(&head, 0);
+    __m256i v_yalpha1  = __lasx_xvreplgr2vr_w(yalpha1);
+    __m256i v_uvalpha1 = __lasx_xvreplgr2vr_w(uvalpha1);
+    __m256i v_yalpha   = __lasx_xvreplgr2vr_w(yalpha);
+    __m256i v_uvalpha  = __lasx_xvreplgr2vr_w(uvalpha);
+    __m256i headroom   = __lasx_xvreplgr2vr_w(head);
 
     for (i = 0; i < len; i += 16) {
         int Y1, Y2, U, V;
@@ -623,8 +623,8 @@ yuv2rgb_1_template_lasx(SwsContext *c, const int16_t *buf0,
         int count    = 0;
         int16_t bias_int = 64;
         int head = YUVRGB_TABLE_HEADROOM;
-        __m256i headroom  = __lasx_xvldrepl_w(&head, 0);
-        __m256i bias_64   = __lasx_xvldrepl_h(&bias_int, 0);
+        __m256i headroom  = __lasx_xvreplgr2vr_w(head);
+        __m256i bias_64   = __lasx_xvreplgr2vr_h(bias_int);
 
         for (i = 0; i < len; i += 16) {
             int Y1, Y2, U, V;
@@ -686,9 +686,9 @@ yuv2rgb_1_template_lasx(SwsContext *c, const int16_t *buf0,
         int16_t bias_int_64 = 64;
         int bias_int_128    = 128;
         int HEADROOM = YUVRGB_TABLE_HEADROOM;
-        __m256i headroom    = __lasx_xvldrepl_w(&HEADROOM, 0);
-        __m256i bias_64     = __lasx_xvldrepl_h(&bias_int_64, 0);
-        __m256i bias_128    = __lasx_xvldrepl_w(&bias_int_128, 0);
+        __m256i headroom    = __lasx_xvreplgr2vr_w(HEADROOM);
+        __m256i bias_64     = __lasx_xvreplgr2vr_h(bias_int_64);
+        __m256i bias_128    = __lasx_xvreplgr2vr_w(bias_int_128);
 
         for (i = 0; i < len; i += 16) {
             int Y1, Y2, U, V;
@@ -950,12 +950,12 @@ static av_always_inline void yuv2rgb_write_full(SwsContext *c,
     int v2g_coe    = c->yuv2rgb_v2g_coeff;                       \
     int u2g_coe    = c->yuv2rgb_u2g_coeff;                       \
     int u2b_coe    = c->yuv2rgb_u2b_coeff;                       \
-    __m256i offset = __lasx_xvldrepl_w(&y_offset, 0);            \
-    __m256i coeff  = __lasx_xvldrepl_w(&y_coeff, 0);             \
-    __m256i v2r    = __lasx_xvldrepl_w(&v2r_coe, 0);             \
-    __m256i v2g    = __lasx_xvldrepl_w(&v2g_coe, 0);             \
-    __m256i u2g    = __lasx_xvldrepl_w(&u2g_coe, 0);             \
-    __m256i u2b    = __lasx_xvldrepl_w(&u2b_coe, 0);             \
+    __m256i offset = __lasx_xvreplgr2vr_w(y_offset);             \
+    __m256i coeff  = __lasx_xvreplgr2vr_w(y_coeff);              \
+    __m256i v2r    = __lasx_xvreplgr2vr_w(v2r_coe);              \
+    __m256i v2g    = __lasx_xvreplgr2vr_w(v2g_coe);              \
+    __m256i u2g    = __lasx_xvreplgr2vr_w(u2g_coe);              \
+    __m256i u2b    = __lasx_xvreplgr2vr_w(u2b_coe);              \
 
 
 #define YUVTORGB(y, u, v, R, G, B, offset, coeff,              \
@@ -1111,7 +1111,7 @@ yuv2rgb_full_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
     int tempc      = templ - (128 << 19);
     int ytemp      = 1 << 21;
     int len        = dstW - 15;
-    __m256i y_temp = __lasx_xvldrepl_w(&ytemp, 0);
+    __m256i y_temp = __lasx_xvreplgr2vr_w(ytemp);
     YUVTORGB_SETUP
 
     if(   target == AV_PIX_FMT_BGR4_BYTE || target == AV_PIX_FMT_RGB4_BYTE
@@ -1123,8 +1123,8 @@ yuv2rgb_full_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
         __m256i y_l, y_h, u_l, u_h, v_l, v_h, temp;
         __m256i R_l, R_h, G_l, G_h, B_l, B_h;
 
-        y_l = y_h = __lasx_xvldrepl_w(&templ, 0);
-        u_l = u_h = v_l = v_h = __lasx_xvldrepl_w(&tempc, 0);
+        y_l = y_h = __lasx_xvreplgr2vr_w(templ);
+        u_l = u_h = v_l = v_h = __lasx_xvreplgr2vr_w(tempc);
         for (j = 0; j < lumFilterSize; j++) {
             temp  = __lasx_xvldrepl_h((lumFilter + j), 0);
             l_src = LASX_LD((lumSrc[j] + i));
@@ -1152,7 +1152,7 @@ yuv2rgb_full_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
         if (hasAlpha) {
             __m256i a_src, a_l, a_h;
 
-            a_l = a_h = __lasx_xvldrepl_w(&a_temp, 0);
+            a_l = a_h = __lasx_xvreplgr2vr_w(a_temp);
             for (j = 0; j < lumFilterSize; j++) {
                 temp  = __lasx_xvldrepl_h(lumFilter + j, 0);
                 a_src = LASX_LD((alpSrc[j] + i));
@@ -1185,8 +1185,8 @@ yuv2rgb_full_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
         __m256i y_l, u_l, v_l, temp;
         __m256i R_l, G_l, B_l;
 
-        y_l = __lasx_xvldrepl_w(&templ, 0);
-        u_l = v_l = __lasx_xvldrepl_w(&tempc, 0);
+        y_l = __lasx_xvreplgr2vr_w(templ);
+        u_l = v_l = __lasx_xvreplgr2vr_w(tempc);
         for (j = 0; j < lumFilterSize; j++) {
             temp  = __lasx_xvldrepl_h((lumFilter + j), 0);
             l_src = LASX_LD((lumSrc[j] + i));
@@ -1210,7 +1210,7 @@ yuv2rgb_full_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
         if (hasAlpha) {
             __m256i a_src, a_l;
 
-            a_l = __lasx_xvldrepl_w(&a_temp, 0);
+            a_l = __lasx_xvreplgr2vr_w(a_temp);
             for (j = 0; j < lumFilterSize; j++) {
                 temp  = __lasx_xvldrepl_h(lumFilter + j, 0);
                 a_src = LASX_LD((alpSrc[j] + i));
@@ -1290,13 +1290,13 @@ yuv2rgb_full_2_template_lasx(SwsContext *c, const int16_t *buf[2],
     int len      = dstW - 15;
     int i, R, G, B, A;
     int step = (target == AV_PIX_FMT_RGB24 || target == AV_PIX_FMT_BGR24) ? 3 : 4;
-    __m256i v_uvalpha1 = __lasx_xvldrepl_w(&uvalpha1, 0);
-    __m256i v_yalpha1  = __lasx_xvldrepl_w(&yalpha1, 0);
-    __m256i v_uvalpha  = __lasx_xvldrepl_w(&uvalpha, 0);
-    __m256i v_yalpha   = __lasx_xvldrepl_w(&yalpha, 0);
-    __m256i uv         = __lasx_xvldrepl_w(&uvtemp, 0);
-    __m256i a_bias     = __lasx_xvldrepl_w(&atemp, 0);
-    __m256i y_temp     = __lasx_xvldrepl_w(&ytemp, 0);
+    __m256i v_uvalpha1 = __lasx_xvreplgr2vr_w(uvalpha1);
+    __m256i v_yalpha1  = __lasx_xvreplgr2vr_w(yalpha1);
+    __m256i v_uvalpha  = __lasx_xvreplgr2vr_w(uvalpha);
+    __m256i v_yalpha   = __lasx_xvreplgr2vr_w(yalpha);
+    __m256i uv         = __lasx_xvreplgr2vr_w(uvtemp);
+    __m256i a_bias     = __lasx_xvreplgr2vr_w(atemp);
+    __m256i y_temp     = __lasx_xvreplgr2vr_w(ytemp);
     YUVTORGB_SETUP
 
     av_assert2(yalpha  <= 4096U);
@@ -1482,8 +1482,8 @@ yuv2rgb_full_1_template_lasx(SwsContext *c, const int16_t *buf0,
     int ytemp      = 1 << 21;
     int bias_int   = 64;
     int len        = dstW - 15;
-    __m256i bias   = __lasx_xvldrepl_w(&bias_int, 0);
-    __m256i y_temp = __lasx_xvldrepl_w(&ytemp, 0);
+    __m256i bias   = __lasx_xvreplgr2vr_w(bias_int);
+    __m256i y_temp = __lasx_xvreplgr2vr_w(ytemp);
     YUVTORGB_SETUP
 
     if(   target == AV_PIX_FMT_BGR4_BYTE || target == AV_PIX_FMT_RGB4_BYTE
@@ -1491,7 +1491,7 @@ yuv2rgb_full_1_template_lasx(SwsContext *c, const int16_t *buf0,
         step = 1;
     if (uvalpha < 2048) {
         int uvtemp = 128 << 7;
-        __m256i uv = __lasx_xvldrepl_w(&uvtemp, 0);
+        __m256i uv = __lasx_xvreplgr2vr_w(uvtemp);
 
         for (i = 0; i < len; i += 16) {
             __m256i b, ub, vb, ub_l, ub_h, vb_l, vb_h;
@@ -1614,7 +1614,7 @@ yuv2rgb_full_1_template_lasx(SwsContext *c, const int16_t *buf0,
     } else {
         const int16_t *ubuf1 = ubuf[1], *vbuf1 = vbuf[1];
         int uvtemp = 128 << 8;
-        __m256i uv = __lasx_xvldrepl_w(&uvtemp, 0);
+        __m256i uv = __lasx_xvreplgr2vr_w(uvtemp);
 
         for (i = 0; i < len; i += 16) {
             __m256i b, ub0, ub1, vb0, vb1;

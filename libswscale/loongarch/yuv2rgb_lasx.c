@@ -23,24 +23,24 @@
 #include "swscale_loongarch.h"
 #include "libavutil/loongarch/generic_macros_lasx.h"
 
-#define YUV2RGB_LOAD_COE                                      \
-    /* Load x_offset */                                       \
-    __m256i y_offset = __lasx_xvldrepl_d(&c->yOffset, 0);     \
-    __m256i u_offset = __lasx_xvldrepl_d(&c->uOffset, 0);     \
-    __m256i v_offset = __lasx_xvldrepl_d(&c->vOffset, 0);     \
-    /* Load x_coeff  */                                       \
-    __m256i ug_coeff = __lasx_xvldrepl_d(&c->ugCoeff, 0);     \
-    __m256i vg_coeff = __lasx_xvldrepl_d(&c->vgCoeff, 0);     \
-    __m256i y_coeff  = __lasx_xvldrepl_d(&c->yCoeff,  0);     \
-    __m256i ub_coeff = __lasx_xvldrepl_d(&c->ubCoeff, 0);     \
-    __m256i vr_coeff = __lasx_xvldrepl_d(&c->vrCoeff, 0);     \
+#define YUV2RGB_LOAD_COE                                     \
+    /* Load x_offset */                                      \
+    __m256i y_offset = __lasx_xvreplgr2vr_d(c->yOffset);     \
+    __m256i u_offset = __lasx_xvreplgr2vr_d(c->uOffset);     \
+    __m256i v_offset = __lasx_xvreplgr2vr_d(c->vOffset);     \
+    /* Load x_coeff  */                                      \
+    __m256i ug_coeff = __lasx_xvreplgr2vr_d(c->ugCoeff);     \
+    __m256i vg_coeff = __lasx_xvreplgr2vr_d(c->vgCoeff);     \
+    __m256i y_coeff  = __lasx_xvreplgr2vr_d(c->yCoeff);      \
+    __m256i ub_coeff = __lasx_xvreplgr2vr_d(c->ubCoeff);     \
+    __m256i vr_coeff = __lasx_xvreplgr2vr_d(c->vrCoeff);     \
 
-#define LOAD_YUV_16                                           \
-    m_y  = LASX_LD(py + (w << 4));                            \
-    m_u  = __lasx_xvldrepl_d(pu + (w << 3), 0);               \
-    m_v  = __lasx_xvldrepl_d(pv + (w << 3), 0);               \
-    LASX_UNPCK_L_HU_BU(m_y, m_y);                             \
-    LASX_UNPCK_L_HU_BU_2(m_u, m_v, m_u, m_v);                 \
+#define LOAD_YUV_16                                          \
+    m_y  = LASX_LD(py + (w << 4));                           \
+    m_u  = __lasx_xvldrepl_d(pu + (w << 3), 0);              \
+    m_v  = __lasx_xvldrepl_d(pv + (w << 3), 0);              \
+    LASX_UNPCK_L_HU_BU(m_y, m_y);                            \
+    LASX_UNPCK_L_HU_BU_2(m_u, m_v, m_u, m_v);                \
 
 /* YUV2RGB method
  * The conversion method is as follows:
