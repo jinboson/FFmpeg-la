@@ -733,3 +733,43 @@ PUT_VC1_MSPEL_MC_LASX(2, 3);
 PUT_VC1_MSPEL_MC_LASX(3, 1);
 PUT_VC1_MSPEL_MC_LASX(3, 2);
 PUT_VC1_MSPEL_MC_LASX(3, 3);
+
+void ff_put_no_rnd_vc1_chroma_mc8_lasx(uint8_t *dst /* align 8 */,
+                                       uint8_t *src /* align 1 */,
+                                       ptrdiff_t stride, int h, int x, int y)
+{
+    const int intA = (8 - x) * (8 - y);
+    const int intB =     (x) * (8 - y);
+    const int intC = (8 - x) *     (y);
+    const int intD =     (x) *     (y);
+    __m256i src00, src01, src10, src11;
+    __m256i A, B, C, D;
+    int i;
+
+    av_assert2(x < 8 && y < 8 && x >= 0 && y >= 0);
+
+    A = __lasx_xvldrepl_h(&intA, 0);
+    B = __lasx_xvldrepl_h(&intB, 0);
+    C = __lasx_xvldrepl_h(&intC, 0);
+    D = __lasx_xvldrepl_h(&intD, 0);
+    for(i = 0; i < h; i++){
+        LASX_LD_2(src, 1, src00, src01);
+        src += stride;
+        LASX_LD_2(src, 1, src10, src11);
+
+        LASX_UNPCK_L_HU_BU_4(src00, src01, src10, src11,
+                             src00, src01, src10, src11);
+        src00 = __lasx_xvmul_h(src00, A);
+        src01 = __lasx_xvmul_h(src01, B);
+        src10 = __lasx_xvmul_h(src10, C);
+        src11 = __lasx_xvmul_h(src11, D);
+        src00 = __lasx_xvadd_h(src00, src01);
+        src10 = __lasx_xvadd_h(src10, src11);
+        src00 = __lasx_xvadd_h(src00, src10);
+        src00 = __lasx_xvaddi_hu(src00, 28);
+        src00 = __lasx_xvsrli_h(src00, 6);
+        LASX_PCKEV_B_128SV(src00, src00, src00);
+        LASX_ST_D(src00, 0, dst);
+        dst += stride;
+    }
+}

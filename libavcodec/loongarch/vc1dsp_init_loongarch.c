@@ -50,5 +50,6 @@ av_cold void ff_vc1dsp_init_loongarch(VC1DSPContext *dsp)
         FN_ASSIGN(put_, 3, 1, _lasx);
         FN_ASSIGN(put_, 3, 2, _lasx);
         FN_ASSIGN(put_, 3, 3, _lasx);
+        dsp->put_no_rnd_vc1_chroma_pixels_tab[0] = ff_put_no_rnd_vc1_chroma_mc8_lasx;
     }
 }
