@@ -748,10 +748,10 @@ void ff_put_no_rnd_vc1_chroma_mc8_lasx(uint8_t *dst /* align 8 */,
 
     av_assert2(x < 8 && y < 8 && x >= 0 && y >= 0);
 
-    A = __lasx_xvldrepl_h(&intA, 0);
-    B = __lasx_xvldrepl_h(&intB, 0);
-    C = __lasx_xvldrepl_h(&intC, 0);
-    D = __lasx_xvldrepl_h(&intD, 0);
+    A = __lasx_xvreplgr2vr_h(intA);
+    B = __lasx_xvreplgr2vr_h(intB);
+    C = __lasx_xvreplgr2vr_h(intC);
+    D = __lasx_xvreplgr2vr_h(intD);
     for(i = 0; i < h; i++){
         LASX_LD_2(src, 1, src00, src01);
         src += stride;

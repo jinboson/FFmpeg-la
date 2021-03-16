@@ -230,7 +230,7 @@ void ff_h264_idct4x4_addblk_dc_lasx(uint8_t *dst, int16_t *src,
     const int16_t dc = (src[0] + 32) >> 6;
     __m256i pred, out;
     __m256i src0, src1, src2, src3;
-    __m256i input_dc = __lasx_xvldrepl_h(&dc, 0);
+    __m256i input_dc = __lasx_xvreplgr2vr_h(dc);
 
     src[0] = 0;
     LASX_LD_4(dst, dst_stride, src0, src1, src2, src3);
@@ -250,7 +250,7 @@ void ff_h264_idct8_dc_addblk_lasx(uint8_t *dst, int16_t *src,
     __m256i dc;
 
     dc_val = (src[0] + 32) >> 6;
-    dc = __lasx_xvldrepl_h(&dc_val, 0);
+    dc = __lasx_xvreplgr2vr_h(dc_val);
 
     src[0] = 0;
 
@@ -422,7 +422,7 @@ void ff_h264_deq_idct_luma_dc_lasx(int16_t *dst, int16_t *src,
     __m256i tmp0, tmp1, tmp2, tmp3;
     __m256i hres0, hres1, hres2, hres3;
     __m256i vres0, vres1, vres2, vres3;
-    __m256i de_q_vec = __lasx_xvldrepl_w(&de_qval, 0);
+    __m256i de_q_vec = __lasx_xvreplgr2vr_w(de_qval);
 
     LASX_LD_4(src, 4, src0, src1, src2, src3);
     LASX_TRANSPOSE4x4_H_128SV(src0, src1, src2, src3, tmp0, tmp1, tmp2, tmp3);

@@ -84,9 +84,9 @@ void avc_luma_hv_qrt_and_aver_dst_16x16_lasx(const uint8_t *src_x,
     __m256i minus5b = __lasx_xvldi(0xFB);
     __m256i plus20b = __lasx_xvldi(20);
 
-    filt0 = __lasx_xvldrepl_h(&filt_const0, 0);
-    filt1 = __lasx_xvldrepl_h(&filt_const1, 0);
-    filt2 = __lasx_xvldrepl_h(&filt_const2, 0);
+    filt0 = __lasx_xvreplgr2vr_h(filt_const0);
+    filt1 = __lasx_xvreplgr2vr_h(filt_const1);
+    filt2 = __lasx_xvreplgr2vr_h(filt_const2);
 
     mask0 = LASX_LD(luma_mask_arr);
     LASX_LD_2(luma_mask_arr + 32, 32, mask1, mask2);
@@ -187,9 +187,9 @@ avc_luma_hv_qrt_16x16_lasx(const uint8_t *src_x, const uint8_t *src_y, uint8_t *
     __m256i minus5b = __lasx_xvldi(0xFB);
     __m256i plus20b = __lasx_xvldi(20);
 
-    filt0 = __lasx_xvldrepl_h(&filt_const0, 0);
-    filt1 = __lasx_xvldrepl_h(&filt_const1, 0);
-    filt2 = __lasx_xvldrepl_h(&filt_const2, 0);
+    filt0 = __lasx_xvreplgr2vr_h(filt_const0);
+    filt1 = __lasx_xvreplgr2vr_h(filt_const1);
+    filt2 = __lasx_xvreplgr2vr_h(filt_const2);
 
     mask0 = LASX_LD(luma_mask_arr);
     LASX_LD_2(luma_mask_arr + 32, 32, mask1, mask2);

@@ -110,8 +110,8 @@ void ff_h264_h_lpf_luma_8_lasx(uint8_t *data, int img_width,
         p1_asub_p0 = __lasx_xvabsd_bu(p1_org, p0_org);
         q1_asub_q0 = __lasx_xvabsd_bu(q1_org, q0_org);
 
-        alpha = __lasx_xvldrepl_b(&alpha_in, 0);
-        beta  = __lasx_xvldrepl_b(&beta_in, 0);
+        alpha = __lasx_xvreplgr2vr_b(alpha_in);
+        beta  = __lasx_xvreplgr2vr_b(beta_in);
 
         is_less_than_alpha = __lasx_xvslt_bu(p0_asub_q0, alpha);
         is_less_than_beta  = __lasx_xvslt_bu(p1_asub_p0, beta);
@@ -232,8 +232,8 @@ void ff_h264_v_lpf_luma_8_lasx(uint8_t *data, int img_width,
         __m256i is_bs_greater_than0;
         __m256i zero = __lasx_xvldi(0);
 
-        alpha = __lasx_xvldrepl_b(&alpha_in, 0);
-        beta  = __lasx_xvldrepl_b(&beta_in, 0);
+        alpha = __lasx_xvreplgr2vr_b(alpha_in);
+        beta  = __lasx_xvreplgr2vr_b(beta_in);
 
         p2_org = LASX_LD(data - img_width_3x);
         p1_org = LASX_LD(data - img_width_2x);
@@ -369,8 +369,8 @@ void ff_h264_h_lpf_chroma_8_lasx(uint8_t *data, int img_width,
         p1_asub_p0 = __lasx_xvabsd_bu(p1_org, p0_org);
         q1_asub_q0 = __lasx_xvabsd_bu(q1_org, q0_org);
 
-        alpha = __lasx_xvldrepl_b(&alpha_in, 0);
-        beta  = __lasx_xvldrepl_b(&beta_in, 0);
+        alpha = __lasx_xvreplgr2vr_b(alpha_in);
+        beta  = __lasx_xvreplgr2vr_b(beta_in);
 
         is_less_than_alpha = __lasx_xvslt_bu(p0_asub_q0, alpha);
         is_less_than_beta  = __lasx_xvslt_bu(p1_asub_p0, beta);
@@ -443,8 +443,8 @@ void ff_h264_v_lpf_chroma_8_lasx(uint8_t *data, int img_width,
         __m256i is_less_than, is_less_than_beta, is_less_than_alpha;
         __m256i is_bs_greater_than0;
 
-        alpha = __lasx_xvldrepl_b(&alpha_in, 0);
-        beta  = __lasx_xvldrepl_b(&beta_in, 0);
+        alpha = __lasx_xvreplgr2vr_b(alpha_in);
+        beta  = __lasx_xvreplgr2vr_b(beta_in);
 
         p1_org = LASX_LD(data - img_width_2x);
         p0_org = LASX_LD(data - img_width);
@@ -557,8 +557,8 @@ void ff_h264_h_lpf_luma_intra_8_lasx(uint8_t *data, int img_width,
                              q0_org, q1_org, q2_org, q3_org);
     }
 
-    alpha = __lasx_xvldrepl_b(&alpha_in, 0);
-    beta  = __lasx_xvldrepl_b(&beta_in, 0);
+    alpha = __lasx_xvreplgr2vr_b(alpha_in);
+    beta  = __lasx_xvreplgr2vr_b(beta_in);
     p0_asub_q0 = __lasx_xvabsd_bu(p0_org, q0_org);
     p1_asub_p0 = __lasx_xvabsd_bu(p1_org, p0_org);
     q1_asub_q0 = __lasx_xvabsd_bu(q1_org, q0_org);
@@ -685,8 +685,8 @@ void ff_h264_v_lpf_luma_intra_8_lasx(uint8_t *data, int img_width,
     __m256i zero = __lasx_xvldi(0);
 
     LASX_LD_4(src, img_width, p1_org, p0_org, q0_org, q1_org)
-    alpha = __lasx_xvldrepl_b(&alpha_in, 0);
-    beta  = __lasx_xvldrepl_b(&beta_in, 0);
+    alpha = __lasx_xvreplgr2vr_b(alpha_in);
+    beta  = __lasx_xvreplgr2vr_b(beta_in);
     p0_asub_q0 = __lasx_xvabsd_bu(p0_org, q0_org);
     p1_asub_p0 = __lasx_xvabsd_bu(p1_org, p0_org);
     q1_asub_q0 = __lasx_xvabsd_bu(q1_org, q0_org);
@@ -810,8 +810,8 @@ void ff_h264_h_lpf_chroma_intra_8_lasx(uint8_t *data, int img_width,
         q1_org = __lasx_xvpermi_d(row3, 0x55);
     }
 
-    alpha = __lasx_xvldrepl_b(&alpha_in, 0);
-    beta  = __lasx_xvldrepl_b(&beta_in, 0);
+    alpha = __lasx_xvreplgr2vr_b(alpha_in);
+    beta  = __lasx_xvreplgr2vr_b(beta_in);
 
     p0_asub_q0 = __lasx_xvabsd_bu(p0_org, q0_org);
     p1_asub_p0 = __lasx_xvabsd_bu(p1_org, p0_org);
@@ -864,8 +864,8 @@ void ff_h264_v_lpf_chroma_intra_8_lasx(uint8_t *data, int img_width,
     __m256i p0_asub_q0, p1_asub_p0, q1_asub_q0, alpha, beta;
     __m256i is_less_than, is_less_than_beta, is_less_than_alpha;
 
-    alpha = __lasx_xvldrepl_b(&alpha_in, 0);
-    beta  = __lasx_xvldrepl_b(&beta_in, 0);
+    alpha = __lasx_xvreplgr2vr_b(alpha_in);
+    beta  = __lasx_xvreplgr2vr_b(beta_in);
 
     p1_org = LASX_LD(data - img_width_2x);
     p0_org = LASX_LD(data - img_width);
@@ -915,11 +915,11 @@ void ff_biweight_h264_pixels16_8_lasx(uint8_t *dst, uint8_t *src,
     offset_in  += ((weight_src + weight_dst) << 7);
     log2_denom += 1;
 
-    tmp0   = __lasx_xvldrepl_b(&weight_src, 0);
-    tmp1   = __lasx_xvldrepl_b(&weight_dst, 0);
+    tmp0   = __lasx_xvreplgr2vr_b(weight_src);
+    tmp1   = __lasx_xvreplgr2vr_b(weight_dst);
     wgt    = __lasx_xvilvh_b(tmp1, tmp0);
-    offset = __lasx_xvldrepl_h(&offset_in, 0);
-    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+    offset = __lasx_xvreplgr2vr_h(offset_in);
+    denom  = __lasx_xvreplgr2vr_h(log2_denom);
 
     LASX_LD_8(src, stride, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7);
     src += 8 * stride;
@@ -1056,11 +1056,11 @@ static void avc_biwgt_8x4_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     offset_in  += ((weight_src + weight_dst) << 7);
     log2_denom += 1;
 
-    tmp0   = __lasx_xvldrepl_b(&weight_src, 0);
-    tmp1   = __lasx_xvldrepl_b(&weight_dst, 0);
+    tmp0   = __lasx_xvreplgr2vr_b(weight_src);
+    tmp1   = __lasx_xvreplgr2vr_b(weight_dst);
     wgt    = __lasx_xvilvh_b(tmp1, tmp0);
-    offset = __lasx_xvldrepl_h(&offset_in, 0);
-    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+    offset = __lasx_xvreplgr2vr_h(offset_in);
+    denom  = __lasx_xvreplgr2vr_h(log2_denom);
 
     LASX_LD_4(src, stride, tmp0, tmp1, tmp2, tmp3);
     LASX_ILVL_D_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
@@ -1093,11 +1093,11 @@ static void avc_biwgt_8x8_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     offset_in  += ((weight_src + weight_dst) << 7);
     log2_denom += 1;
 
-    tmp0   = __lasx_xvldrepl_b(&weight_src, 0);
-    tmp1   = __lasx_xvldrepl_b(&weight_dst, 0);
+    tmp0   = __lasx_xvreplgr2vr_b(weight_src);
+    tmp1   = __lasx_xvreplgr2vr_b(weight_dst);
     wgt    = __lasx_xvilvh_b(tmp1, tmp0);
-    offset = __lasx_xvldrepl_h(&offset_in, 0);
-    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+    offset = __lasx_xvreplgr2vr_h(offset_in);
+    denom  = __lasx_xvreplgr2vr_h(log2_denom);
 
     LASX_LD_4(src, stride, tmp0, tmp1, tmp2, tmp3);
     src += stride_4x;
@@ -1146,11 +1146,11 @@ static void avc_biwgt_8x16_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     offset_in  += ((weight_src + weight_dst) << 7);
     log2_denom += 1;
 
-    tmp0   = __lasx_xvldrepl_b(&weight_src, 0);
-    tmp1   = __lasx_xvldrepl_b(&weight_dst, 0);
+    tmp0   = __lasx_xvreplgr2vr_b(weight_src);
+    tmp1   = __lasx_xvreplgr2vr_b(weight_dst);
     wgt    = __lasx_xvilvh_b(tmp1, tmp0);
-    offset = __lasx_xvldrepl_h(&offset_in, 0);
-    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+    offset = __lasx_xvreplgr2vr_h(offset_in);
+    denom  = __lasx_xvreplgr2vr_h(log2_denom);
 
     LASX_LD_4(src, stride, tmp0, tmp1, tmp2, tmp3);
     src += stride_4x;
@@ -1245,11 +1245,11 @@ static void avc_biwgt_4x2_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     offset_in  += ((weight_src + weight_dst) << 7);
     log2_denom += 1;
 
-    tmp0   = __lasx_xvldrepl_b(&weight_src, 0);
-    tmp1   = __lasx_xvldrepl_b(&weight_dst, 0);
+    tmp0   = __lasx_xvreplgr2vr_b(weight_src);
+    tmp1   = __lasx_xvreplgr2vr_b(weight_dst);
     wgt    = __lasx_xvilvh_b(tmp1, tmp0);
-    offset = __lasx_xvldrepl_h(&offset_in, 0);
-    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+    offset = __lasx_xvreplgr2vr_h(offset_in);
+    denom  = __lasx_xvreplgr2vr_h(log2_denom);
 
     LASX_LD_2(src, stride, tmp0, tmp1);
     LASX_ILVL_W_128SV(tmp1, tmp0, src0);
@@ -1276,11 +1276,11 @@ static void avc_biwgt_4x4_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     offset_in  += ((weight_src + weight_dst) << 7);
     log2_denom += 1;
 
-    tmp0   = __lasx_xvldrepl_b(&weight_src, 0);
-    tmp1   = __lasx_xvldrepl_b(&weight_dst, 0);
+    tmp0   = __lasx_xvreplgr2vr_b(weight_src);
+    tmp1   = __lasx_xvreplgr2vr_b(weight_dst);
     wgt    = __lasx_xvilvh_b(tmp1, tmp0);
-    offset = __lasx_xvldrepl_h(&offset_in, 0);
-    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+    offset = __lasx_xvreplgr2vr_h(offset_in);
+    denom  = __lasx_xvreplgr2vr_h(log2_denom);
 
     LASX_LD_4(src, stride, tmp0, tmp1, tmp2, tmp3);
     LASX_ILVL_W_2_128SV(tmp2, tmp0, tmp3, tmp1, tmp0, tmp1);
@@ -1309,11 +1309,11 @@ static void avc_biwgt_4x8_lasx(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
     offset_in  += ((weight_src + weight_dst) << 7);
     log2_denom += 1;
 
-    tmp0   = __lasx_xvldrepl_b(&weight_src, 0);
-    tmp1   = __lasx_xvldrepl_b(&weight_dst, 0);
+    tmp0   = __lasx_xvreplgr2vr_b(weight_src);
+    tmp1   = __lasx_xvreplgr2vr_b(weight_dst);
     wgt    = __lasx_xvilvh_b(tmp1, tmp0);
-    offset = __lasx_xvldrepl_h(&offset_in, 0);
-    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+    offset = __lasx_xvreplgr2vr_h(offset_in);
+    denom  = __lasx_xvreplgr2vr_h(log2_denom);
 
     LASX_LD_8(src, stride, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7);
     LASX_ILVL_W_4_128SV(tmp2, tmp0, tmp3, tmp1, tmp6, tmp4, tmp7, tmp5,
@@ -1366,9 +1366,9 @@ void ff_weight_h264_pixels16_8_lasx(uint8_t *src, ptrdiff_t stride,
 
     offset_val = (unsigned) offset_in << log2_denom;
 
-    wgt    = __lasx_xvldrepl_h(&weight_src, 0);
-    offset = __lasx_xvldrepl_h(&offset_val, 0);
-    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+    wgt    = __lasx_xvreplgr2vr_h(weight_src);
+    offset = __lasx_xvreplgr2vr_h(offset_val);
+    denom  = __lasx_xvreplgr2vr_h(log2_denom);
 
     LASX_LD_8(src, stride, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7);
     LASX_PCKEV_Q_4(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6,
@@ -1500,9 +1500,9 @@ static void avc_wgt_8x4_lasx(uint8_t *src, ptrdiff_t stride,
 
     offset_val = (unsigned) offset_in << log2_denom;
 
-    wgt    = __lasx_xvldrepl_h(&weight_src, 0);
-    offset = __lasx_xvldrepl_h(&offset_val, 0);
-    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+    wgt    = __lasx_xvreplgr2vr_h(weight_src);
+    offset = __lasx_xvreplgr2vr_h(offset_val);
+    denom  = __lasx_xvreplgr2vr_h(log2_denom);
 
     LASX_LD_4(src, stride, tmp0, tmp1, tmp2, tmp3);
     LASX_ILVL_D_2_128SV(tmp1, tmp0, tmp3, tmp2, tmp0, tmp1);
@@ -1532,9 +1532,9 @@ static void avc_wgt_8x8_lasx(uint8_t *src, ptrdiff_t stride, int32_t log2_denom,
 
     offset_val = (unsigned) offset_in << log2_denom;
 
-    wgt    = __lasx_xvldrepl_h(&src_weight, 0);
-    offset = __lasx_xvldrepl_h(&offset_val, 0);
-    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+    wgt    = __lasx_xvreplgr2vr_h(src_weight);
+    offset = __lasx_xvreplgr2vr_h(offset_val);
+    denom  = __lasx_xvreplgr2vr_h(log2_denom);
 
     LASX_LD_4(src_tmp, stride, tmp0, tmp1, tmp2, tmp3);
     src_tmp += stride_4x;
@@ -1579,9 +1579,9 @@ static void avc_wgt_8x16_lasx(uint8_t *src, ptrdiff_t stride,
 
     offset_val = (unsigned) offset_in << log2_denom;
 
-    wgt    = __lasx_xvldrepl_h(&src_weight, 0);
-    offset = __lasx_xvldrepl_h(&offset_val, 0);
-    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+    wgt    = __lasx_xvreplgr2vr_h(src_weight);
+    offset = __lasx_xvreplgr2vr_h(offset_val);
+    denom  = __lasx_xvreplgr2vr_h(log2_denom);
 
     LASX_LD_4(src_tmp, stride, tmp0, tmp1, tmp2, tmp3);
     src_tmp += stride_4x;
@@ -1666,9 +1666,9 @@ static void avc_wgt_4x2_lasx(uint8_t *src, ptrdiff_t stride,
 
     offset_val = (unsigned) offset_in << log2_denom;
 
-    wgt    = __lasx_xvldrepl_h(&weight_src, 0);
-    offset = __lasx_xvldrepl_h(&offset_val, 0);
-    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+    wgt    = __lasx_xvreplgr2vr_h(weight_src);
+    offset = __lasx_xvreplgr2vr_h(offset_val);
+    denom  = __lasx_xvreplgr2vr_h(log2_denom);
 
     LASX_LD_2(src, stride, tmp0, tmp1);
     LASX_ILVL_W_128SV(tmp1, tmp0, src0);
@@ -1690,9 +1690,9 @@ static void avc_wgt_4x4_lasx(uint8_t *src, ptrdiff_t stride,
 
     offset_val = (unsigned) offset_in << log2_denom;
 
-    wgt    = __lasx_xvldrepl_h(&weight_src, 0);
-    offset = __lasx_xvldrepl_h(&offset_val, 0);
-    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+    wgt    = __lasx_xvreplgr2vr_h(weight_src);
+    offset = __lasx_xvreplgr2vr_h(offset_val);
+    denom  = __lasx_xvreplgr2vr_h(log2_denom);
 
     LASX_LD_4(src, stride, tmp0, tmp1, tmp2, tmp3);
     LASX_ILVL_W_2_128SV(tmp2, tmp0, tmp3, tmp1, tmp0, tmp1);
@@ -1716,9 +1716,9 @@ static void avc_wgt_4x8_lasx(uint8_t *src, ptrdiff_t stride,
 
     offset_val = (unsigned) offset_in << log2_denom;
 
-    wgt    = __lasx_xvldrepl_h(&weight_src, 0);
-    offset = __lasx_xvldrepl_h(&offset_val, 0);
-    denom  = __lasx_xvldrepl_h(&log2_denom, 0);
+    wgt    = __lasx_xvreplgr2vr_h(weight_src);
+    offset = __lasx_xvreplgr2vr_h(offset_val);
+    denom  = __lasx_xvreplgr2vr_h(log2_denom);
 
     LASX_LD_8(src, stride, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7);
     LASX_ILVL_W_4_128SV(tmp2, tmp0, tmp3, tmp1, tmp6, tmp4, tmp7, tmp5,

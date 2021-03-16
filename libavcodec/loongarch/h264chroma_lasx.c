@@ -39,11 +39,11 @@ static av_always_inline void avc_chroma_hv_8x4_lasx(uint8_t *src, uint8_t *dst,
     __m256i src0, src1, src2, src3, src4, out;
     __m256i res_hz0, res_hz1, res_hz2, res_vt0, res_vt1;
     __m256i mask;
-    __m256i coeff_hz_vec0 = __lasx_xvldrepl_b(&coef_hor0, 0);
-    __m256i coeff_hz_vec1 = __lasx_xvldrepl_b(&coef_hor1, 0);
+    __m256i coeff_hz_vec0 = __lasx_xvreplgr2vr_b(coef_hor0);
+    __m256i coeff_hz_vec1 = __lasx_xvreplgr2vr_b(coef_hor1);
     __m256i coeff_hz_vec = __lasx_xvilvl_b(coeff_hz_vec0, coeff_hz_vec1);
-    __m256i coeff_vt_vec0 = __lasx_xvldrepl_h(&coef_ver0, 0);
-    __m256i coeff_vt_vec1 = __lasx_xvldrepl_h(&coef_ver1, 0);
+    __m256i coeff_vt_vec0 = __lasx_xvreplgr2vr_h(coef_ver0);
+    __m256i coeff_vt_vec1 = __lasx_xvreplgr2vr_h(coef_ver1);
 
     mask = LASX_LD(chroma_mask_arr);
     src0 = LASX_LD(src);
@@ -79,11 +79,11 @@ static av_always_inline void avc_chroma_hv_8x8_lasx(uint8_t *src, uint8_t *dst,
     __m256i res_hz0, res_hz1, res_hz2, res_hz3, res_hz4;
     __m256i res_vt0, res_vt1, res_vt2, res_vt3;
     __m256i mask;
-    __m256i coeff_hz_vec0 = __lasx_xvldrepl_b(&coef_hor0, 0);
-    __m256i coeff_hz_vec1 = __lasx_xvldrepl_b(&coef_hor1, 0);
+    __m256i coeff_hz_vec0 = __lasx_xvreplgr2vr_b(coef_hor0);
+    __m256i coeff_hz_vec1 = __lasx_xvreplgr2vr_b(coef_hor1);
     __m256i coeff_hz_vec = __lasx_xvilvl_b(coeff_hz_vec0, coeff_hz_vec1);
-    __m256i coeff_vt_vec0 = __lasx_xvldrepl_h(&coef_ver0, 0);
-    __m256i coeff_vt_vec1 = __lasx_xvldrepl_h(&coef_ver1, 0);
+    __m256i coeff_vt_vec0 = __lasx_xvreplgr2vr_h(coef_ver0);
+    __m256i coeff_vt_vec1 = __lasx_xvreplgr2vr_h(coef_ver1);
 
     mask = LASX_LD(chroma_mask_arr);
     src0 = LASX_LD(src);
@@ -132,8 +132,8 @@ static av_always_inline void avc_chroma_hz_8x4_lasx(uint8_t *src, uint8_t *dst,
     __m256i src0, src1, src2, src3, out;
     __m256i res0, res1;
     __m256i mask;
-    __m256i coeff_vec0 = __lasx_xvldrepl_b(&coeff0, 0);
-    __m256i coeff_vec1 = __lasx_xvldrepl_b(&coeff1, 0);
+    __m256i coeff_vec0 = __lasx_xvreplgr2vr_b(coeff0);
+    __m256i coeff_vec1 = __lasx_xvreplgr2vr_b(coeff1);
     __m256i coeff_vec = __lasx_xvilvl_b(coeff_vec0, coeff_vec1);
 
     mask = LASX_LD(chroma_mask_arr);
@@ -158,8 +158,8 @@ static av_always_inline void avc_chroma_hz_8x8_lasx(uint8_t *src, uint8_t *dst,
     __m256i out0, out1;
     __m256i res0, res1, res2, res3;
     __m256i mask;
-    __m256i coeff_vec0 = __lasx_xvldrepl_b(&coeff0, 0);
-    __m256i coeff_vec1 = __lasx_xvldrepl_b(&coeff1, 0);
+    __m256i coeff_vec0 = __lasx_xvreplgr2vr_b(coeff0);
+    __m256i coeff_vec1 = __lasx_xvreplgr2vr_b(coeff1);
     __m256i coeff_vec = __lasx_xvilvl_b(coeff_vec0, coeff_vec1);
 
     mask = LASX_LD(chroma_mask_arr);
@@ -195,8 +195,8 @@ static av_always_inline void avc_chroma_hz_nonmult_lasx(uint8_t *src,
     __m256i src0, src1, src2, src3, out;
     __m256i res0, res1;
     __m256i mask;
-    __m256i coeff_vec0 = __lasx_xvldrepl_b(&coeff0, 0);
-    __m256i coeff_vec1 = __lasx_xvldrepl_b(&coeff1, 0);
+    __m256i coeff_vec0 = __lasx_xvreplgr2vr_b(coeff0);
+    __m256i coeff_vec1 = __lasx_xvreplgr2vr_b(coeff1);
     __m256i coeff_vec = __lasx_xvilvl_b(coeff_vec0, coeff_vec1);
 
     mask = LASX_LD(chroma_mask_arr);
@@ -239,8 +239,8 @@ static av_always_inline void avc_chroma_vt_8x4_lasx(uint8_t *src, uint8_t *dst,
 {
     __m256i src0, src1, src2, src3, src4, out;
     __m256i res0, res1;
-    __m256i coeff_vec0 = __lasx_xvldrepl_b(&coeff0, 0);
-    __m256i coeff_vec1 = __lasx_xvldrepl_b(&coeff1, 0);
+    __m256i coeff_vec0 = __lasx_xvreplgr2vr_b(coeff0);
+    __m256i coeff_vec1 = __lasx_xvreplgr2vr_b(coeff1);
     __m256i coeff_vec = __lasx_xvilvl_b(coeff_vec0, coeff_vec1);
 
     src0 = LASX_LD(src);
@@ -265,8 +265,8 @@ static av_always_inline void avc_chroma_vt_8x8_lasx(uint8_t *src, uint8_t *dst,
     __m256i src0, src1, src2, src3, src4, src5, src6, src7, src8;
     __m256i out0, out1;
     __m256i res0, res1, res2, res3;
-    __m256i coeff_vec0 = __lasx_xvldrepl_b(&coeff0, 0);
-    __m256i coeff_vec1 = __lasx_xvldrepl_b(&coeff1, 0);
+    __m256i coeff_vec0 = __lasx_xvreplgr2vr_b(coeff0);
+    __m256i coeff_vec1 = __lasx_xvreplgr2vr_b(coeff1);
     __m256i coeff_vec = __lasx_xvilvl_b(coeff_vec0, coeff_vec1);
 
     src0 = LASX_LD(src);
@@ -443,11 +443,11 @@ static av_always_inline void avc_chroma_hv_and_aver_dst_8x4_lasx(uint8_t *src,
     __m256i src0, src1, src2, src3, src4, out;
     __m256i res_hz0, res_hz1, res_hz2, res_vt0, res_vt1;
     __m256i mask;
-    __m256i coeff_hz_vec0 = __lasx_xvldrepl_b(&coef_hor0, 0);
-    __m256i coeff_hz_vec1 = __lasx_xvldrepl_b(&coef_hor1, 0);
+    __m256i coeff_hz_vec0 = __lasx_xvreplgr2vr_b(coef_hor0);
+    __m256i coeff_hz_vec1 = __lasx_xvreplgr2vr_b(coef_hor1);
     __m256i coeff_hz_vec = __lasx_xvilvl_b(coeff_hz_vec0, coeff_hz_vec1);
-    __m256i coeff_vt_vec0 = __lasx_xvldrepl_h(&coef_ver0, 0);
-    __m256i coeff_vt_vec1 = __lasx_xvldrepl_h(&coef_ver1, 0);
+    __m256i coeff_vt_vec0 = __lasx_xvreplgr2vr_h(coef_ver0);
+    __m256i coeff_vt_vec1 = __lasx_xvreplgr2vr_h(coef_ver1);
 
     mask = LASX_LD(chroma_mask_arr);
     src0 = LASX_LD(src);
@@ -488,11 +488,11 @@ static av_always_inline void avc_chroma_hv_and_aver_dst_8x8_lasx(uint8_t *src,
     __m256i res_hz0, res_hz1, res_hz2, res_hz3, res_hz4;
     __m256i res_vt0, res_vt1, res_vt2, res_vt3;
     __m256i mask;
-    __m256i coeff_hz_vec0 = __lasx_xvldrepl_b(&coef_hor0, 0);
-    __m256i coeff_hz_vec1 = __lasx_xvldrepl_b(&coef_hor1, 0);
+    __m256i coeff_hz_vec0 = __lasx_xvreplgr2vr_b(coef_hor0);
+    __m256i coeff_hz_vec1 = __lasx_xvreplgr2vr_b(coef_hor1);
+    __m256i coeff_vt_vec0 = __lasx_xvreplgr2vr_h(coef_ver0);
+    __m256i coeff_vt_vec1 = __lasx_xvreplgr2vr_h(coef_ver1);
     __m256i coeff_hz_vec = __lasx_xvilvl_b(coeff_hz_vec0, coeff_hz_vec1);
-    __m256i coeff_vt_vec0 = __lasx_xvldrepl_h(&coef_ver0, 0);
-    __m256i coeff_vt_vec1 = __lasx_xvldrepl_h(&coef_ver1, 0);
 
     mask = LASX_LD(chroma_mask_arr);
     src0 = LASX_LD(src);
@@ -551,8 +551,8 @@ static av_always_inline void avc_chroma_hz_and_aver_dst_8x4_lasx(uint8_t *src,
     __m256i src0, src1, src2, src3, out;
     __m256i res0, res1;
     __m256i mask;
-    __m256i coeff_vec0 = __lasx_xvldrepl_b(&coeff0, 0);
-    __m256i coeff_vec1 = __lasx_xvldrepl_b(&coeff1, 0);
+    __m256i coeff_vec0 = __lasx_xvreplgr2vr_b(coeff0);
+    __m256i coeff_vec1 = __lasx_xvreplgr2vr_b(coeff1);
     __m256i coeff_vec = __lasx_xvilvl_b(coeff_vec0, coeff_vec1);
 
     mask = LASX_LD(chroma_mask_arr);
@@ -583,8 +583,8 @@ static av_always_inline void avc_chroma_hz_and_aver_dst_8x8_lasx(uint8_t *src,
     __m256i out0, out1;
     __m256i res0, res1, res2, res3;
     __m256i mask;
-    __m256i coeff_vec0 = __lasx_xvldrepl_b(&coeff0, 0);
-    __m256i coeff_vec1 = __lasx_xvldrepl_b(&coeff1, 0);
+    __m256i coeff_vec0 = __lasx_xvreplgr2vr_b(coeff0);
+    __m256i coeff_vec1 = __lasx_xvreplgr2vr_b(coeff1);
     __m256i coeff_vec = __lasx_xvilvl_b(coeff_vec0, coeff_vec1);
 
     mask = LASX_LD(chroma_mask_arr);
@@ -627,8 +627,8 @@ static av_always_inline void avc_chroma_vt_and_aver_dst_8x4_lasx(uint8_t *src,
     __m256i tp0, tp1, tp2, tp3;
     __m256i src0, src1, src2, src3, src4, out;
     __m256i res0, res1;
-    __m256i coeff_vec0 = __lasx_xvldrepl_b(&coeff0, 0);
-    __m256i coeff_vec1 = __lasx_xvldrepl_b(&coeff1, 0);
+    __m256i coeff_vec0 = __lasx_xvreplgr2vr_b(coeff0);
+    __m256i coeff_vec1 = __lasx_xvreplgr2vr_b(coeff1);
     __m256i coeff_vec = __lasx_xvilvl_b(coeff_vec0, coeff_vec1);
 
     src0 = LASX_LD(src);
@@ -659,8 +659,8 @@ static av_always_inline void avc_chroma_vt_and_aver_dst_8x8_lasx(uint8_t *src,
     __m256i src0, src1, src2, src3, src4, src5, src6, src7, src8;
     __m256i out0, out1;
     __m256i res0, res1, res2, res3;
-    __m256i coeff_vec0 = __lasx_xvldrepl_b(&coeff0, 0);
-    __m256i coeff_vec1 = __lasx_xvldrepl_b(&coeff1, 0);
+    __m256i coeff_vec0 = __lasx_xvreplgr2vr_b(coeff0);
+    __m256i coeff_vec1 = __lasx_xvreplgr2vr_b(coeff1);
     __m256i coeff_vec = __lasx_xvilvl_b(coeff_vec0, coeff_vec1);
 
     src0 = LASX_LD(src);

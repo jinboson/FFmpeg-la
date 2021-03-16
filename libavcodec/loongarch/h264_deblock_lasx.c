@@ -120,8 +120,8 @@ void ff_h264_loop_filter_strength_lasx(int16_t bS[2][4][4], uint8_t nnz[40],
     __m256i one  = __lasx_xvnor_v(zero, zero);
     int64_t cnst3 = 0x0206020602060206, cnst4 = 0x0103010301030103;
     if (field) {
-        cnst_0 = __lasx_xvldrepl_d(&cnst3, 0);
-        cnst_1 = __lasx_xvldrepl_d(&cnst4, 0);
+        cnst_0 = __lasx_xvreplgr2vr_d(cnst3);
+        cnst_1 = __lasx_xvreplgr2vr_d(cnst4);
         cnst_2 = __lasx_xvldi(0x01);
     } else {
         cnst_0 = __lasx_xvldi(0x06);
