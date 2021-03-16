@@ -54,6 +54,24 @@ FF_PUT_VC1_MSPEL_MC_LASX(3, 1);
 FF_PUT_VC1_MSPEL_MC_LASX(3, 2);
 FF_PUT_VC1_MSPEL_MC_LASX(3, 3);
 
+#define FF_PUT_VC1_MSPEL_MC_V_LASX(vmode)                                 \
+void ff_put_vc1_mspel_mc0 ## vmode ## _16_lasx(uint8_t *dst,              \
+                                               const uint8_t *src,        \
+                                               ptrdiff_t stride, int rnd);
+
+FF_PUT_VC1_MSPEL_MC_V_LASX(1);
+FF_PUT_VC1_MSPEL_MC_V_LASX(2);
+FF_PUT_VC1_MSPEL_MC_V_LASX(3);
+
+#define FF_PUT_VC1_MSPEL_MC_H_LASX(hmode)                                 \
+void ff_put_vc1_mspel_mc ## hmode ## 0_16_lasx(uint8_t *dst,              \
+                                               const uint8_t *src,        \
+                                               ptrdiff_t stride, int rnd);
+
+FF_PUT_VC1_MSPEL_MC_H_LASX(1);
+FF_PUT_VC1_MSPEL_MC_H_LASX(2);
+FF_PUT_VC1_MSPEL_MC_H_LASX(3);
+
 void ff_put_no_rnd_vc1_chroma_mc8_lasx(uint8_t *dst /* align 8 */,
                                        uint8_t *src /* align 1 */,
                                        ptrdiff_t stride, int h, int x, int y);

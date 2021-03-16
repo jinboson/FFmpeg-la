@@ -28,6 +28,12 @@
     dsp->OP##vc1_mspel_pixels_tab[1][X+4*Y] = ff_##OP##vc1_mspel_mc##X##Y##INSN; \
     dsp->OP##vc1_mspel_pixels_tab[0][X+4*Y] = ff_##OP##vc1_mspel_mc##X##Y##_16##INSN
 
+#define FN_ASSIGN_V(OP, Y, INSN) \
+    dsp->OP##vc1_mspel_pixels_tab[0][4*Y] = ff_##OP##vc1_mspel_mc0##Y##_16##INSN
+
+#define FN_ASSIGN_H(OP, X, INSN) \
+    dsp->OP##vc1_mspel_pixels_tab[0][X] = ff_##OP##vc1_mspel_mc##X##0_16##INSN
+
 av_cold void ff_vc1dsp_init_loongarch(VC1DSPContext *dsp)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -50,6 +56,12 @@ av_cold void ff_vc1dsp_init_loongarch(VC1DSPContext *dsp)
         FN_ASSIGN(put_, 3, 1, _lasx);
         FN_ASSIGN(put_, 3, 2, _lasx);
         FN_ASSIGN(put_, 3, 3, _lasx);
+        FN_ASSIGN_V(put_, 1, _lasx);
+        FN_ASSIGN_V(put_, 2, _lasx);
+        FN_ASSIGN_V(put_, 3, _lasx);
+        FN_ASSIGN_H(put_, 1, _lasx);
+        FN_ASSIGN_H(put_, 2, _lasx);
+        FN_ASSIGN_H(put_, 3, _lasx);
         dsp->put_no_rnd_vc1_chroma_pixels_tab[0] = ff_put_no_rnd_vc1_chroma_mc8_lasx;
     }
 }
