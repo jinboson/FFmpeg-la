@@ -57,7 +57,7 @@
  */
 #define LSOM_LASX_VERSION_MAJOR 2
 #define LSOM_LASX_VERSION_MINOR 0
-#define LSOM_LASX_VERSION_MICRO 0
+#define LSOM_LASX_VERSION_MICRO 2
 
 /* Description : Load 256-bit vector data with stride
  * Arguments   : Inputs  - psrc    (source pointer to load from)
@@ -310,7 +310,7 @@
  *               twice the size of input i.e. signed word.
  *               Then this iniplication results of adjacent odd-even elements
  *               are added together and stored to the out vector.
- * Exampe      : LASX_DP2_W_H(in0, in1, out0)
+ * Example     : LASX_DP2_W_H(in0, in1, out0)
  *               in0:   1,2,3,4, 5,6,7,8, 1,2,3,4, 5,6,7,8,
  *               in0:   8,7,6,5, 4,3,2,1, 8,7,6,5, 4,3,2,1,
  *               out0:  22,38,38,22, 22,38,38,22
@@ -391,7 +391,6 @@
  *               twice the size of input i.e. unsigned word.
  *               Multiplication result of adjacent odd-even elements
  *               are added together and written to the 'out0' vector
- *               __lasx_xvdp2_w_hu_h
  */
 #define LASX_DP2_W_HU_H(in0, in1, out0)                   \
 {                                                         \
@@ -622,7 +621,7 @@
  *               twice the size of input i.e. signed word.
  *               Then this iniplication results of four adjacent elements
  *               are added together and stored to the out vector.
- * Exampe      : LASX_DP2_W_H(in0, in0, out0)
+ * Example     : LASX_DP2_W_H(in0, in0, out0)
  *               in0:   3,1,3,0, 0,0,0,1, 0,0,1,-1, 0,0,0,1,
  *               in0:   -2,1,1,0, 1,0,0,0, 0,0,1,0, 1,0,0,1,
  *               out0:  -2,0,1,1,
@@ -654,7 +653,7 @@
  * Details     : The in0 vector and the in1 vector are added after the
  *               higher half of the two-fold sign extension ( signed byte
  *               to signed half word ) and stored to the out vector.
- * Exampe      : see LASX_ADDWL_W_H_128SV
+ * Example     : see LASX_ADDWL_W_H_128SV
  */
 #define LASX_ADDWH_H_B_128SV(in0, in1, out0)                                  \
 {                                                                             \
@@ -683,7 +682,7 @@
  * Details     : The in0 vector and the in1 vector are added after the
  *               higher half of the two-fold sign extension ( signed half word
  *               to signed word ) and stored to the out vector.
- * Exampe      : see LASX_ADDWL_W_H_128SV
+ * Example     : see LASX_ADDWL_W_H_128SV
  */
 #define LASX_ADDWH_W_H_128SV(in0, in1, out0)                                  \
 {                                                                             \
@@ -712,7 +711,7 @@
  * Details     : The in0 vector and the in1 vector are added after the
  *               lower half of the two-fold sign extension ( signed byte
  *               to signed half word ) and stored to the out vector.
- * Exampe      : see LASX_ADDWL_W_H_128SV
+ * Example     : see LASX_ADDWL_W_H_128SV
  */
 #define LASX_ADDWL_H_B_128SV(in0, in1, out0)                                  \
 {                                                                             \
@@ -737,12 +736,11 @@
 /* Description : The low half of the vector elements are expanded and
  *               added after being doubled
  * Arguments   : Inputs  - in0, in1, ~
- *                         in0, in1, ~
  *               Outputs - out0,  out1,  ~
  * Details     : The in0 vector and the in1 vector are added after the
  *               lower half of the two-fold sign extension ( signed half word
  *               to signed word ) and stored to the out vector.
- * Exampe      : LASX_ADDWL_W_H_128SV(in0, in1, out0)
+ * Example     : LASX_ADDWL_W_H_128SV(in0, in1, out0)
  *               in0   3,0,3,0, 0,0,0,-1, 0,0,1,-1, 0,0,0,1,
  *               in1   2,-1,1,2, 1,0,0,0, 1,0,1,0, 1,0,0,1,
  *               out0  5,-1,4,2, 1,0,2,-1,
@@ -799,7 +797,6 @@
 /* Description : The low half of the vector elements are expanded and
  *               added after being doubled
  * Arguments   : Inputs  - in0, in1, ~
- *                         in0, in1, ~
  *               Outputs - out0,  out1,  ~
  * Details     : In1 vector plus in0 vector after double zero extension
  *               ( unsigned byte to half word ),add and stored to the out vector.
@@ -827,11 +824,10 @@
 /* Description : The low half of the vector elements are expanded and
  *               added after being doubled
  * Arguments   : Inputs  - in0, in1, ~
- *                         in0, in1, ~
  *               Outputs - out0,  out1,  ~
  * Details     : In1 vector plus in0 vector after double sign extension
  *               ( signed half word to word ),add and stored to the out vector.
- * Exampe      : LASX_ADDW_W_W_H_128SV(in0, in1, out0)
+ * Example     : LASX_ADDW_W_W_H_128SV(in0, in1, out0)
  *               in0   0,1,0,0, -1,0,0,1,
  *               in1   2,-1,1,2, 1,0,0,0, 0,0,1,0, 1,0,0,1,
  *               out0  2,0,1,2, -1,0,1,1,
@@ -858,13 +854,12 @@
 /* Description : Multiplication and addition calculation after expansion
  *               of the lower half of the vector
  * Arguments   : Inputs  - in0, in1, ~
- *                         in0, in1, ~
  *               Outputs - out0,  out1,  ~
  * Details     : The in1 vector and the in0 vector are multiplied after
  *               the lower half of the two-fold sign extension ( signed
  *               half word to signed word ) , and the result is added to
  *               the vector in0, the stored to the out vector.
- * Exampe      : LASX_MADDWL_W_H_128SV(in0, in1, in2, out0)
+ * Example     : LASX_MADDWL_W_H_128SV(in0, in1, in2, out0)
  *               in0   1,2,3,4, 5,6,7 8
  *               in1   1,2,3,4, 1,2,3,4, 5,6,7,8, 5,6,7,8
  *               in2   200,300,400,500, 2000,3000,4000,5000,
@@ -901,7 +896,7 @@
  *               the higher half of the two-fold sign extension ( signed
  *               half word to signed word ) , and the result is added to
  *               the vector in0, the stored to the out vector.
- * Exampe      : see LASX_MADDWL_W_H_128SV
+ * Example     : see LASX_MADDWL_W_H_128SV
  */
 #define LASX_MADDWH_W_H_128SV(in0, in1, in2, out0)                            \
 {                                                                             \
@@ -928,12 +923,11 @@
 /* Description : Multiplication calculation after expansion
  *               of the lower half of the vector
  * Arguments   : Inputs  - in0, in1, ~
- *                         in0, in1, ~
  *               Outputs - out0,  out1,  ~
  * Details     : The in1 vector and the in0 vector are multiplied after
  *               the lower half of the two-fold sign extension ( signed
  *               half word to signed word ) , the stored to the out vector.
- * Exampe      : LASX_MULWL_W_H_128SV(in0, in1, out0)
+ * Example     : LASX_MULWL_W_H_128SV(in0, in1, out0)
  *               in0   3,-1,3,0, 0,0,0,-1, 0,0,1,-1, 0,0,0,1,
  *               in1   2,-1,1,2, 1,0,0,0,  0,0,1,0, 1,0,0,1,
  *               out0  6,1,3,0, 0,0,1,0,
@@ -962,12 +956,11 @@
 /* Description : Multiplication calculation after expansion
  *               of the lower half of the vector
  * Arguments   : Inputs  - in0, in1, ~
- *                         in0, in1, ~
  *               Outputs - out0,  out1,  ~
  * Details     : The in1 vector and the in0 vector are multiplied after
  *               the lower half of the two-fold sign extension ( signed
  *               half word to signed word ) , the stored to the out vector.
- * Exampe      : see LASX_MULWL_W_H_128SV
+ * Example     : see LASX_MULWL_W_H_128SV
  */
 #define LASX_MULWH_W_H_128SV(in0, in1, out0)                    \
 {                                                               \
@@ -3340,7 +3333,7 @@
  * Details     : Each element of vector 'in0' is shifted right arithmetic by
  *               value in 'shift'.
  *               Similar for other pairs
- * Exampe      : see LASX_SRARI_H(in0, out0, shift)
+ * Example     : see LASX_SRARI_H(in0, out0, shift)
  */
 #define LASX_SRAI_W(in0, out0, shift)                                    \
 {                                                                        \
