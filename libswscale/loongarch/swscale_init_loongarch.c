@@ -69,6 +69,26 @@ av_cold SwsFunc ff_yuv2rgb_init_loongarch(SwsContext *c)
                 return yuv420_rgb24_lasx;
             case AV_PIX_FMT_BGR24:
                 return yuv420_bgr24_lasx;
+            case AV_PIX_FMT_RGBA:
+                if (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat)) {
+                    break;
+                } else
+                    return yuv420_rgba32_lasx;
+            case AV_PIX_FMT_ARGB:
+                if (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat)) {
+                    break;
+                } else
+                    return yuv420_argb32_lasx;
+            case AV_PIX_FMT_BGRA:
+                if (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat)) {
+                    break;
+                } else
+                    return yuv420_bgra32_lasx;
+            case AV_PIX_FMT_ABGR:
+                if (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat)) {
+                    break;
+                } else
+                    return yuv420_abgr32_lasx;
         }
     }
     return NULL;
