@@ -54,7 +54,7 @@ static const uint8_t luma_mask_arr[16 * 6] __attribute__((aligned(0x40))) = {
 ( {                                                            \
     __m256i out0_m;                                            \
                                                                \
-    out0_m = __lasx_xvdp2_h_b(in0, coeff0);                    \
+    LASX_DP2_H_B(in0, coeff0, out0_m);                         \
     LASX_DP2ADD_H_B(out0_m, in1, coeff1, out0_m);              \
     LASX_DP2ADD_H_B(out0_m, in2, coeff2, out0_m);              \
                                                                \
