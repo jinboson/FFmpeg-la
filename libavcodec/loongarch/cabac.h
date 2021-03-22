@@ -44,8 +44,7 @@ static av_always_inline int get_cabac_inline_loongarch(CABACContext *c,
 
         "sub.d        %[c_range],    %[c_range],     %[tmp1]       \n\t"
         "slli.d       %[tmp0],       %[c_range],     0x11          \n\t"
-        "slt          %[tmp2],       %[tmp0],        %[c_low]      \n\t"
-        "beqz         %[tmp2],       1f                            \n\t"
+        "bge          %[tmp0],       %[c_low],       1f            \n\t"
         "move         %[c_range],    %[tmp1]                       \n\t"
         "nor          %[bit],        %[bit],         %[bit]        \n\t"
         "sub.d        %[c_low],      %[c_low],       %[tmp0]       \n\t"
