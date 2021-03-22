@@ -57,7 +57,7 @@
  */
 #define LSOM_LASX_VERSION_MAJOR 2
 #define LSOM_LASX_VERSION_MINOR 0
-#define LSOM_LASX_VERSION_MICRO 2
+#define LSOM_LASX_VERSION_MICRO 3
 
 /* Description : Load 256-bit vector data with stride
  * Arguments   : Inputs  - psrc    (source pointer to load from)
@@ -747,11 +747,10 @@
  */
 #define LASX_ADDWL_W_H_128SV(in0, in1, out0)                                  \
 {                                                                             \
-    __m256i _tmp0_m, _tmp1_m;                                                 \
+    __m256i _tmp0_m;                                                          \
                                                                               \
-    _tmp0_m = __lasx_xvsllwil_w_h( in0, 0 );                                  \
-    _tmp1_m = __lasx_xvsllwil_w_h( in1, 0 );                                  \
-    out0 = __lasx_xvadd_w( _tmp0_m, _tmp1_m );                                \
+    _tmp0_m = __lasx_xvilvl_h(in1, in0);                                      \
+    out0 = __lasx_xvhaddw_w_h( _tmp0_m, _tmp0_m );                            \
 }
 #define LASX_ADDWL_W_H_2_128SV(in0, in1, in2, in3, out0, out1)                \
 {                                                                             \
@@ -775,23 +774,21 @@
  */
 #define LASX_ADDWL_H_BU_128SV(in0, in1, out0)                                 \
 {                                                                             \
-    __m256i _tmp0_m, _tmp1_m;                                                 \
-    __m256i _zero_m = { 0 };                                                  \
+    __m256i _tmp0_m;                                                          \
                                                                               \
-    _tmp0_m = __lasx_xvilvl_b( _zero_m, in0 );                                \
-    _tmp1_m = __lasx_xvilvl_b( _zero_m, in1 );                                \
-    out0 = __lasx_xvadd_h( _tmp0_m, _tmp1_m );                                \
+    _tmp0_m = __lasx_xvilvl_b(in1, in0);                                      \
+    out0 = __lasx_xvhaddw_hu_bu( _tmp0_m, _tmp0_m );                          \
 }
-#define LASX_ADDWL_H_BU_2_128SV(in0, in1, in2, in3, out0, out1)                \
-{                                                                              \
-    LASX_ADDWL_H_BU_128SV(in0, in1, out0);                                     \
-    LASX_ADDWL_H_BU_128SV(in2, in3, out1);                                     \
+#define LASX_ADDWL_H_BU_2_128SV(in0, in1, in2, in3, out0, out1)               \
+{                                                                             \
+    LASX_ADDWL_H_BU_128SV(in0, in1, out0);                                    \
+    LASX_ADDWL_H_BU_128SV(in2, in3, out1);                                    \
 }
-#define LASX_ADDWL_H_BU_4_128SV(in0, in1, in2, in3,                            \
-                                in4, in5, in6, in7, out0, out1, out2, out3)    \
-{                                                                              \
-    LASX_ADDWL_H_BU_2_128SV(in0, in1, in2, in3, out0, out1);                   \
-    LASX_ADDWL_H_BU_2_128SV(in4, in5, in6, in7, out2, out3);                   \
+#define LASX_ADDWL_H_BU_4_128SV(in0, in1, in2, in3,                           \
+                                in4, in5, in6, in7, out0, out1, out2, out3)   \
+{                                                                             \
+    LASX_ADDWL_H_BU_2_128SV(in0, in1, in2, in3, out0, out1);                  \
+    LASX_ADDWL_H_BU_2_128SV(in4, in5, in6, in7, out2, out3);                  \
 }
 
 /* Description : The low half of the vector elements are expanded and
