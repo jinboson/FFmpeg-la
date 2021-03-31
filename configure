@@ -5832,8 +5832,8 @@ EOF
     esac
 
 elif enabled loongarch; then
-    enabled lsx && check_inline_asm lsx '"vmskfill.b $vr0, $vr1"' '-mlsx' && append LSXFLAGS '-mlsx'
-    enabled lasx && check_inline_asm lasx '"xvmskfill.b $xr0, $xr1"' '-mlasx' && append LASXFLAGS '-mlasx'
+    enabled lsx && check_inline_asm lsx '"vadd.b $vr0, $vr1, $vr2"' '-mlsx' && append LSXFLAGS '-mlsx'
+    enabled lasx && check_inline_asm lasx '"xvadd.b $xr0, $xr1, $xr2"' '-mlasx' && append LASXFLAGS '-mlasx'
 fi
 
 check_cc intrinsics_neon arm_neon.h "int16x8_t test = vdupq_n_s16(0)"

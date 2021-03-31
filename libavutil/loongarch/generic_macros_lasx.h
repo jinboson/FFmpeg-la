@@ -55,9 +55,9 @@
  * MINOR version: Add new macros, or bug fix.
  * MICRO version: Comment changes or implementation changes。
  */
-#define LSOM_LASX_VERSION_MAJOR 2
+#define LSOM_LASX_VERSION_MAJOR 3
 #define LSOM_LASX_VERSION_MINOR 0
-#define LSOM_LASX_VERSION_MICRO 3
+#define LSOM_LASX_VERSION_MICRO 0
 
 /* Description : Load 256-bit vector data with stride
  * Arguments   : Inputs  - psrc    (source pointer to load from)
@@ -3521,44 +3521,6 @@
 {                                                                \
     LASX_AVER_BU_2( in0, in1, in2, in3, out0, out1 );            \
     LASX_AVER_BU_2( in4, in5, in6, in7, out2, out3 );            \
-}
-
-/* Description : Immediate number of elements to slide
- * Arguments   : Inputs  - in0_0, in0_1, in1_0, in1_1, slide_val
- *               Outputs - out0, out1
- *               Return Type - as per RTYPE
- * Details     : Byte elements from 'in0_0' vector are slide into 'in1_0' by
- *               value specified in 'slide_val'
- * Example     : LASX_SLDI_B_128SV( in0_0, in1_0, out0, slide_val )
- *               in0_0:  1,2,3,4, 5,6,7,8, 9,10,11,12, 13,14,15,16
- *                       17,18,19,20, 21,22,23,24, 25,26,27,28, 29,30,31,32
- *               in1_0:  33,34,35,36, 37,38,39,40, 41,42,43,44, 45,46,47,48
- *                       49,50,51,52, 53,54,55,56, 57,58,59,60, 61,62,63,64
- *               slide_val:  1
- *               out0:   2,3,4, 5,6,7,8, 9,10,11,12, 13,14,15,16,33
- *                       18,19,20, 21,22,23,24, 25,26,27,28, 29,30,31,32,49
-*/
-#define LASX_SLDI_B_128SV( in0_0, in1_0, out0, slide_val ) \
-{                                                          \
-    out0 = __lasx_xvextrcoli_b( in0_0, in1_0, slide_val ); \
-}
-
-#define LASX_SLDI_B_2_128SV( in0_0, in0_1, in1_0, in1_1,   \
-                             out0, out1, slide_val )       \
-{                                                          \
-    LASX_SLDI_B_128SV( in0_0, in1_0, out0, slide_val );    \
-    LASX_SLDI_B_128SV( in0_1, in1_1, out1, slide_val );    \
-}
-
-#define LASX_SLDI_B_4_128SV( in0_0, in0_1, in0_2, in0_3,   \
-                             in1_0, in1_1, in1_2, in1_3,   \
-                             out0, out1, out2, out3,       \
-                             slide_val )                   \
-{                                                          \
-    LASX_SLDI_B_2_128SV( in0_0, in0_1, in1_0, in1_1,       \
-                         out0, out1, slide_val );          \
-    LASX_SLDI_B_2_128SV( in0_2, in0_3, in1_2, in1_3,       \
-                         out2, out3, slide_val );          \
 }
 
 /* Description : Butterfly of 4 input vectors
