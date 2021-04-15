@@ -20,9 +20,7 @@
  */
 
 #include "swscale_loongarch.h"
-#include "libavutil/attributes.h"
 #include "libavutil/loongarch/generic_macros_lasx.h"
-#include "config.h"
 
 void ff_yuv2planeX_8_lasx(const int16_t *filter, int filterSize,
                           const int16_t **src, uint8_t *dest, int dstW,

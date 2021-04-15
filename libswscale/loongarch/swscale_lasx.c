@@ -62,16 +62,18 @@
     src5 = __lasx_xvhaddw_d_w(src5, src5);                        \
     src6 = __lasx_xvhaddw_d_w(src6, src6);                        \
     src7 = __lasx_xvhaddw_d_w(src7, src7);                        \
-    LASX_PCKEV_W_4(src1, src0, src3, src2, src5, src4, src7, src6,\
-                   src0, src1, src2, src3);                       \
+    LASX_PCKEV_W_4_128SV(src1, src0, src3, src2, src5, src4,      \
+                         src7, src6, src0, src1, src2, src3);     \
     src0 = __lasx_xvhaddw_d_w(src0, src0);                        \
     src1 = __lasx_xvhaddw_d_w(src1, src1);                        \
     src2 = __lasx_xvhaddw_d_w(src2, src2);                        \
     src3 = __lasx_xvhaddw_d_w(src3, src3);                        \
-    LASX_PCKEV_W_2(src1, src0, src3, src2, src0, src1);           \
+    LASX_PCKEV_W_2_128SV(src1, src0, src3, src2, src0, src1);     \
     LASX_SRAI_W_2(src0, src1, src0, src1, _sh);                   \
     src0 = __lasx_xvmin_w(src0, vmax);                            \
     src1 = __lasx_xvmin_w(src1, vmax);                            \
+    src0 = __lasx_xvperm_w(src0, shuf);                           \
+    src1 = __lasx_xvperm_w(src1, shuf);                           \
     LASX_PCKEV_H(src1, src0, src0);                               \
     LASX_ST(src0, dst);                                           \
     filterPos += 16;                                              \
@@ -100,18 +102,13 @@
     src1 = __lasx_xvhaddw_d_w(src1, src1);                        \
     src2 = __lasx_xvhaddw_d_w(src2, src2);                        \
     src3 = __lasx_xvhaddw_d_w(src3, src3);                        \
-    LASX_PCKEV_W_2(src1, src0, src3, src2, src0, src1);           \
+    LASX_PCKEV_W_2_128SV(src1, src0, src3, src2, src0, src1);     \
     src0 = __lasx_xvhaddw_d_w(src0, src0);                        \
     src1 = __lasx_xvhaddw_d_w(src1, src1);                        \
-    LASX_PCKEV_W(src1, src0, src0);                               \
+    LASX_PCKEV_W_128SV(src1, src0, src0);                         \
     LASX_SRAI_W(src0, src0, _sh);                                 \
     src0 = __lasx_xvmin_w(src0, vmax);                            \
-    LASX_PCKEV_H_128SV(src0, src0, src0);                         \
-    LASX_ST_D_2(src0, 0, 2, dst, 4);                              \
-    filterPos += 8;                                               \
-    filter    += 64;                                              \
-    dst       += 8;                                               \
-    res       -= 8;                                               \
+    src0 = __lasx_xvperm_w(src0, shuf);                           \
 }
 
 #define SCALE_8_4(_sh)                                            \
@@ -126,50 +123,134 @@
     LASX_DP2_W_H_2(filter0, src0, filter1, src2, src0, src1);     \
     src0 = __lasx_xvhaddw_d_w(src0, src0);                        \
     src1 = __lasx_xvhaddw_d_w(src1, src1);                        \
-    LASX_PCKEV_W(src1, src0, src0);                               \
+    LASX_PCKEV_W_128SV(src1, src0, src0);                         \
     src0 = __lasx_xvhaddw_d_w(src0, src0);                        \
-    LASX_PCKEV_W(src0, src0, src0);                               \
+    LASX_PCKEV_W_128SV(src0, src0, src0);                         \
     LASX_SRAI_W(src0, src0, _sh);                                 \
     src0 = __lasx_xvmin_w(src0, vmax);                            \
-    LASX_PCKEV_H_128SV(src0, src0, src0);                         \
-    LASX_ST_D(src0, 0, dst);                                      \
-    filterPos += 4;                                               \
-    filter    += 32;                                              \
-    dst       += 4;                                               \
-    res       -= 4;                                               \
+    src0 = __lasx_xvperm_w(src0, shuf);                           \
 }
 
-#define SCALE_8(_sh)                                              \
+#define SCALE_8_2(_sh)                                            \
 {                                                                 \
-    int val1, val2, val3, val4;                                   \
-    __m256i src0, src1, src2, src3, filter0, filter1, out0, out1; \
     src0    = __lasx_xvldrepl_d(src + filterPos[0], 0);           \
     src1    = __lasx_xvldrepl_d(src + filterPos[1], 0);           \
-    src2    = __lasx_xvldrepl_d(src + filterPos[2], 0);           \
-    src3    = __lasx_xvldrepl_d(src + filterPos[3], 0);           \
     filter0 = LASX_LD(filter);                                    \
-    filter1 = LASX_LD(filter + 16);                               \
-    src0    = __lasx_xvpermi_q(src0, src1, 0x02);                 \
-    src2    = __lasx_xvpermi_q(src2, src3, 0x02);                 \
-    LASX_ILVL_B_2_128SV(zero, src0, zero, src2, src0, src2);      \
-    LASX_DP2_W_H_2(filter0, src0, filter1, src2, out0, out1);     \
-    src0    = __lasx_xvhaddw_d_w(out0, out0);                     \
-    src1    = __lasx_xvhaddw_d_w(out1, out1);                     \
-    out0    = __lasx_xvpackev_d(src1, src0);                      \
-    out1    = __lasx_xvpackod_d(src1, src0);                      \
-    out0    = __lasx_xvadd_w(out0, out1);                         \
-    out0    = __lasx_xvsrai_w(out0, _sh);                         \
-    val1    = __lasx_xvpickve2gr_w(out0, 0);                      \
-    val2    = __lasx_xvpickve2gr_w(out0, 4);                      \
-    val3    = __lasx_xvpickve2gr_w(out0, 2);                      \
-    val4    = __lasx_xvpickve2gr_w(out0, 6);                      \
-    dst[0]  = FFMIN(val1, max);                                   \
-    dst[1]  = FFMIN(val2, max);                                   \
-    dst[2]  = FFMIN(val3, max);                                   \
-    dst[3]  = FFMIN(val4, max);                                   \
-    filterPos += 4;                                               \
-    filter += 32;                                                 \
-    dst += 4;                                                     \
+    LASX_PCKEV_D_128SV(src1, src0, src0);                         \
+    LASX_UNPCK_L_HU_BU(src0, src0);                               \
+    LASX_DP2_W_H(filter0, src0, src0);                            \
+    src0 = __lasx_xvhaddw_d_w(src0, src0);                        \
+    src0 = __lasx_xvhaddw_q_d(src0, src0);                        \
+    LASX_SRAI_W(src0, src0, _sh);                                 \
+    src0 = __lasx_xvmin_w(src0, vmax);                            \
+    dst[0] = __lasx_xvpickve2gr_w(src0, 0);                       \
+    dst[1] = __lasx_xvpickve2gr_w(src0, 4);                       \
+    filterPos += 2;                                               \
+    filter    += 16;                                              \
+    dst       += 2;                                               \
+}
+
+#define SCALE_4_16(_sh)                                           \
+{                                                                 \
+    src0    = __lasx_xvldrepl_w(src + filterPos[0], 0);           \
+    src1    = __lasx_xvldrepl_w(src + filterPos[1], 0);           \
+    src2    = __lasx_xvldrepl_w(src + filterPos[2], 0);           \
+    src3    = __lasx_xvldrepl_w(src + filterPos[3], 0);           \
+    src4    = __lasx_xvldrepl_w(src + filterPos[4], 0);           \
+    src5    = __lasx_xvldrepl_w(src + filterPos[5], 0);           \
+    src6    = __lasx_xvldrepl_w(src + filterPos[6], 0);           \
+    src7    = __lasx_xvldrepl_w(src + filterPos[7], 0);           \
+    src8    = __lasx_xvldrepl_w(src + filterPos[8], 0);           \
+    src9    = __lasx_xvldrepl_w(src + filterPos[9], 0);           \
+    src10   = __lasx_xvldrepl_w(src + filterPos[10], 0);          \
+    src11   = __lasx_xvldrepl_w(src + filterPos[11], 0);          \
+    src12   = __lasx_xvldrepl_w(src + filterPos[12], 0);          \
+    src13   = __lasx_xvldrepl_w(src + filterPos[13], 0);          \
+    src14   = __lasx_xvldrepl_w(src + filterPos[14], 0);          \
+    src15   = __lasx_xvldrepl_w(src + filterPos[15], 0);          \
+    LASX_LD_4(filter, 16, filter0, filter1, filter2, filter3);    \
+    LASX_ILVL_W_4_128SV(src1, src0, src3, src2, src5, src4,       \
+                        src7, src6, src0, src2, src4, src6);      \
+    LASX_ILVL_W_4_128SV(src9, src8, src11, src10, src13, src12,   \
+                        src15, src14, src8, src10, src12, src14); \
+    LASX_ILVL_D_4_128SV(src2, src0, src6, src4, src10, src8,      \
+                        src14, src12, src0, src1, src2, src3);    \
+    LASX_UNPCK_L_HU_BU_4(src0, src1, src2, src3,                  \
+                         src0, src1, src2, src3);                 \
+    LASX_DP2_W_H_4(filter0, src0, filter1, src1, filter2, src2,   \
+                   filter3, src3, src0, src1, src2, src3);        \
+    src0 = __lasx_xvhaddw_d_w(src0, src0);                        \
+    src1 = __lasx_xvhaddw_d_w(src1, src1);                        \
+    src2 = __lasx_xvhaddw_d_w(src2, src2);                        \
+    src3 = __lasx_xvhaddw_d_w(src3, src3);                        \
+    LASX_PCKEV_W_2_128SV(src1, src0, src3, src2, src0, src1);     \
+    LASX_SRAI_W_2(src0, src1, src0, src1, _sh);                   \
+    src0 = __lasx_xvmin_w(src0, vmax);                            \
+    src1 = __lasx_xvmin_w(src1, vmax);                            \
+    LASX_PCKEV_H_128SV(src1, src0, src0);                         \
+    src0 = __lasx_xvperm_w(src0, shuf);                           \
+    LASX_ST(src0, dst);                                           \
+    filterPos += 16;                                              \
+    filter    += 64;                                              \
+    dst       += 16;                                              \
+}
+
+#define SCALE_4_8(_sh)                                            \
+{                                                                 \
+    src0    = __lasx_xvldrepl_w(src + filterPos[0], 0);           \
+    src1    = __lasx_xvldrepl_w(src + filterPos[1], 0);           \
+    src2    = __lasx_xvldrepl_w(src + filterPos[2], 0);           \
+    src3    = __lasx_xvldrepl_w(src + filterPos[3], 0);           \
+    src4    = __lasx_xvldrepl_w(src + filterPos[4], 0);           \
+    src5    = __lasx_xvldrepl_w(src + filterPos[5], 0);           \
+    src6    = __lasx_xvldrepl_w(src + filterPos[6], 0);           \
+    src7    = __lasx_xvldrepl_w(src + filterPos[7], 0);           \
+    LASX_LD_2(filter, 16, filter0, filter1);                      \
+    LASX_ILVL_W_4_128SV(src1, src0, src3, src2, src5, src4,       \
+                        src7, src6, src0, src2, src4, src6);      \
+    LASX_ILVL_D_2_128SV(src2, src0, src6, src4, src0, src1);      \
+    LASX_UNPCK_L_HU_BU_2(src0, src1, src0, src1);                 \
+    LASX_DP2_W_H_2(filter0, src0, filter1, src1, src0, src1);     \
+    src0 = __lasx_xvhaddw_d_w(src0, src0);                        \
+    src1 = __lasx_xvhaddw_d_w(src1, src1);                        \
+    LASX_PCKEV_W_128SV(src1, src0, src0);                         \
+    LASX_SRAI_W(src0, src0, _sh);                                 \
+    src0 = __lasx_xvmin_w(src0, vmax);                            \
+}
+
+#define SCALE_4_4(_sh)                                            \
+{                                                                 \
+    src0    = __lasx_xvldrepl_w(src + filterPos[0], 0);           \
+    src1    = __lasx_xvldrepl_w(src + filterPos[1], 0);           \
+    src2    = __lasx_xvldrepl_w(src + filterPos[2], 0);           \
+    src3    = __lasx_xvldrepl_w(src + filterPos[3], 0);           \
+    filter0 = LASX_LD(filter);                                    \
+    LASX_ILVL_W_2_128SV(src1, src0, src3, src2, src0, src1);      \
+    LASX_ILVL_D_128SV(src1, src0, src0);                          \
+    LASX_UNPCK_L_HU_BU(src0, src0);                               \
+    LASX_DP2_W_H(filter0, src0, src0);                            \
+    src0 = __lasx_xvhaddw_d_w(src0, src0);                        \
+    LASX_SRAI_W(src0, src0, _sh);                                 \
+    src0 = __lasx_xvmin_w(src0, vmax);                            \
+    LASX_PCKEV_W(src0, src0, src0);                               \
+}
+
+#define SCALE_4_2(_sh)                                            \
+{                                                                 \
+    src0    = __lasx_xvldrepl_w(src + filterPos[0], 0);           \
+    src1    = __lasx_xvldrepl_w(src + filterPos[1], 0);           \
+    filter0 = LASX_LD(filter);                                    \
+    LASX_ILVL_W_128SV(src1, src0, src0);                          \
+    LASX_UNPCK_L_HU_BU(src0, src0);                               \
+    LASX_DP2_W_H(filter0, src0, src0);                            \
+    src0 = __lasx_xvhaddw_d_w(src0, src0);                        \
+    LASX_SRAI_W(src0, src0, _sh);                                 \
+    src0 = __lasx_xvmin_w(src0, vmax);                            \
+    dst[0] = __lasx_xvpickve2gr_w(src0, 0);                       \
+    dst[1] = __lasx_xvpickve2gr_w(src0, 2);                       \
+    filterPos += 2;                                               \
+    filter    += 8;                                               \
+    dst       += 2;                                               \
 }
 
 #define SCALE_16                                                  \
@@ -202,10 +283,7 @@ void ff_hscale_8_to_15_lasx(SwsContext *c, int16_t *dst, int dstW,
                             const int32_t *filterPos, int filterSize)
 {
     int i;
-    int len = dstW >> 2;
-    int res = dstW & 3;
     int max = (1 << 15) - 1;
-    __m256i zero = { 0 };
 
     if (filterSize == 8) {
         __m256i src0, src1, src2, src3, src4, src5, src6, src7;
@@ -213,67 +291,89 @@ void ff_hscale_8_to_15_lasx(SwsContext *c, int16_t *dst, int dstW,
         __m256i filter0, filter1, filter2, filter3;
         __m256i filter4, filter5, filter6, filter7;
         __m256i vmax = __lasx_xvreplgr2vr_w(max);
-        len >>= 2;
-        res   = dstW & 15;
-        for (i = 0; i < len; i++) {
+        __m256i shuf = {0x0000000400000000, 0x0000000500000001, 0x0000000600000002, 0x0000000700000003};
+        int len = dstW >> 4;
+        int res = dstW & 15;
+        while (len--) {
             SCALE_8_16(7);
         }
-        if (res > 7) {
+        if (res & 8) {
             SCALE_8_8(7);
+            LASX_PCKEV_H_128SV(src0, src0, src0);
+            LASX_ST_D_2(src0, 0, 2, dst, 4);
+            filterPos += 8;
+            filter    += 64;
+            dst       += 8;
         }
-        if (res > 3) {
+        if (res & 4) {
             SCALE_8_4(7);
+            LASX_PCKEV_H_128SV(src0, src0, src0);
+            LASX_ST_D(src0, 0, dst);
+            filterPos += 4;
+            filter    += 32;
+            dst       += 4;
         }
-        for (i = 0; i < res; i++) {
+        if (res & 2) {
+            SCALE_8_2(7);
+        }
+        if (res & 1) {
             int val = 0;
-            src0    = __lasx_xvldrepl_d(src + filterPos[i], 0);
+            src0    = __lasx_xvldrepl_d(src + filterPos[0], 0);
             filter0 = LASX_LD(filter);
-            LASX_ILVL_B_128SV(zero, src0, src0);
+            LASX_UNPCK_L_HU_BU(src0, src0);
             LASX_DP2_W_H(filter0, src0, src0);
             src0    = __lasx_xvhaddw_d_w(src0, src0);
             src0    = __lasx_xvhaddw_q_d(src0, src0);
             val     = __lasx_xvpickve2gr_w(src0, 0);
-            dst[i]  = FFMIN(val >> 7, max);
-            filter += 8;
+            dst[0]  = FFMIN(val >> 7, max);
         }
     } else if (filterSize == 4) {
-        for (i = 0; i < len; i++) {
-            __m256i src1, src2, src3, src4, src0, filter0, out0;
-
-            src1 = __lasx_xvldrepl_w(src + filterPos[0], 0);
-            src2 = __lasx_xvldrepl_w(src + filterPos[1], 0);
-            src3 = __lasx_xvldrepl_w(src + filterPos[2], 0);
-            src4 = __lasx_xvldrepl_w(src + filterPos[3], 0);
-            filter0 = LASX_LD(filter);
-            LASX_ILVL_W_128SV(src2, src1, src1);
-            LASX_ILVL_W_128SV(src4, src3, src3);
-            src0 = __lasx_xvpermi_q(src1, src3, 0x02);
-            LASX_ILVL_B_128SV(zero, src0, src0);
-            LASX_DP2_W_H(filter0, src0, out0);
-            out0 = __lasx_xvhaddw_d_w(out0, out0);
-            out0 = __lasx_xvsrai_w(out0, 7);
-            dst[0] = FFMIN((__lasx_xvpickve2gr_w(out0, 0)), max);
-            dst[1] = FFMIN((__lasx_xvpickve2gr_w(out0, 2)), max);
-            dst[2] = FFMIN((__lasx_xvpickve2gr_w(out0, 4)), max);
-            dst[3] = FFMIN((__lasx_xvpickve2gr_w(out0, 6)), max);
-            dst       += 4;
+        __m256i src0, src1, src2, src3, src4, src5, src6, src7;
+        __m256i src8, src9, src10, src11, src12, src13, src14, src15;
+        __m256i filter0, filter1, filter2, filter3;
+        __m256i vmax = __lasx_xvreplgr2vr_w(max);
+        __m256i shuf = {0x0000000400000000, 0x0000000500000001, 0x0000000600000002, 0x0000000700000003};
+        int len = dstW >> 4;
+        int res = dstW & 15;
+        while (len--) {
+            SCALE_4_16(7);
+        }
+        if (res & 8) {
+            SCALE_4_8(7);
+            LASX_PCKEV_H_128SV(src1, src0, src0);
+            src0 = __lasx_xvperm_w(src0, shuf);
+            LASX_ST_D_2(src0, 0, 1, dst, 4);
+            filterPos += 8;
+            filter    += 32;
+            dst       += 8;
+        }
+        if (res & 4) {
+            SCALE_4_4(7);
+            LASX_PCKEV_H_128SV(src0, src0, src0);
+            LASX_ST_D(src0, 0, dst);
             filterPos += 4;
             filter    += 16;
+            dst       += 4;
         }
-        for (i = 0; i < res; i++) {
+        if (res & 2) {
+            SCALE_4_2(7);
+        }
+        if (res & 1) {
             int val = 0;
-            const uint8_t *srcPos = src + filterPos[i];
+            const uint8_t *srcPos = src + filterPos[0];
 
             for (int j = 0; j < filterSize; j++) {
                 val += ((int)srcPos[j]) * filter[j];
             }
-            dst[i] = FFMIN(val >> 7, max);
-            filter += 4;
+            dst[0] = FFMIN(val >> 7, max);
         }
     } else if (filterSize > 8) {
         int filterlen = filterSize - 7;
+        int len = dstW >> 2;
+        int res = dstW & 3;
+        __m256i zero = __lasx_xvldi(0);
 
-        for (i = 0; i < len; i++) {
+        while (len--) {
             __m256i src0, src1, src2, src3;
             __m256i filter0, filter1, filter2, filter3, out0, out1;
             __m256i out = zero;
@@ -348,67 +448,86 @@ void ff_hscale_8_to_19_lasx(SwsContext *c, int16_t *_dst, int dstW,
 {
     int i;
     int max = (1 << 19) - 1;
-    int len = dstW >> 2;
-    int res = dstW & 3;
     int32_t *dst = (int32_t *) _dst;
-    __m256i zero = { 0 };
 
     if (filterSize == 8) {
-        for (i = 0; i < len; i++) {
-            SCALE_8(3)
+        __m256i src0, src1, src2, src3, src4, src5, src6, src7;
+        __m256i filter0, filter1, filter2, filter3;
+        __m256i vmax = __lasx_xvreplgr2vr_w(max);
+        __m256i shuf = {0x0000000400000000, 0x0000000500000001, 0x0000000600000002, 0x0000000700000003};
+        int len = dstW >> 3;
+        int res = dstW & 7;
+        while (len--) {
+            SCALE_8_8(3);
+            LASX_ST(src0, dst);
+            filterPos += 8;
+            filter    += 64;
+            dst       += 8;
         }
-        for (i = 0; i < res; i++) {
+        if (res & 4) {
+            SCALE_8_4(3);
+            LASX_ST_D_2(src0, 0, 1, dst, 4);
+            filterPos += 4;
+            filter    += 32;
+            dst       += 4;
+        }
+        if (res & 2) {
+            SCALE_8_2(3);
+        }
+        if (res & 1) {
             int val = 0;
             __m256i src0, filter0, out0;
 
-            src0    = __lasx_xvldrepl_d(src + filterPos[i], 0);
+            src0    = __lasx_xvldrepl_d(src + filterPos[0], 0);
             filter0 = LASX_LD(filter);
-            LASX_ILVL_B_128SV(zero, src0, src0);
+            LASX_UNPCK_L_HU_BU(src0, src0);
             LASX_DP2_W_H(filter0, src0, out0);
             out0    = __lasx_xvhaddw_d_w(out0, out0);
             out0    = __lasx_xvhaddw_q_d(out0, out0);
             val     = __lasx_xvpickve2gr_w(out0, 0);
-            dst[i]  = FFMIN(val >> 3, max);
-            filter += 8;
+            dst[0]  = FFMIN(val >> 3, max);
         }
     } else if (filterSize == 4) {
-        for (i = 0; i < len; i++) {
-            __m256i src1, src2, src3, src4, src0, filter0, out0;
-
-            src1 = __lasx_xvldrepl_w(src + filterPos[0], 0);
-            src2 = __lasx_xvldrepl_w(src + filterPos[1], 0);
-            src3 = __lasx_xvldrepl_w(src + filterPos[2], 0);
-            src4 = __lasx_xvldrepl_w(src + filterPos[3], 0);
-            filter0 = LASX_LD(filter);
-            LASX_ILVL_W_128SV(src2, src1, src1);
-            LASX_ILVL_W_128SV(src4, src3, src3);
-            src0 = __lasx_xvpermi_q(src1, src3, 0x02);
-            LASX_ILVL_B_128SV(zero, src0, src0);
-            LASX_DP2_W_H(filter0, src0, out0);
-            out0 = __lasx_xvhaddw_d_w(out0, out0);
-            out0 = __lasx_xvsrai_w(out0, 3);
-            dst[0] = FFMIN((__lasx_xvpickve2gr_w(out0, 0)), max);
-            dst[1] = FFMIN((__lasx_xvpickve2gr_w(out0, 2)), max);
-            dst[2] = FFMIN((__lasx_xvpickve2gr_w(out0, 4)), max);
-            dst[3] = FFMIN((__lasx_xvpickve2gr_w(out0, 6)), max);
-            dst       += 4;
+        __m256i src0, src1, src2, src3, src4, src5, src6, src7;
+        __m256i filter0, filter1;
+        __m256i vmax = __lasx_xvreplgr2vr_w(max);
+        __m256i shuf = {0x0000000100000000, 0x0000000500000004, 0x0000000300000002, 0x0000000700000006};
+        int len = dstW >> 3;
+        int res = dstW & 7;
+        while (len--) {
+            SCALE_4_8(3);
+            src0 = __lasx_xvperm_w(src0, shuf);
+            LASX_ST(src0, dst);
+            filterPos += 8;
+            filter    += 32;
+            dst       += 8;
+        }
+        if (res & 4) {
+            SCALE_4_4(3);
+            LASX_ST_D_2(src0, 0, 2, dst, 4);
             filterPos += 4;
             filter    += 16;
+            dst       += 4;
         }
-        for (i = 0; i < res; i++) {
+        if (res & 2) {
+            SCALE_4_2(3);
+        }
+        if (res & 1) {
             int val = 0;
-            const uint8_t *srcPos = src + filterPos[i];
+            const uint8_t *srcPos = src + filterPos[0];
 
             for (int j = 0; j < filterSize; j++) {
                 val += ((int)srcPos[j]) * filter[j];
             }
-            dst[i] = FFMIN(val >> 3, max);
-            filter += 4;
+            dst[0] = FFMIN(val >> 3, max);
         }
     } else if (filterSize > 8) {
+        int len = dstW >> 2;
+        int res = dstW & 3;
         int filterlen = filterSize - 7;
+        __m256i zero = __lasx_xvldi(0);
 
-        for (i = 0; i < len; i++) {
+        while (len--) {
             __m256i src0, src1, src2, src3;
             __m256i filter0, filter1, filter2, filter3, out0, out1;
             __m256i out = zero;
@@ -477,7 +596,6 @@ void ff_hscale_8_to_19_lasx(SwsContext *c, int16_t *_dst, int dstW,
     }
 }
 
-#undef SCALE_8
 #undef SCALE_16
 
 #define SCALE_8                                                      \
@@ -546,7 +664,8 @@ void ff_hscale_16_to_15_lasx(SwsContext *c, int16_t *dst, int dstW,
     int max = (1 << 15) - 1;
     int len = dstW >> 2;
     int res = dstW & 3;
-    __m256i shift, zero = {0};
+    __m256i shift;
+    __m256i zero = __lasx_xvldi(0);
 
     if (sh < 15) {
         sh = isAnyRGB(c->srcFormat) || c->srcFormat==AV_PIX_FMT_PAL8 ? 13 :
@@ -689,7 +808,8 @@ void ff_hscale_16_to_19_lasx(SwsContext *c, int16_t *_dst, int dstW,
     int max = (1 << 19) - 1;
     int len = dstW >> 2;
     int res = dstW & 3;
-    __m256i shift, zero = {0};
+    __m256i shift;
+    __m256i zero = __lasx_xvldi(0);
 
     if ((isAnyRGB(c->srcFormat) || c->srcFormat == AV_PIX_FMT_PAL8)
          && desc->comp[0].depth<16) {
