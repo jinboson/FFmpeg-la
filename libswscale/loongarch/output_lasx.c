@@ -721,7 +721,7 @@ yuv2rgb_write(uint8_t *_dest, int i, int Y1, int Y2,
 }
 
 
-static av_always_inline void
+static void
 yuv2rgb_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
                         const int16_t **lumSrc, int lumFilterSize,
                         const int16_t *chrFilter, const int16_t **chrUSrc,
@@ -958,7 +958,7 @@ yuv2rgb_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
     }
 }
 
-static av_always_inline void
+static void
 yuv2rgb_2_template_lasx(SwsContext *c, const int16_t *buf[2],
                         const int16_t *ubuf[2], const int16_t *vbuf[2],
                         const int16_t *abuf[2], uint8_t *dest, int dstW,
@@ -1061,7 +1061,7 @@ yuv2rgb_2_template_lasx(SwsContext *c, const int16_t *buf[2],
     }
 }
 
-static av_always_inline void
+static void
 yuv2rgb_1_template_lasx(SwsContext *c, const int16_t *buf0,
                         const int16_t *ubuf[2], const int16_t *vbuf[2],
                         const int16_t *abuf0, uint8_t *dest, int dstW,
@@ -1550,7 +1550,7 @@ static av_always_inline void yuv2rgb_write_full(SwsContext *c,
     dest += step;                                                             \
 }
 
-static av_always_inline void
+static void
 yuv2rgb_full_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
                              const int16_t **lumSrc, int lumFilterSize,
                              const int16_t *chrFilter, const int16_t **chrUSrc,
@@ -1724,7 +1724,7 @@ yuv2rgb_full_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
     c->dither_error[2][i] = err[2];
 }
 
-static av_always_inline void
+static void
 yuv2rgb_full_2_template_lasx(SwsContext *c, const int16_t *buf[2],
                              const int16_t *ubuf[2], const int16_t *vbuf[2],
                              const int16_t *abuf[2], uint8_t *dest, int dstW,
@@ -1923,7 +1923,7 @@ yuv2rgb_full_2_template_lasx(SwsContext *c, const int16_t *buf[2],
     c->dither_error[2][i] = err[2];
 }
 
-static av_always_inline void
+static void
 yuv2rgb_full_1_template_lasx(SwsContext *c, const int16_t *buf0,
                              const int16_t *ubuf[2], const int16_t *vbuf[2],
                              const int16_t *abuf0, uint8_t *dest, int dstW,
