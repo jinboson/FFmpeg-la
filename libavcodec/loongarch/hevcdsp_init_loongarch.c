@@ -1,0 +1,51 @@
+/*
+ * Copyright (c) 2021 Loongson Technology Corporation Limited
+ * Contributed by Lu Wang <wanglu@loongson.cn>
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+#include "libavutil/loongarch/cpu.h"
+#include "libavcodec/loongarch/hevcdsp_lsx.h"
+
+void ff_hevc_dsp_init_loongarch(HEVCDSPContext *c, const int bit_depth)
+{
+    int cpu_flags = av_get_cpu_flags();
+
+    if (have_lsx(cpu_flags)) {
+        if (bit_depth == 8) {
+            c->put_hevc_qpel[1][0][0] = ff_hevc_put_hevc_pel_pixels4_8_lsx;
+            c->put_hevc_qpel[2][0][0] = ff_hevc_put_hevc_pel_pixels6_8_lsx;
+            c->put_hevc_qpel[3][0][0] = ff_hevc_put_hevc_pel_pixels8_8_lsx;
+            c->put_hevc_qpel[4][0][0] = ff_hevc_put_hevc_pel_pixels12_8_lsx;
+            c->put_hevc_qpel[5][0][0] = ff_hevc_put_hevc_pel_pixels16_8_lsx;
+            c->put_hevc_qpel[6][0][0] = ff_hevc_put_hevc_pel_pixels24_8_lsx;
+            c->put_hevc_qpel[7][0][0] = ff_hevc_put_hevc_pel_pixels32_8_lsx;
+            c->put_hevc_qpel[8][0][0] = ff_hevc_put_hevc_pel_pixels48_8_lsx;
+            c->put_hevc_qpel[9][0][0] = ff_hevc_put_hevc_pel_pixels64_8_lsx;
+
+            c->put_hevc_epel[1][0][0] = ff_hevc_put_hevc_pel_pixels4_8_lsx;
+            c->put_hevc_epel[2][0][0] = ff_hevc_put_hevc_pel_pixels6_8_lsx;
+            c->put_hevc_epel[3][0][0] = ff_hevc_put_hevc_pel_pixels8_8_lsx;
+            c->put_hevc_epel[4][0][0] = ff_hevc_put_hevc_pel_pixels12_8_lsx;
+            c->put_hevc_epel[5][0][0] = ff_hevc_put_hevc_pel_pixels16_8_lsx;
+            c->put_hevc_epel[6][0][0] = ff_hevc_put_hevc_pel_pixels24_8_lsx;
+            c->put_hevc_epel[7][0][0] = ff_hevc_put_hevc_pel_pixels32_8_lsx;
+
+        }
+    }
+}
