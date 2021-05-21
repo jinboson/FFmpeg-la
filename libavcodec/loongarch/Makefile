@@ -4,6 +4,7 @@ OBJS-$(CONFIG_H264DSP)                += loongarch/h264dsp_init_loongarch.o
 OBJS-$(CONFIG_IDCTDSP)                += loongarch/idctdsp_init_loongarch.o
 OBJS-$(CONFIG_VC1DSP)                 += loongarch/vc1dsp_init_loongarch.o
 OBJS-$(CONFIG_HPELDSP)                += loongarch/hpeldsp_init_loongarch.o
+OBJS-$(CONFIG_VIDEODSP)               += loongarch/videodsp_init.o
 LASX-OBJS-$(CONFIG_H264DSP)           += loongarch/h264dsp_lasx.o  \
                                          loongarch/h264idct_lasx.o \
                                          loongarch/h264_deblock_lasx.o
