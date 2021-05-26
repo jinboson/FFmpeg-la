@@ -121,7 +121,7 @@ put_pixels16_l2_8_lsx(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
 void ff_put_pixels8_8_lasx(uint8_t *block, const uint8_t *pixels,
                            ptrdiff_t line_size, int h)
 {
-    double tmp[8];
+    uint64_t tmp[8];
     int h_8 = h >> 3;
     int res = h & 7;
 

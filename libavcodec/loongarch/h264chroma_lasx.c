@@ -299,7 +299,7 @@ static av_always_inline void avc_chroma_vt_8x8_lasx(uint8_t *src, uint8_t *dst,
 static av_always_inline void copy_width8x8_lasx(uint8_t *src, uint8_t *dst,
                              ptrdiff_t stride)
 {
-    double tmp[8];
+    uint64_t tmp[8];
     __asm__ volatile (
         "ld.d       %[tmp0],    %[src],    0x0        \n\t"
         "add.d      %[src],     %[src],    %[stride]   \n\t"
@@ -345,7 +345,7 @@ static av_always_inline void copy_width8x8_lasx(uint8_t *src, uint8_t *dst,
 static av_always_inline void copy_width8x4_lasx(uint8_t *src, uint8_t *dst,
                              ptrdiff_t stride)
 {
-    double tmp[4];
+    uint64_t tmp[4];
     __asm__ volatile (
         "ld.d      %[tmp0],    %[src],    0x0        \n\t"
         "add.d     %[src],     %[src],    %[stride]  \n\t"

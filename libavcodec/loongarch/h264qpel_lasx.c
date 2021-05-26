@@ -266,7 +266,7 @@ avc_luma_hv_qrt_16x16_lasx(const uint8_t *src_x, const uint8_t *src_y, uint8_t *
 static av_always_inline void
 put_pixels8_8_inline_asm(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)
 {
-    double tmp[8];
+    uint64_t tmp[8];
     __asm__ volatile (
         "ld.d       %[tmp0],    %[src],    0x0         \n\t"
         "add.d      %[src],     %[src],    %[stride]   \n\t"
