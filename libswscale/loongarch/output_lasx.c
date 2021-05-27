@@ -2027,13 +2027,12 @@ yuv2rgb_full_1_template_lasx(SwsContext *c, const int16_t *buf0,
                      y_temp, v2r, v2g, u2g, u2b);
 
             if(hasAlpha) {
-                __m256i a_src;
-                __m256i a_r, a_l;
+                __m256i a_src, a_l;
 
                 a_src = LASX_LD((abuf0 + i));
                 a_src = __lasx_xvpermi_d(a_src, 0xD8);
                 LASX_ADDW_W_W_H_128SV(bias, a_src, a_l);
-                a_l   = __lasx_xvsrai_w(a_r, 7);
+                a_l   = __lasx_xvsrai_w(a_l, 7);
                 WRITE_FULL_L_A(R_l, G_l, B_l, a_l, c, dest, i, R, A, G, B,
                                y, target, hasAlpha, err);
                 WRITE_FULL_H_A(R_l, G_l, B_l, a_l, c, dest, i + 4, R, A, G, B,
