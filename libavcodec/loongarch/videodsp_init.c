@@ -34,7 +34,7 @@ static void prefetch_loongarch(uint8_t *mem, ptrdiff_t stride, int h)
         "addi.d     %[h],  %[h],     -1         \n\t"
         "add.d      %[p],  %[p],     %[stride]  \n\t"
 
-        "bgt        %[h],  $r0,      1b         \n\t"
+        "blt        $r0,   %[h],     1b         \n\t"
         : [p] "+r" (p), [h] "+r" (h)
         : [stride] "r" (stride)
     );
