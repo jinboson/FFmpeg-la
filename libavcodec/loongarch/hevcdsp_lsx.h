@@ -43,6 +43,23 @@ MC(pel, pixels, 32);
 MC(pel, pixels, 48);
 MC(pel, pixels, 64);
 
-#undef MC
+MC(qpel, h, 4);
+MC(qpel, h, 8);
+MC(qpel, h, 12);
+MC(qpel, h, 16);
+MC(qpel, h, 24);
+MC(qpel, h, 32);
+MC(qpel, h, 48);
+MC(qpel, h, 64);
 
+MC(qpel, v, 4);
+MC(qpel, v, 8);
+MC(qpel, v, 12);
+MC(qpel, v, 16);
+MC(qpel, v, 24);
+MC(qpel, v, 32);
+MC(qpel, v, 48);
+MC(qpel, v, 64);
+
+#undef MC
 #endif  // #ifndef AVCODEC_LOONGARCH_HEVCDSP_LSX_H
