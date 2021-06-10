@@ -138,6 +138,28 @@ static const uint8_t mc_filt_mask_arr[16 * 3] = {
     __lsx_vst(_dst3, _dst, 0);                                            \
 }
 
+#define LSX_LD_4_16(_src, _stride, _src0, _src1, _src2, _src3)            \
+{                                                                         \
+    _src0 = __lsx_vld(_src, 16);                                          \
+    _src += _stride;                                                      \
+    _src1 = __lsx_vld(_src, 16);                                          \
+    _src += _stride;                                                      \
+    _src2 = __lsx_vld(_src, 16);                                          \
+    _src += _stride;                                                      \
+    _src3 = __lsx_vld(_src, 16);                                          \
+}
+
+#define LSX_ST_4_16(_dst0, _dst1, _dst2, _dst3, _dst, _stride)            \
+{                                                                         \
+    __lsx_vst(_dst0, _dst, 16);                                           \
+    _dst += _stride;                                                      \
+    __lsx_vst(_dst1, _dst, 16);                                           \
+    _dst += _stride;                                                      \
+    __lsx_vst(_dst2, _dst, 16);                                           \
+    _dst += _stride;                                                      \
+    __lsx_vst(_dst3, _dst, 16);                                           \
+}
+
 static void common_hz_8t_4x4_lsx(const uint8_t *src, int32_t src_stride,
                                  uint8_t *dst, int32_t dst_stride,
                                  const int8_t *filter)
@@ -974,6 +996,110 @@ static void common_hv_8ht_8vt_64w_lsx(const uint8_t *src, int32_t src_stride,
     }
 }
 
+static void copy_width8_lsx(const uint8_t *src, int32_t src_stride,
+                            uint8_t *dst, int32_t dst_stride,
+                            int32_t height)
+{
+    int32_t cnt = height >> 2;
+    __m128i src0, src1, src2, src3;
+
+    for (;cnt--;) {
+        src0 = __lsx_vldrepl_d(src, 0);
+        src += src_stride;
+        src1 = __lsx_vldrepl_d(src, 0);
+        src += src_stride;
+        src2 = __lsx_vldrepl_d(src, 0);
+        src += src_stride;
+        src3 = __lsx_vldrepl_d(src, 0);
+        src += src_stride;
+        __lsx_vstelm_d(src0, dst, 0, 0);
+        dst += dst_stride;
+        __lsx_vstelm_d(src1, dst, 0, 0);
+        dst += dst_stride;
+        __lsx_vstelm_d(src2, dst, 0, 0);
+        dst += dst_stride;
+        __lsx_vstelm_d(src3, dst, 0, 0);
+        dst += dst_stride;
+    }
+}
+
+static void copy_width16_lsx(const uint8_t *src, int32_t src_stride,
+                             uint8_t *dst, int32_t dst_stride,
+                             int32_t height)
+{
+    int32_t cnt = height >> 2;
+    __m128i src0, src1, src2, src3;
+
+    for (;cnt--;) {
+        LSX_LD_4(src, src_stride, src0, src1, src2, src3);
+        src += src_stride;
+        LSX_ST_4(src0, src1, src2, src3, dst, dst_stride);
+        dst += dst_stride;
+    }
+}
+
+static void copy_width32_lsx(const uint8_t *src, int32_t src_stride,
+                             uint8_t *dst, int32_t dst_stride,
+                             int32_t height)
+{
+    int32_t cnt = height >> 2;
+    const uint8_t *src_tmp = src;
+    uint8_t *dst_tmp = dst;
+    __m128i src0, src1, src2, src3, src4, src5, src6, src7;
+
+    for (;cnt--;) {
+        LSX_LD_4(src_tmp, src_stride, src0, src1, src2, src3);
+        src_tmp += src_stride;
+
+        LSX_LD_4_16(src, src_stride, src4, src5, src6, src7);
+        src += src_stride;
+        LSX_ST_4(src0, src1, src2, src3, dst_tmp, dst_stride);
+        dst_tmp += dst_stride;
+        LSX_ST_4_16(src4, src5, src6, src7, dst, dst_stride);
+        dst += dst_stride;
+    }
+}
+
+static void copy_width64_lsx(const uint8_t *src, int32_t src_stride,
+                             uint8_t *dst, int32_t dst_stride,
+                             int32_t height)
+{
+    int32_t cnt = height >> 2;
+    __m128i src0, src1, src2, src3, src4, src5, src6, src7;
+    __m128i src8, src9, src10, src11, src12, src13, src14, src15;
+
+    for (;cnt--;) {
+        LSX_DUP4_ARG2(__lsx_vld, src, 0, src, 16, src, 32, src, 48, src0, src1, src2, src3);
+        src += src_stride;
+        LSX_DUP4_ARG2(__lsx_vld, src, 0, src, 16, src, 32, src, 48, src4, src5, src6, src7);
+        src += src_stride;
+        LSX_DUP4_ARG2(__lsx_vld, src, 0, src, 16, src, 32, src, 48, src8, src9, src10, src11);
+        src += src_stride;
+        LSX_DUP4_ARG2(__lsx_vld, src, 0, src, 16, src, 32, src, 48, src12, src13, src14, src15);
+        src += src_stride;
+        __lsx_vst(src0, dst, 0);
+        __lsx_vst(src1, dst, 16);
+        __lsx_vst(src2, dst, 32);
+        __lsx_vst(src3, dst, 48);
+        dst += dst_stride;
+        __lsx_vst(src4, dst, 0);
+        __lsx_vst(src5, dst, 16);
+        __lsx_vst(src6, dst, 32);
+        __lsx_vst(src7, dst, 48);
+        dst += dst_stride;
+        __lsx_vst(src8, dst, 0);
+        __lsx_vst(src9, dst, 16);
+        __lsx_vst(src10, dst, 32);
+        __lsx_vst(src11, dst, 48);
+        dst += dst_stride;
+        __lsx_vst(src12, dst, 0);
+        __lsx_vst(src13, dst, 16);
+        __lsx_vst(src14, dst, 32);
+        __lsx_vst(src15, dst, 48);
+        dst += dst_stride;
+    }
+}
+
 static const int8_t vp9_subpel_filters_lsx[3][15][8] = {
     [FILTER_8TAP_REGULAR] = {
          {0, 1, -5, 126, 8, -3, 1, 0},
@@ -1059,6 +1185,15 @@ void ff_put_8tap_##type##_##SIZE##hv_lsx(uint8_t *dst, ptrdiff_t dststride,    \
                                     vfilter, h);                               \
 }
 
+#define VP9_COPY_LOONGARCH_LSX_FUNC(SIZE)                          \
+void ff_copy##SIZE##_lsx(uint8_t *dst, ptrdiff_t dststride,        \
+                         const uint8_t *src, ptrdiff_t srcstride,  \
+                         int h, int mx, int my)                    \
+{                                                                  \
+                                                                   \
+    copy_width##SIZE##_lsx(src, srcstride, dst, dststride, h);     \
+}
+
 VP9_8TAP_LOONGARCH_LSX_FUNC(64, regular, FILTER_8TAP_REGULAR);
 VP9_8TAP_LOONGARCH_LSX_FUNC(32, regular, FILTER_8TAP_REGULAR);
 VP9_8TAP_LOONGARCH_LSX_FUNC(16, regular, FILTER_8TAP_REGULAR);
@@ -1077,4 +1212,10 @@ VP9_8TAP_LOONGARCH_LSX_FUNC(16, smooth, FILTER_8TAP_SMOOTH);
 VP9_8TAP_LOONGARCH_LSX_FUNC(8, smooth, FILTER_8TAP_SMOOTH);
 VP9_8TAP_LOONGARCH_LSX_FUNC(4, smooth, FILTER_8TAP_SMOOTH);
 
+VP9_COPY_LOONGARCH_LSX_FUNC(64);
+VP9_COPY_LOONGARCH_LSX_FUNC(32);
+VP9_COPY_LOONGARCH_LSX_FUNC(16);
+VP9_COPY_LOONGARCH_LSX_FUNC(8);
+
 #undef VP9_8TAP_LOONGARCH_LSX_FUNC
+#undef VP9_COPY_LOONGARCH_LSX_FUNC

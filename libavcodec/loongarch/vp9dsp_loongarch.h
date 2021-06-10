@@ -38,6 +38,11 @@ void ff_put_8tap_##type##_##SIZE##hv_lsx(uint8_t *dst, ptrdiff_t dststride,  \
                                          ptrdiff_t srcstride,                \
                                          int h, int mx, int my);             \
 
+#define VP9_COPY_LOONGARCH_LSX_FUNC(SIZE)                          \
+void ff_copy##SIZE##_lsx(uint8_t *dst, ptrdiff_t dststride,        \
+                         const uint8_t *src, ptrdiff_t srcstride,  \
+                         int h, int mx, int my);
+
 VP9_8TAP_LOONGARCH_LSX_FUNC(64, regular, FILTER_8TAP_REGULAR);
 VP9_8TAP_LOONGARCH_LSX_FUNC(32, regular, FILTER_8TAP_REGULAR);
 VP9_8TAP_LOONGARCH_LSX_FUNC(16, regular, FILTER_8TAP_REGULAR);
@@ -56,6 +61,12 @@ VP9_8TAP_LOONGARCH_LSX_FUNC(16, smooth, FILTER_8TAP_SMOOTH);
 VP9_8TAP_LOONGARCH_LSX_FUNC(8, smooth, FILTER_8TAP_SMOOTH);
 VP9_8TAP_LOONGARCH_LSX_FUNC(4, smooth, FILTER_8TAP_SMOOTH);
 
+VP9_COPY_LOONGARCH_LSX_FUNC(64);
+VP9_COPY_LOONGARCH_LSX_FUNC(32);
+VP9_COPY_LOONGARCH_LSX_FUNC(16);
+VP9_COPY_LOONGARCH_LSX_FUNC(8);
+
 #undef VP9_8TAP_LOONGARCH_LSX_FUNC
+#undef VP9_COPY_LOONGARCH_LSX_FUNC
 
 #endif /* AVCODEC_LOONGARCH_VP9DSP_LOONGARCH_H */

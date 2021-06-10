@@ -53,6 +53,23 @@ static av_cold void vp9dsp_mc_init_lsx(VP9DSPContext *dsp, int bpp)
 #undef init_subpel1
 #undef init_subpel2
 #undef init_subpel3
+
+#define init_fpel(idx1, idx2, sz, type)                                \
+dsp->mc[idx1][FILTER_8TAP_SMOOTH ][idx2][0][0] = ff_##type##sz##_lsx;  \
+dsp->mc[idx1][FILTER_8TAP_REGULAR][idx2][0][0] = ff_##type##sz##_lsx;  \
+dsp->mc[idx1][FILTER_8TAP_SHARP  ][idx2][0][0] = ff_##type##sz##_lsx;  \
+dsp->mc[idx1][FILTER_BILINEAR    ][idx2][0][0] = ff_##type##sz##_lsx
+
+#define init_copy(idx, sz)                    \
+    init_fpel(idx, 0, sz, copy);
+
+    init_copy(0, 64);
+    init_copy(1, 32);
+    init_copy(2, 16);
+    init_copy(3, 8);
+
+#undef init_copy
+#undef init_fpel
     }
 }
 
