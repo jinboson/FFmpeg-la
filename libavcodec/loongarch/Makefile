@@ -16,3 +16,4 @@ LASX-OBJS-$(CONFIG_IDCTDSP)           += loongarch/simple_idct_lasx.o  \
 LASX-OBJS-$(CONFIG_VC1_DECODER)       += loongarch/vc1dsp_lasx.o
 LASX-OBJS-$(CONFIG_HPELDSP)           += loongarch/hpeldsp_lasx.o
 LSX-OBJS-$(CONFIG_HEVC_DECODER)       += loongarch/hevcdsp_lsx.o
+LSX-OBJS-$(CONFIG_HEVC_DECODER)       += loongarch/hevc_idct_lsx.o

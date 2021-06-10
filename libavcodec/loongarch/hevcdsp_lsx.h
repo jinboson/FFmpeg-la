@@ -62,4 +62,9 @@ MC(qpel, v, 48);
 MC(qpel, v, 64);
 
 #undef MC
+
+void ff_hevc_idct_4x4_lsx(int16_t *coeffs, int col_limit);
+void ff_hevc_idct_8x8_lsx(int16_t *coeffs, int col_limit);
+void ff_hevc_idct_16x16_lsx(int16_t *coeffs, int col_limit);
+void ff_hevc_idct_32x32_lsx(int16_t *coeffs, int col_limit);
 #endif  // #ifndef AVCODEC_LOONGARCH_HEVCDSP_LSX_H
