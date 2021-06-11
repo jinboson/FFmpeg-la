@@ -24,7 +24,6 @@
 #include "libavcodec/vp9dsp.h"
 #include "vp9dsp_loongarch.h"
 
-#if HAVE_LSX
 static av_cold void vp9dsp_mc_init_lsx(VP9DSPContext *dsp, int bpp)
 {
     if (bpp == 8) {
@@ -49,6 +48,7 @@ static av_cold void vp9dsp_mc_init_lsx(VP9DSPContext *dsp, int bpp)
     init_subpel2(idx, 1, 1, hv, type);
 
     init_subpel3(0, put);
+    init_subpel3(1, avg);
 
 #undef init_subpel1
 #undef init_subpel2
@@ -77,12 +77,10 @@ static av_cold void vp9dsp_init_lsx(VP9DSPContext *dsp, int bpp)
 {
     vp9dsp_mc_init_lsx(dsp, bpp);
 }
-#endif /* #if HAVE_LSX */
 
 av_cold void ff_vp9dsp_init_loongarch(VP9DSPContext *dsp, int bpp)
 {
     int cpu_flags = av_get_cpu_flags();
-
     if (have_lsx(cpu_flags))
         vp9dsp_init_lsx(dsp, bpp);
 }

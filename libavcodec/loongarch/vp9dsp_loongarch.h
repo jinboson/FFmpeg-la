@@ -37,6 +37,21 @@ void ff_put_8tap_##type##_##SIZE##hv_lsx(uint8_t *dst, ptrdiff_t dststride,  \
                                          const uint8_t *src,                 \
                                          ptrdiff_t srcstride,                \
                                          int h, int mx, int my);             \
+                                                                             \
+void ff_avg_8tap_##type##_##SIZE##h_lsx(uint8_t *dst, ptrdiff_t dststride,   \
+                                        const uint8_t *src,                  \
+                                        ptrdiff_t srcstride,                 \
+                                        int h, int mx, int my);              \
+                                                                             \
+void ff_avg_8tap_##type##_##SIZE##v_lsx(uint8_t *dst, ptrdiff_t dststride,   \
+                                        const uint8_t *src,                  \
+                                        ptrdiff_t srcstride,                 \
+                                        int h, int mx, int my);              \
+                                                                             \
+void ff_avg_8tap_##type##_##SIZE##hv_lsx(uint8_t *dst, ptrdiff_t dststride,  \
+                                         const uint8_t *src,                 \
+                                         ptrdiff_t srcstride,                \
+                                         int h, int mx, int my);
 
 #define VP9_COPY_LOONGARCH_LSX_FUNC(SIZE)                          \
 void ff_copy##SIZE##_lsx(uint8_t *dst, ptrdiff_t dststride,        \
