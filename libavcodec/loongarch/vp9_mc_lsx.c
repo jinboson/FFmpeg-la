@@ -1996,6 +1996,165 @@ static void common_hv_8ht_8vt_and_aver_dst_64w_lsx(const uint8_t *src,
     }
 }
 
+static void avg_width8_lsx(const uint8_t *src, int32_t src_stride,
+                           uint8_t *dst, int32_t dst_stride,
+                           int32_t height)
+{
+    int32_t cnt = height >> 2;
+    uint8_t *dst_tmp = dst;
+    __m128i src0, src1, dst0, dst1;
+    __m128i tmp0, tmp1, tmp2, tmp3;
+
+    for (;cnt--;) {
+        tmp0 = __lsx_vldrepl_d(src, 0);
+        src += src_stride;
+        tmp1 = __lsx_vldrepl_d(src, 0);
+        src += src_stride;
+        tmp2 = __lsx_vldrepl_d(src, 0);
+        src += src_stride;
+        tmp3 = __lsx_vldrepl_d(src, 0);
+        src += src_stride;
+        LSX_DUP2_ARG2(__lsx_vilvl_d, tmp1, tmp0, tmp3, tmp2, src0, src1);
+        tmp0 = __lsx_vldrepl_d(dst_tmp, 0);
+        dst_tmp += dst_stride;
+        tmp1 = __lsx_vldrepl_d(dst_tmp, 0);
+        dst_tmp += dst_stride;
+        tmp2 = __lsx_vldrepl_d(dst_tmp, 0);
+        dst_tmp += dst_stride;
+        tmp3 = __lsx_vldrepl_d(dst_tmp, 0);
+        dst_tmp += dst_stride;
+        LSX_DUP2_ARG2(__lsx_vilvl_d, tmp1, tmp0, tmp3, tmp2, dst0, dst1);
+        LSX_DUP2_ARG2(__lsx_vavgr_bu, src0, dst0, src1, dst1, dst0, dst1);
+        __lsx_vstelm_d(dst0, dst, 0, 0);
+        dst += dst_stride;
+        __lsx_vstelm_d(dst0, dst, 0, 1);
+        dst += dst_stride;
+        __lsx_vstelm_d(dst1, dst, 0, 0);
+        dst += dst_stride;
+        __lsx_vstelm_d(dst1, dst, 0, 1);
+        dst += dst_stride;
+    }
+}
+
+static void avg_width16_lsx(const uint8_t *src, int32_t src_stride,
+                            uint8_t *dst, int32_t dst_stride,
+                            int32_t height)
+{
+    int32_t cnt = height >> 2;
+    uint8_t *dst_tmp = dst;
+    __m128i src0, src1, src2, src3;
+    __m128i dst0, dst1, dst2, dst3;
+
+    for (;cnt--;) {
+        LSX_LD_4(src, src_stride, src0, src1, src2, src3);
+        src += src_stride;
+        LSX_LD_4(dst_tmp, dst_stride, dst0, dst1, dst2, dst3);
+        dst_tmp += dst_stride;
+        LSX_DUP4_ARG2(__lsx_vavgr_bu, src0, dst0, src1, dst1,
+                      src2, dst2, src3, dst3, dst0, dst1, dst2, dst3);
+        LSX_ST_4(dst0, dst1, dst2, dst3, dst, dst_stride);
+        dst += dst_stride;
+    }
+}
+
+static void avg_width32_lsx(const uint8_t *src, int32_t src_stride,
+                            uint8_t *dst, int32_t dst_stride,
+                            int32_t height)
+{
+    int32_t cnt = height >> 2;
+    const uint8_t *src_tmp = src;
+    uint8_t *dst_tmp, *dst_tmp1, *dst_tmp2;
+    __m128i src0, src1, src2, src3, src4, src5, src6, src7;
+    __m128i dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
+
+    dst_tmp = dst_tmp1 = dst_tmp2 = dst;
+    for (;cnt--;) {
+        LSX_LD_4(src, src_stride, src0, src2, src4, src6);
+        src += src_stride;
+        LSX_LD_4_16(src_tmp, src_stride, src1, src3, src5, src7);
+        src_tmp += src_stride;
+        LSX_LD_4(dst_tmp1, dst_stride, dst0, dst2, dst4, dst6);
+        dst_tmp1 += dst_stride;
+        LSX_LD_4_16(dst_tmp2, dst_stride, dst1, dst3, dst5, dst7);
+        dst_tmp2 += dst_stride;
+        LSX_DUP4_ARG2(__lsx_vavgr_bu, src0, dst0, src1, dst1,
+                      src2, dst2, src3, dst3, dst0, dst1, dst2, dst3);
+        LSX_DUP4_ARG2(__lsx_vavgr_bu, src4, dst4, src5, dst5,
+                      src6, dst6, src7, dst7, dst4, dst5, dst6, dst7);
+        LSX_ST_4(dst0, dst2, dst4, dst6, dst_tmp, dst_stride);
+        dst_tmp += dst_stride;
+        LSX_ST_4_16(dst1, dst3, dst5, dst7, dst, dst_stride);
+        dst += dst_stride;
+    }
+}
+
+static void avg_width64_lsx(const uint8_t *src, int32_t src_stride,
+                            uint8_t *dst, int32_t dst_stride,
+                            int32_t height)
+{
+    int32_t cnt = height >> 2;
+    uint8_t *dst_tmp = dst;
+    __m128i src0, src1, src2, src3, src4, src5, src6, src7;
+    __m128i src8, src9, src10, src11, src12, src13, src14, src15;
+    __m128i dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
+    __m128i dst8, dst9, dst10, dst11, dst12, dst13, dst14, dst15;
+
+    for (;cnt--;) {
+        LSX_DUP4_ARG2(__lsx_vld, src, 0, src, 16, src, 32, src, 48,
+                      src0, src1, src2, src3);
+        src += src_stride;
+        LSX_DUP4_ARG2(__lsx_vld, src, 0, src, 16, src, 32, src, 48,
+                      src4, src5, src6, src7);
+        src += src_stride;
+        LSX_DUP4_ARG2(__lsx_vld, src, 0, src, 16, src, 32, src, 48,
+                      src8, src9, src10, src11);
+        src += src_stride;
+        LSX_DUP4_ARG2(__lsx_vld, src, 0, src, 16, src, 32, src, 48,
+                      src12, src13, src14, src15);
+        src += src_stride;
+        LSX_DUP4_ARG2(__lsx_vld, dst_tmp, 0, dst_tmp, 16, dst_tmp, 32, dst_tmp, 48,
+                      dst0, dst1, dst2, dst3);
+        dst_tmp += dst_stride;
+        LSX_DUP4_ARG2(__lsx_vld, dst_tmp, 0, dst_tmp, 16, dst_tmp, 32, dst_tmp, 48,
+                      dst4, dst5, dst6, dst7);
+        dst_tmp += dst_stride;
+        LSX_DUP4_ARG2(__lsx_vld, dst_tmp, 0, dst_tmp, 16, dst_tmp, 32, dst_tmp, 48,
+                      dst8, dst9, dst10, dst11);
+        dst_tmp += dst_stride;
+        LSX_DUP4_ARG2(__lsx_vld, dst_tmp, 0, dst_tmp, 16, dst_tmp, 32, dst_tmp, 48,
+                      dst12, dst13, dst14, dst15);
+        dst_tmp += dst_stride;
+        LSX_DUP4_ARG2(__lsx_vavgr_bu, src0, dst0, src1, dst1,
+                      src2, dst2, src3, dst3, dst0, dst1, dst2, dst3);
+        LSX_DUP4_ARG2(__lsx_vavgr_bu, src4, dst4, src5, dst5,
+                      src6, dst6, src7, dst7, dst4, dst5, dst6, dst7);
+        LSX_DUP4_ARG2(__lsx_vavgr_bu, src8, dst8, src9, dst9, src10,
+                      dst10, src11, dst11, dst8, dst9, dst10, dst11);
+        LSX_DUP4_ARG2(__lsx_vavgr_bu, src12, dst12, src13, dst13, src14,
+                      dst14, src15, dst15, dst12, dst13, dst14, dst15);
+        __lsx_vst(dst0, dst, 0);
+        __lsx_vst(dst1, dst, 16);
+        __lsx_vst(dst2, dst, 32);
+        __lsx_vst(dst3, dst, 48);
+        dst += dst_stride;
+        __lsx_vst(dst4, dst, 0);
+        __lsx_vst(dst5, dst, 16);
+        __lsx_vst(dst6, dst, 32);
+        __lsx_vst(dst7, dst, 48);
+        dst += dst_stride;
+        __lsx_vst(dst8, dst, 0);
+        __lsx_vst(dst9, dst, 16);
+        __lsx_vst(dst10, dst, 32);
+        __lsx_vst(dst11, dst, 48);
+        dst += dst_stride;
+        __lsx_vst(dst12, dst, 0);
+        __lsx_vst(dst13, dst, 16);
+        __lsx_vst(dst14, dst, 32);
+        __lsx_vst(dst15, dst, 48);
+        dst += dst_stride;
+    }
+}
+
 static const int8_t vp9_subpel_filters_lsx[3][15][8] = {
     [FILTER_8TAP_REGULAR] = {
          {0, 1, -5, 126, 8, -3, 1, 0},
@@ -2123,6 +2282,13 @@ void ff_copy##SIZE##_lsx(uint8_t *dst, ptrdiff_t dststride,        \
 {                                                                  \
                                                                    \
     copy_width##SIZE##_lsx(src, srcstride, dst, dststride, h);     \
+}                                                                  \
+void ff_avg##SIZE##_lsx(uint8_t *dst, ptrdiff_t dststride,         \
+                        const uint8_t *src, ptrdiff_t srcstride,   \
+                        int h, int mx, int my)                     \
+{                                                                  \
+                                                                   \
+    avg_width##SIZE##_lsx(src, srcstride, dst, dststride, h);      \
 }
 
 VP9_8TAP_LOONGARCH_LSX_FUNC(64, regular, FILTER_8TAP_REGULAR);

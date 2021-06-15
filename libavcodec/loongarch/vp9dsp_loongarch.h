@@ -56,7 +56,11 @@ void ff_avg_8tap_##type##_##SIZE##hv_lsx(uint8_t *dst, ptrdiff_t dststride,  \
 #define VP9_COPY_LOONGARCH_LSX_FUNC(SIZE)                          \
 void ff_copy##SIZE##_lsx(uint8_t *dst, ptrdiff_t dststride,        \
                          const uint8_t *src, ptrdiff_t srcstride,  \
-                         int h, int mx, int my);
+                         int h, int mx, int my);                   \
+                                                                   \
+void ff_avg##SIZE##_lsx(uint8_t *dst, ptrdiff_t dststride,         \
+                        const uint8_t *src, ptrdiff_t srcstride,   \
+                        int h, int mx, int my);
 
 VP9_8TAP_LOONGARCH_LSX_FUNC(64, regular, FILTER_8TAP_REGULAR);
 VP9_8TAP_LOONGARCH_LSX_FUNC(32, regular, FILTER_8TAP_REGULAR);
@@ -83,5 +87,14 @@ VP9_COPY_LOONGARCH_LSX_FUNC(8);
 
 #undef VP9_8TAP_LOONGARCH_LSX_FUNC
 #undef VP9_COPY_LOONGARCH_LSX_FUNC
+
+void ff_vert_16x16_lsx(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                       const uint8_t *top);
+void ff_vert_32x32_lsx(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                       const uint8_t *top);
+void ff_hor_16x16_lsx(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                      const uint8_t *top);
+void ff_hor_32x32_lsx(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                      const uint8_t *top);
 
 #endif /* AVCODEC_LOONGARCH_VP9DSP_LOONGARCH_H */

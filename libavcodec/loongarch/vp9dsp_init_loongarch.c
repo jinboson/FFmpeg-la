@@ -61,7 +61,8 @@ dsp->mc[idx1][FILTER_8TAP_SHARP  ][idx2][0][0] = ff_##type##sz##_lsx;  \
 dsp->mc[idx1][FILTER_BILINEAR    ][idx2][0][0] = ff_##type##sz##_lsx
 
 #define init_copy(idx, sz)                    \
-    init_fpel(idx, 0, sz, copy);
+    init_fpel(idx, 0, sz, copy);              \
+    init_fpel(idx, 1, sz, avg)
 
     init_copy(0, 64);
     init_copy(1, 32);
@@ -73,9 +74,23 @@ dsp->mc[idx1][FILTER_BILINEAR    ][idx2][0][0] = ff_##type##sz##_lsx
     }
 }
 
+static av_cold void vp9dsp_intrapred_init_lsx(VP9DSPContext *dsp, int bpp)
+{
+    if (bpp == 8) {
+#define init_intra_pred_lsx(tx, sz)                             \
+    dsp->intra_pred[tx][VERT_PRED]    = ff_vert_##sz##_lsx;     \
+    dsp->intra_pred[tx][HOR_PRED]     = ff_hor_##sz##_lsx;      \
+
+        init_intra_pred_lsx(TX_16X16, 16x16);
+        init_intra_pred_lsx(TX_32X32, 32x32);
+#undef init_intra_pred_lsx
+    }
+}
+
 static av_cold void vp9dsp_init_lsx(VP9DSPContext *dsp, int bpp)
 {
     vp9dsp_mc_init_lsx(dsp, bpp);
+    vp9dsp_intrapred_init_lsx(dsp, bpp);
 }
 
 av_cold void ff_vp9dsp_init_loongarch(VP9DSPContext *dsp, int bpp)
