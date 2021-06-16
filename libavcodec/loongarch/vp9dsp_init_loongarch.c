@@ -80,10 +80,28 @@ static av_cold void vp9dsp_intrapred_init_lsx(VP9DSPContext *dsp, int bpp)
 #define init_intra_pred_lsx(tx, sz)                             \
     dsp->intra_pred[tx][VERT_PRED]    = ff_vert_##sz##_lsx;     \
     dsp->intra_pred[tx][HOR_PRED]     = ff_hor_##sz##_lsx;      \
+    dsp->intra_pred[tx][DC_PRED]      = ff_dc_##sz##_lsx;       \
+    dsp->intra_pred[tx][LEFT_DC_PRED] = ff_dc_left_##sz##_lsx;  \
+    dsp->intra_pred[tx][TOP_DC_PRED]  = ff_dc_top_##sz##_lsx;   \
+    dsp->intra_pred[tx][DC_128_PRED]  = ff_dc_128_##sz##_lsx;   \
+    dsp->intra_pred[tx][DC_127_PRED]  = ff_dc_127_##sz##_lsx;   \
+    dsp->intra_pred[tx][DC_129_PRED]  = ff_dc_129_##sz##_lsx;   \
+    dsp->intra_pred[tx][TM_VP8_PRED]  = ff_tm_##sz##_lsx;       \
 
         init_intra_pred_lsx(TX_16X16, 16x16);
         init_intra_pred_lsx(TX_32X32, 32x32);
 #undef init_intra_pred_lsx
+
+#define init_intra_pred_lsx(tx, sz)                             \
+    dsp->intra_pred[tx][DC_PRED]      = ff_dc_##sz##_lsx;       \
+    dsp->intra_pred[tx][LEFT_DC_PRED] = ff_dc_left_##sz##_lsx;  \
+    dsp->intra_pred[tx][TOP_DC_PRED]  = ff_dc_top_##sz##_lsx;   \
+    dsp->intra_pred[tx][TM_VP8_PRED]  = ff_tm_##sz##_lsx;       \
+
+    init_intra_pred_lsx(TX_4X4, 4x4);
+    init_intra_pred_lsx(TX_8X8, 8x8);
+#undef init_intra_pred_lsx
+
     }
 }
 

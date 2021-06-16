@@ -96,5 +96,49 @@ void ff_hor_16x16_lsx(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
                       const uint8_t *top);
 void ff_hor_32x32_lsx(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
                       const uint8_t *top);
+void ff_dc_4x4_lsx(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                   const uint8_t *top);
+void ff_dc_8x8_lsx(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                   const uint8_t *top);
+void ff_dc_16x16_lsx(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                     const uint8_t *top);
+void ff_dc_32x32_lsx(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                     const uint8_t *top);
+void ff_dc_left_4x4_lsx(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                        const uint8_t *top);
+void ff_dc_left_8x8_lsx(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                        const uint8_t *top);
+void ff_dc_left_16x16_lsx(uint8_t *dst, ptrdiff_t stride,
+                          const uint8_t *left, const uint8_t *top);
+void ff_dc_left_32x32_lsx(uint8_t *dst, ptrdiff_t stride,
+                          const uint8_t *left, const uint8_t *top);
+void ff_dc_top_4x4_lsx(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                       const uint8_t *top);
+void ff_dc_top_8x8_lsx(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                       const uint8_t *top);
+void ff_dc_top_16x16_lsx(uint8_t *dst, ptrdiff_t stride,
+                         const uint8_t *left, const uint8_t *top);
+void ff_dc_top_32x32_lsx(uint8_t *dst, ptrdiff_t stride,
+                         const uint8_t *left, const uint8_t *top);
+void ff_dc_128_16x16_lsx(uint8_t *dst, ptrdiff_t stride,
+                         const uint8_t *left, const uint8_t *top);
+void ff_dc_128_32x32_lsx(uint8_t *dst, ptrdiff_t stride,
+                         const uint8_t *left, const uint8_t *top);
+void ff_dc_127_16x16_lsx(uint8_t *dst, ptrdiff_t stride,
+                         const uint8_t *left, const uint8_t *top);
+void ff_dc_127_32x32_lsx(uint8_t *dst, ptrdiff_t stride,
+                         const uint8_t *left, const uint8_t *top);
+void ff_dc_129_16x16_lsx(uint8_t *dst, ptrdiff_t stride,
+                         const uint8_t *left, const uint8_t *top);
+void ff_dc_129_32x32_lsx(uint8_t *dst, ptrdiff_t stride,
+                         const uint8_t *left, const uint8_t *top);
+void ff_tm_4x4_lsx(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                   const uint8_t *top);
+void ff_tm_8x8_lsx(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                   const uint8_t *top);
+void ff_tm_16x16_lsx(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                     const uint8_t *top);
+void ff_tm_32x32_lsx(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
+                     const uint8_t *top);
 
 #endif /* AVCODEC_LOONGARCH_VP9DSP_LOONGARCH_H */
