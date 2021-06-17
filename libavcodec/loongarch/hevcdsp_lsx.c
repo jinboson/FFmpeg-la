@@ -21,6 +21,7 @@
 
 #include "libavutil/loongarch/generic_macros_lsx.h"
 #include "libavcodec/loongarch/hevcdsp_lsx.h"
+#include "libavcodec/loongarch/hevc_macros_lsx.h"
 
 static const uint8_t ff_hevc_mask_arr[16 * 2] __attribute__((aligned(0x40))) = {
     /* 8 width cases */
@@ -1697,6 +1698,529 @@ static void hevc_vt_8t_64w_lsx(uint8_t *src, int32_t src_stride,
                                 filter, height, 64);
 }
 
+static void hevc_hv_8t_4w_lsx(uint8_t *src, int32_t src_stride,
+                              int16_t *dst, int32_t dst_stride,
+                              const int8_t *filter_x, const int8_t *filter_y,
+                              int32_t height)
+{
+    uint32_t loop_cnt;
+    int32_t src_stride_2x = (src_stride << 1);
+    int32_t dst_stride_2x = (dst_stride << 1);
+    int32_t src_stride_4x = (src_stride << 2);
+    int32_t dst_stride_4x = (dst_stride << 2);
+    int32_t src_stride_3x = src_stride_2x + src_stride;
+    int32_t dst_stride_3x = dst_stride_2x + dst_stride;
+    __m128i src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10;
+    __m128i filt0, filt1, filt2, filt3;
+    __m128i filt_h0, filt_h1, filt_h2, filt_h3;
+    __m128i mask1, mask2, mask3;
+    __m128i filter_vec, const_vec;
+    __m128i vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
+    __m128i vec8, vec9, vec10, vec11, vec12, vec13, vec14, vec15;
+    __m128i dst30, dst41, dst52, dst63, dst66, dst97, dst108;
+    __m128i dst0_r, dst1_r, dst2_r, dst3_r;
+    __m128i dst10_r, dst32_r, dst54_r, dst76_r, dst98_r;
+    __m128i dst21_r, dst43_r, dst65_r, dst87_r, dst109_r;
+    __m128i mask0;
+
+    mask0 = __lsx_vld(ff_hevc_mask_arr, 16);
+
+    src -= src_stride_3x + 3;
+    LSX_DUP4_ARG2(__lsx_vldrepl_h, filter_x, 0, filter_x, 2, filter_x, 4,
+                  filter_x, 6, filt0, filt1, filt2, filt3);
+
+    filter_vec = __lsx_vld(filter_y, 0);
+    filter_vec = __lsx_vsllwil_h_b(filter_vec, 0);
+
+    LSX_DUP4_ARG2(__lsx_vreplvei_w, filter_vec, 0, filter_vec, 1, filter_vec, 2,
+                  filter_vec, 3, filt_h0, filt_h1, filt_h2, filt_h3);
+
+    mask1 = __lsx_vaddi_bu(mask0, 2);
+    mask2 = __lsx_vaddi_bu(mask0, 4);
+    mask3 = __lsx_vaddi_bu(mask0, 6);
+    const_vec = __lsx_vreplgr2vr_h(8192); // 128 << 6
+
+    LSX_DUP4_ARG2(__lsx_vld, src, 0, src + src_stride, 0, src + src_stride_2x, 0,
+                  src + src_stride_3x, 0, src0, src1, src2, src3);
+    src += src_stride_4x;
+    LSX_DUP2_ARG2(__lsx_vld, src, 0, src + src_stride, 0, src4, src5);
+    src6 = __lsx_vld(src + src_stride_2x, 0);
+    src += src_stride_3x;
+    LSX_DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128, src0, src1,
+                  src2, src3);
+    LSX_DUP2_ARG2(__lsx_vxori_b, src4, 128, src5, 128, src4, src5);
+    src6 = __lsx_vxori_b(src6, 128);
+
+    LSX_DUP4_ARG3(__lsx_vshuf_b, src3, src0, mask0, src3, src0, mask1, src3, src0,
+                  mask2, src3, src0, mask3, vec0, vec1, vec2, vec3);
+    LSX_DUP4_ARG3(__lsx_vshuf_b, src4, src1, mask0, src4, src1, mask1, src4, src1,
+                  mask2, src4, src1, mask3, vec4, vec5, vec6, vec7);
+    LSX_DUP4_ARG3(__lsx_vshuf_b, src5, src2, mask0, src5, src2, mask1, src5, src2,
+                  mask2, src5, src2, mask3, vec8, vec9, vec10, vec11);
+    LSX_DUP4_ARG3(__lsx_vshuf_b, src6, src3, mask0, src6, src3, mask1, src6, src3,
+                  mask2, src6, src3, mask3, vec12, vec13, vec14, vec15);
+    LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec0, filt0, dst30, vec1, filt1, dst30,
+                  vec2, filt2, dst30, vec3, filt3, dst30, dst30, dst30, dst30);
+    LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec4, filt0, dst41, vec5, filt1, dst41,
+                  vec6, filt2, dst41, vec7, filt3, dst41, dst41, dst41, dst41);
+    LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec8, filt0, dst52, vec9, filt1, dst52,
+                  vec10, filt2, dst52, vec11, filt3, dst52, dst52, dst52, dst52);
+    LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec12, filt0, dst63, vec13, filt1, dst63,
+                  vec14, filt2, dst63, vec15, filt3, dst63, dst63, dst63, dst63);
+
+    LSX_DUP2_ARG2(__lsx_vilvl_h, dst41, dst30, dst52, dst41, dst10_r, dst21_r);
+    LSX_DUP2_ARG2(__lsx_vilvh_h, dst41, dst30, dst52, dst41, dst43_r, dst54_r);
+    dst32_r = __lsx_vilvl_h(dst63, dst52);
+    dst65_r = __lsx_vilvh_h(dst63, dst52);
+    dst66 = __lsx_vreplvei_d(dst63, 1);
+
+    for (loop_cnt = height >> 2; loop_cnt--;) {
+        LSX_DUP4_ARG2(__lsx_vld, src, 0, src + src_stride, 0, src + src_stride_2x, 0,
+                      src + src_stride_3x, 0, src7, src8, src9, src10);
+        src += src_stride_4x;
+        LSX_DUP4_ARG2(__lsx_vxori_b, src7, 128, src8, 128, src9, 128, src10, 128,
+                      src7, src8, src9, src10);
+
+        LSX_DUP4_ARG3(__lsx_vshuf_b, src9, src7, mask0, src9, src7, mask1, src9, src7,
+                      mask2, src9, src7, mask3, vec0, vec1, vec2, vec3);
+        LSX_DUP4_ARG3(__lsx_vshuf_b, src10, src8, mask0, src10, src8, mask1, src10, src8,
+                      mask2, src10, src8, mask3, vec4, vec5, vec6, vec7);
+
+        LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec0, filt0, dst97, vec1, filt1,
+                      dst97, vec2, filt2, dst97, vec3, filt3, dst97, dst97, dst97, dst97);
+        LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec4, filt0, dst108, vec5, filt1,
+                      dst108, vec6, filt2, dst108, vec7, filt3, dst108, dst108, dst108, dst108);
+
+        LSX_DUP2_ARG2(__lsx_vilvl_h, dst97, dst66, dst108, dst97, dst76_r, dst87_r);
+        dst109_r = __lsx_vilvh_h(dst108, dst97);
+        dst66 = __lsx_vreplvei_d(dst97, 1);
+        dst98_r = __lsx_vilvl_h(dst66, dst108);
+
+        dst0_r = __lsx_hevc_filt_8tap_w(dst10_r, dst32_r, dst54_r, dst76_r,
+                                        filt_h0, filt_h1, filt_h2, filt_h3);
+        dst1_r = __lsx_hevc_filt_8tap_w(dst21_r, dst43_r, dst65_r, dst87_r,
+                                        filt_h0, filt_h1, filt_h2, filt_h3);
+        dst2_r = __lsx_hevc_filt_8tap_w(dst32_r, dst54_r, dst76_r, dst98_r,
+                                        filt_h0, filt_h1, filt_h2, filt_h3);
+        dst3_r = __lsx_hevc_filt_8tap_w(dst43_r, dst65_r, dst87_r, dst109_r,
+                                        filt_h0, filt_h1, filt_h2, filt_h3);
+        LSX_DUP4_ARG2(__lsx_vsrli_w, dst0_r, 6, dst1_r, 6, dst2_r, 6, dst3_r, 6,
+                      dst0_r, dst1_r, dst2_r, dst3_r);
+        LSX_DUP2_ARG2(__lsx_vpickev_h, dst1_r, dst0_r, dst3_r, dst2_r, dst0_r, dst2_r);
+        __lsx_vstelm_d(dst0_r, dst, 0, 0);
+        __lsx_vstelm_d(dst0_r, dst + dst_stride, 0, 1);
+        __lsx_vstelm_d(dst2_r, dst + dst_stride_2x, 0, 0);
+        __lsx_vstelm_d(dst2_r, dst + dst_stride_3x, 0, 1);
+        dst += dst_stride_4x;
+
+        dst10_r = dst54_r;
+        dst32_r = dst76_r;
+        dst54_r = dst98_r;
+        dst21_r = dst65_r;
+        dst43_r = dst87_r;
+        dst65_r = dst109_r;
+        dst66 = __lsx_vreplvei_d(dst108, 1);
+    }
+}
+
+static void hevc_hv_8t_8multx1mult_lsx(uint8_t *src,
+                                       int32_t src_stride,
+                                       int16_t *dst,
+                                       int32_t dst_stride,
+                                       const int8_t *filter_x,
+                                       const int8_t *filter_y,
+                                       int32_t height, int32_t width)
+{
+    uint32_t loop_cnt, cnt;
+    uint8_t *src_tmp;
+    int16_t *dst_tmp;
+    int32_t src_stride_2x = (src_stride << 1);
+    int32_t src_stride_4x = (src_stride << 2);
+    int32_t src_stride_3x = src_stride_2x + src_stride;
+    __m128i src0, src1, src2, src3, src4, src5, src6, src7;
+    __m128i filt0, filt1, filt2, filt3;
+    __m128i filt_h0, filt_h1, filt_h2, filt_h3;
+    __m128i mask1, mask2, mask3;
+    __m128i filter_vec, const_vec;
+    __m128i vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
+    __m128i vec8, vec9, vec10, vec11, vec12, vec13, vec14, vec15;
+    __m128i dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
+    __m128i dst0_r, dst0_l;
+    __m128i dst10_r, dst32_r, dst54_r, dst76_r;
+    __m128i dst10_l, dst32_l, dst54_l, dst76_l;
+    __m128i mask0 = {0x403030202010100, 0x807070606050504};
+
+    src -= src_stride_3x + 3;
+    LSX_DUP4_ARG2(__lsx_vldrepl_h, filter_x, 0, filter_x, 2, filter_x, 4,
+                  filter_x, 6, filt0, filt1, filt2, filt3);
+
+    filter_vec = __lsx_vld(filter_y, 0);
+    filter_vec = __lsx_vsllwil_h_b(filter_vec, 0);
+
+    LSX_DUP4_ARG2(__lsx_vreplvei_w, filter_vec, 0, filter_vec, 1, filter_vec, 2,
+                  filter_vec, 3, filt_h0, filt_h1, filt_h2, filt_h3);
+
+    mask1 = __lsx_vaddi_bu(mask0, 2);
+    mask2 = __lsx_vaddi_bu(mask0, 4);
+    mask3 = __lsx_vaddi_bu(mask0, 6);
+    const_vec = __lsx_vreplgr2vr_h(8192); // 128 << 6
+
+    for (cnt = width >> 3; cnt--;) {
+        src_tmp = src;
+        dst_tmp = dst;
+        LSX_DUP4_ARG2(__lsx_vld, src_tmp, 0, src_tmp + src_stride, 0,
+                      src_tmp + src_stride_2x, 0, src_tmp + src_stride_3x, 0,
+                      src0, src1, src2, src3);
+        src_tmp += src_stride_4x;
+        LSX_DUP2_ARG2(__lsx_vld, src_tmp, 0, src_tmp + src_stride, 0, src4, src5);
+        src6 = __lsx_vld(src_tmp + src_stride_2x, 0);
+        src_tmp += src_stride_3x;
+        LSX_DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128, src0,
+                      src1, src2, src3);
+        LSX_DUP2_ARG2(__lsx_vxori_b, src4, 128, src5, 128, src4, src5);
+        src6 = __lsx_vxori_b(src6, 128);
+
+        /* row 0 row 1 row 2 row 3 */
+        LSX_DUP4_ARG3(__lsx_vshuf_b, src0, src0, mask0, src0, src0, mask1, src0, src0,
+                      mask2, src0, src0, mask3, vec0, vec1, vec2, vec3);
+        LSX_DUP4_ARG3(__lsx_vshuf_b, src1, src1, mask0, src1, src1, mask1, src1, src1,
+                      mask2, src1, src1, mask3, vec4, vec5, vec6, vec7);
+        LSX_DUP4_ARG3(__lsx_vshuf_b, src2, src2, mask0, src2, src2, mask1, src2, src2,
+                      mask2, src2, src2, mask3, vec8, vec9, vec10, vec11);
+        LSX_DUP4_ARG3(__lsx_vshuf_b, src3, src3, mask0, src3, src3, mask1, src3, src3,
+                      mask2, src3, src3, mask3, vec12, vec13, vec14, vec15);
+        LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec0, filt0, dst0, vec1, filt1, dst0,
+                      vec2, filt2, dst0, vec3, filt3, dst0, dst0, dst0, dst0);
+        LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec4, filt0, dst1, vec5, filt1, dst1,
+                      vec6, filt2, dst1, vec7, filt3, dst1, dst1, dst1, dst1);
+        LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec8, filt0, dst2, vec9, filt1, dst2,
+                      vec10, filt2, dst2, vec11, filt3, dst2, dst2, dst2, dst2);
+        LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec12, filt0, dst3, vec13, filt1,
+                      dst3, vec14, filt2, dst3, vec15, filt3, dst3, dst3, dst3, dst3);
+
+        /* row 4 row 5 row 6 */
+        LSX_DUP4_ARG3(__lsx_vshuf_b, src4, src4, mask0, src4, src4, mask1, src4, src4,
+                      mask2, src4, src4, mask3, vec0, vec1, vec2, vec3);
+        LSX_DUP4_ARG3(__lsx_vshuf_b, src5, src5, mask0, src5, src5, mask1, src5, src5,
+                      mask2, src5, src5, mask3, vec4, vec5, vec6, vec7);
+        LSX_DUP4_ARG3(__lsx_vshuf_b, src6, src6, mask0, src6, src6, mask1, src6, src6,
+                      mask2, src6, src6, mask3, vec8, vec9, vec10, vec11);
+        LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec0, filt0, dst4, filt1, vec1, dst4,
+                      vec2, filt2, dst4, vec3, filt3, dst4, dst4, dst4, dst4);
+        LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec4, filt0, dst5, vec5, filt1, dst5,
+                      vec6, filt2, dst5, vec7, filt3, dst5, dst5, dst5, dst5);
+        LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec8, filt0, dst6, vec9, filt1, dst6,
+                      vec10, filt2, dst6, vec11, filt3, dst6, dst6, dst6, dst6);
+
+        for (loop_cnt = height; loop_cnt--;) {
+            src7 = __lsx_vld(src_tmp, 0);
+            src7 = __lsx_vxori_b(src7, 128);
+            src_tmp += src_stride;
+
+            LSX_DUP4_ARG3(__lsx_vshuf_b, src7, src7, mask0, src7, src7, mask1, src7,
+                          src7, mask2, src7, src7, mask3, vec0, vec1, vec2, vec3);
+            LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec0, filt0, dst7, vec1, filt1,
+                          dst7, vec2, filt2, dst7, vec3, filt3, dst7, dst7, dst7, dst7);
+
+            LSX_DUP4_ARG2(__lsx_vilvl_h, dst1, dst0, dst3, dst2, dst5, dst4, dst7, dst6,
+                          dst10_r, dst32_r, dst54_r, dst76_r);
+            LSX_DUP4_ARG2(__lsx_vilvh_h, dst1, dst0, dst3, dst2, dst5, dst4, dst7, dst6,
+                          dst10_l, dst32_l, dst54_l, dst76_l);
+
+            dst0_r = __lsx_hevc_filt_8tap_w(dst10_r, dst32_r, dst54_r, dst76_r,
+                                            filt_h0, filt_h1, filt_h2, filt_h3);
+            dst0_l = __lsx_hevc_filt_8tap_w(dst10_l, dst32_l, dst54_l, dst76_l,
+                                            filt_h0, filt_h1, filt_h2, filt_h3);
+            dst0_r = __lsx_vsrli_w(dst0_r, 6);
+            dst0_l = __lsx_vsrli_w(dst0_l, 6);
+
+            dst0_r = __lsx_vpickev_h(dst0_l, dst0_r);
+            __lsx_vst(dst0_r, dst_tmp, 0);
+            dst_tmp += dst_stride;
+
+            dst0 = dst1;
+            dst1 = dst2;
+            dst2 = dst3;
+            dst3 = dst4;
+            dst4 = dst5;
+            dst5 = dst6;
+            dst6 = dst7;
+        }
+        src += 8;
+        dst += 8;
+    }
+}
+
+static void hevc_hv_8t_8w_lsx(uint8_t *src, int32_t src_stride,
+                              int16_t *dst, int32_t dst_stride,
+                              const int8_t *filter_x, const int8_t *filter_y,
+                              int32_t height)
+{
+    hevc_hv_8t_8multx1mult_lsx(src, src_stride, dst, dst_stride,
+                               filter_x, filter_y, height, 8);
+}
+
+static void hevc_hv_8t_12w_lsx(uint8_t *src, int32_t src_stride,
+                               int16_t *dst, int32_t dst_stride,
+                               const int8_t *filter_x, const int8_t *filter_y,
+                               int32_t height)
+{
+    uint32_t loop_cnt;
+    uint8_t *src_tmp;
+    int16_t *dst_tmp;
+    int32_t src_stride_2x = (src_stride << 1);
+    int32_t dst_stride_2x = (dst_stride << 1);
+    int32_t src_stride_4x = (src_stride << 2);
+    int32_t dst_stride_4x = (dst_stride << 2);
+    int32_t src_stride_3x = src_stride_2x + src_stride;
+    int32_t dst_stride_3x = dst_stride_2x + dst_stride;
+    __m128i src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10;
+    __m128i mask0, mask1, mask2, mask3, mask4, mask5, mask6, mask7;
+    __m128i vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
+    __m128i vec8, vec9, vec10, vec11, vec12, vec13, vec14, vec15;
+    __m128i filt0, filt1, filt2, filt3, filt_h0, filt_h1, filt_h2, filt_h3;
+    __m128i filter_vec, const_vec;
+    __m128i dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
+    __m128i dst30, dst41, dst52, dst63, dst66, dst97, dst108;
+    __m128i dst10_r, dst32_r, dst54_r, dst76_r, dst98_r, dst21_r, dst43_r;
+    __m128i dst65_r, dst87_r, dst109_r, dst10_l, dst32_l, dst54_l, dst76_l;
+    __m128i dst0_r, dst0_l, dst1_r, dst2_r, dst3_r;
+
+    src -= src_stride_3x + 3;
+    LSX_DUP4_ARG2(__lsx_vldrepl_h, filter_x, 0, filter_x, 2, filter_x, 4,
+                  filter_x, 6, filt0, filt1, filt2, filt3);
+
+    filter_vec = __lsx_vld(filter_y, 0);
+    filter_vec = __lsx_vsllwil_h_b(filter_vec, 0);
+
+    LSX_DUP4_ARG2(__lsx_vreplvei_w, filter_vec, 0, filter_vec, 1, filter_vec, 2,
+                  filter_vec, 3, filt_h0, filt_h1, filt_h2, filt_h3);
+
+    mask0 = __lsx_vld(ff_hevc_mask_arr, 0);
+    mask1 = __lsx_vaddi_bu(mask0, 2);
+    mask2 = __lsx_vaddi_bu(mask0, 4);
+    mask3 = __lsx_vaddi_bu(mask0, 6);
+    const_vec = __lsx_vreplgr2vr_h(8192); // 128 << 6
+
+    src_tmp = src;
+    dst_tmp = dst;
+
+    LSX_DUP4_ARG2(__lsx_vld, src_tmp, 0, src_tmp + src_stride, 0,
+                  src_tmp + src_stride_2x, 0, src_tmp + src_stride_3x, 0,
+                  src0, src1, src2, src3);
+    src_tmp += src_stride_4x;
+    LSX_DUP2_ARG2(__lsx_vld, src_tmp, 0, src_tmp + src_stride, 0, src4, src5);
+    src6 = __lsx_vld(src_tmp + src_stride_2x, 0);
+    src_tmp += src_stride_3x;
+    LSX_DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128, src0, src1,
+                  src2, src3);
+    LSX_DUP2_ARG2(__lsx_vxori_b, src4, 128, src5, 128, src4, src5);
+    src6 = __lsx_vxori_b(src6, 128);
+
+    /* row 0 row 1 row 2 row 3 */
+    LSX_DUP4_ARG3(__lsx_vshuf_b, src0, src0, mask0, src0, src0, mask1, src0, src0,
+                  mask2, src0, src0, mask3, vec0, vec1, vec2, vec3);
+    LSX_DUP4_ARG3(__lsx_vshuf_b, src1, src1, mask0, src1, src1, mask1, src1, src1,
+                  mask2, src1, src1, mask3, vec4, vec5, vec6, vec7);
+    LSX_DUP4_ARG3(__lsx_vshuf_b, src2, src2, mask0, src2, src2, mask1, src2, src2,
+                  mask2, src2, src2, mask3, vec8, vec9, vec10, vec11);
+    LSX_DUP4_ARG3(__lsx_vshuf_b, src3, src3, mask0, src3, src3, mask1, src3, src3,
+                  mask2, src3, src3, mask3, vec12, vec13, vec14, vec15);
+    LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec0, filt0, dst0, vec1, filt1, dst0,
+                  vec2, filt2, dst0, vec3, filt3, dst0, dst0, dst0, dst0);
+    LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec4, filt0, dst1, vec5, filt1, dst1,
+                  vec6, filt2, dst1, vec7, filt3, dst1, dst1, dst1, dst1);
+    LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec8, filt0, dst2, vec9, filt1, dst2,
+                  vec10, filt2, dst2, vec11, filt3, dst2, dst2, dst2, dst2);
+    LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec12, filt0, dst3, vec13, filt1, dst3,
+                  vec14, filt2, dst3, vec15, filt3, dst3, dst3, dst3, dst3);
+
+    /* row 4 row 5 row 6 */
+    LSX_DUP4_ARG3(__lsx_vshuf_b, src4, src4, mask0, src4, src4, mask1, src4, src4,
+                  mask2, src4, src4, mask3, vec0, vec1, vec2, vec3);
+    LSX_DUP4_ARG3(__lsx_vshuf_b, src5, src5, mask0, src5, src5, mask1, src5, src5,
+                  mask2, src5, src5, mask3, vec4, vec5, vec6, vec7);
+    LSX_DUP4_ARG3(__lsx_vshuf_b, src6, src6, mask0, src6, src6, mask1, src6, src6,
+                  mask2, src6, src6, mask3, vec8, vec9, vec10, vec11);
+    LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec0, filt0, dst4, vec1, filt1, dst4,
+                  vec2, filt2, dst4, vec3, filt3, dst4, dst4, dst4, dst4);
+    LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec4, filt0, dst5, vec5, filt1, dst5,
+                  vec6, filt2, dst5, vec7, filt3, dst5, dst5, dst5, dst5);
+    dst6 = const_vec;
+    LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec8, filt0, dst6, vec9, filt1, dst6,
+                  vec10, filt2, dst6, vec11, filt3, dst6, dst6, dst6, dst6);
+
+    for (loop_cnt = height; loop_cnt--;) {
+        src7 = __lsx_vld(src_tmp, 0);
+        src7 = __lsx_vxori_b(src7, 128);
+        src_tmp += src_stride;
+
+        LSX_DUP4_ARG3(__lsx_vshuf_b, src7, src7, mask0, src7, src7, mask1, src7, src7,
+                      mask2, src7, src7, mask3, vec0, vec1, vec2, vec3);
+        LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec0, filt0, dst7, vec1, filt1, dst7,
+                      vec2, filt2, dst7, vec3, filt3, dst7, dst7, dst7, dst7);
+        LSX_DUP4_ARG2(__lsx_vilvl_h, dst1, dst0, dst3, dst2, dst5, dst4, dst7, dst6,
+                      dst10_r, dst32_r, dst54_r, dst76_r);
+        LSX_DUP4_ARG2(__lsx_vilvh_h, dst1, dst0, dst3, dst2, dst5, dst4, dst7, dst6,
+                      dst10_l, dst32_l, dst54_l, dst76_l);
+        dst0_r = __lsx_hevc_filt_8tap_w(dst10_r, dst32_r, dst54_r, dst76_r, filt_h0,
+                                        filt_h1, filt_h2, filt_h3);
+        dst0_l = __lsx_hevc_filt_8tap_w(dst10_l, dst32_l, dst54_l, dst76_l, filt_h0,
+                                        filt_h1, filt_h2, filt_h3);
+        dst0_r = __lsx_vsrli_w(dst0_r, 6);
+        dst0_l = __lsx_vsrli_w(dst0_l, 6);
+
+        dst0_r = __lsx_vpickev_h(dst0_l, dst0_r);
+        __lsx_vst(dst0_r, dst_tmp, 0);
+        dst_tmp += dst_stride;
+
+        dst0 = dst1;
+        dst1 = dst2;
+        dst2 = dst3;
+        dst3 = dst4;
+        dst4 = dst5;
+        dst5 = dst6;
+        dst6 = dst7;
+    }
+    src += 8;
+    dst += 8;
+
+    mask4 = __lsx_vld(ff_hevc_mask_arr, 16);
+    mask5 = __lsx_vaddi_bu(mask4, 2);
+    mask6 = __lsx_vaddi_bu(mask4, 4);
+    mask7 = __lsx_vaddi_bu(mask4, 6);
+
+    LSX_DUP4_ARG2(__lsx_vld, src, 0, src + src_stride, 0, src + src_stride_2x, 0,
+                  src + src_stride_3x, 0, src0, src1, src2, src3);
+    src += src_stride_4x;
+    LSX_DUP2_ARG2(__lsx_vld, src, 0, src + src_stride, 0, src4, src5);
+    src6 = __lsx_vld(src + src_stride_2x, 0);
+    src += src_stride_3x;
+    LSX_DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128, src0,
+                  src1, src2, src3)
+    LSX_DUP2_ARG2(__lsx_vxori_b, src4, 128, src5, 128, src4, src5);
+    src6 = __lsx_vxori_b(src6, 128);
+
+    LSX_DUP4_ARG3(__lsx_vshuf_b, src3, src0, mask4, src3, src0, mask5, src3, src0,
+                  mask6, src3, src0, mask7, vec0, vec1, vec2, vec3);
+    LSX_DUP4_ARG3(__lsx_vshuf_b, src4, src1, mask4, src4, src1, mask5, src4, src1,
+                  mask6, src4, src1, mask7, vec4, vec5, vec6, vec7);
+    LSX_DUP4_ARG3(__lsx_vshuf_b, src5, src2, mask4, src5, src2, mask5, src5, src2,
+                  mask6, src5, src2, mask7, vec8, vec9, vec10, vec11);
+    LSX_DUP4_ARG3(__lsx_vshuf_b, src6, src3, mask4, src6, src3, mask5, src6, src3,
+                  mask6, src6, src3, mask7, vec12, vec13, vec14, vec15);
+    LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec0, filt0, dst30, vec1, filt1, dst30,
+                  vec2, filt2, dst30, vec3, filt3, dst30, dst30, dst30, dst30);
+    LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec4, filt0, dst41, vec5, filt1, dst41,
+                  vec6, filt2, dst41, vec7, filt3, dst41, dst41, dst41, dst41);
+    LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec8, filt0, dst52, vec9, filt1, dst52,
+                  vec10, filt2, dst52, vec11, filt3, dst52, dst52, dst52, dst52);
+    dst63 = const_vec;
+    LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec12, filt0, dst63, vec13, filt1, dst63,
+                  vec14, filt2, dst63, vec15, filt3, dst63, dst63, dst63, dst63);
+
+    LSX_DUP2_ARG2(__lsx_vilvl_h, dst41, dst30, dst52, dst41, dst10_r, dst21_r);
+    LSX_DUP2_ARG2(__lsx_vilvh_h, dst41, dst30, dst52, dst41, dst43_r, dst54_r);
+    dst32_r = __lsx_vilvl_h(dst63, dst52);
+    dst65_r = __lsx_vilvh_h(dst63, dst52);
+
+    dst66 = __lsx_vreplvei_d(dst63, 1);
+
+    for (loop_cnt = height >> 2; loop_cnt--;) {
+        LSX_DUP4_ARG2(__lsx_vld, src, 0, src + src_stride, 0, src + src_stride_2x, 0,
+                      src + src_stride_3x, 0, src7, src8, src9, src10);
+        src += src_stride_4x;
+        LSX_DUP4_ARG2(__lsx_vxori_b, src7, 128, src8, 128, src9, 128, src10, 128, src7,
+                      src8, src9, src10);
+
+        LSX_DUP4_ARG3(__lsx_vshuf_b, src9, src7, mask4, src9, src7, mask5, src9, src7,
+                      mask6, src9, src7, mask7, vec0, vec1, vec2, vec3);
+        LSX_DUP4_ARG3(__lsx_vshuf_b, src10, src8, mask4, src10, src8, mask5, src10,
+                      src8, mask6, src10, src8, mask7, vec4, vec5, vec6, vec7);
+        LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec0, filt0, dst97, vec1, filt1,
+                      dst97, vec2, filt2, dst97, vec3, filt3, dst97, dst97, dst97,
+                      dst97);
+        LSX_DUP4_ARG3(__lsx_dp2add_h_b, const_vec, vec4, filt0, dst108, vec5, filt1,
+                      dst108, vec6, filt2, dst108, vec7, filt3, dst108, dst108, dst108,
+                      dst108);
+
+        LSX_DUP2_ARG2(__lsx_vilvl_h, dst97, dst66, dst108, dst97, dst76_r, dst87_r);
+        dst109_r = __lsx_vilvh_h(dst108, dst97);
+        dst66 = __lsx_vreplvei_d(dst97, 1);
+        dst98_r = __lsx_vilvl_h(dst66, dst108);
+
+        dst0_r = __lsx_hevc_filt_8tap_w(dst10_r, dst32_r, dst54_r, dst76_r, filt_h0,
+                                        filt_h1, filt_h2, filt_h3);
+        dst1_r = __lsx_hevc_filt_8tap_w(dst21_r, dst43_r, dst65_r, dst87_r, filt_h0,
+                                        filt_h1, filt_h2, filt_h3);
+        dst2_r = __lsx_hevc_filt_8tap_w(dst32_r, dst54_r, dst76_r, dst98_r, filt_h0,
+                                        filt_h1, filt_h2, filt_h3);
+        dst3_r = __lsx_hevc_filt_8tap_w(dst43_r, dst65_r, dst87_r, dst109_r, filt_h0,
+                                        filt_h1, filt_h2, filt_h3);
+        LSX_DUP4_ARG2(__lsx_vsrli_w, dst0_r, 6, dst1_r, 6, dst2_r, 6, dst3_r, 6,
+                      dst0_r, dst1_r, dst2_r, dst3_r);
+        LSX_DUP2_ARG2(__lsx_vpickev_h, dst1_r, dst0_r, dst3_r, dst2_r, dst0_r, dst2_r);
+        __lsx_vstelm_d(dst0_r, dst, 0, 0);
+        __lsx_vstelm_d(dst0_r, dst + dst_stride, 0, 1);
+        __lsx_vstelm_d(dst2_r, dst + dst_stride_2x, 0, 0);
+        __lsx_vstelm_d(dst2_r, dst + dst_stride_3x, 0, 1);
+        dst += dst_stride_4x;
+
+        dst10_r = dst54_r;
+        dst32_r = dst76_r;
+        dst54_r = dst98_r;
+        dst21_r = dst65_r;
+        dst43_r = dst87_r;
+        dst65_r = dst109_r;
+        dst66 = __lsx_vreplvei_d(dst108, 1);
+    }
+}
+
+static void hevc_hv_8t_16w_lsx(uint8_t *src, int32_t src_stride,
+                               int16_t *dst, int32_t dst_stride,
+                               const int8_t *filter_x, const int8_t *filter_y,
+                               int32_t height)
+{
+    hevc_hv_8t_8multx1mult_lsx(src, src_stride, dst, dst_stride,
+                               filter_x, filter_y, height, 16);
+}
+
+static void hevc_hv_8t_24w_lsx(uint8_t *src, int32_t src_stride,
+                               int16_t *dst, int32_t dst_stride,
+                               const int8_t *filter_x, const int8_t *filter_y,
+                               int32_t height)
+{
+    hevc_hv_8t_8multx1mult_lsx(src, src_stride, dst, dst_stride,
+                               filter_x, filter_y, height, 24);
+}
+
+static void hevc_hv_8t_32w_lsx(uint8_t *src, int32_t src_stride,
+                               int16_t *dst, int32_t dst_stride,
+                               const int8_t *filter_x, const int8_t *filter_y,
+                               int32_t height)
+{
+    hevc_hv_8t_8multx1mult_lsx(src, src_stride, dst, dst_stride,
+                               filter_x, filter_y, height, 32);
+}
+
+static void hevc_hv_8t_48w_lsx(uint8_t *src, int32_t src_stride,
+                               int16_t *dst, int32_t dst_stride,
+                               const int8_t *filter_x, const int8_t *filter_y,
+                               int32_t height)
+{
+    hevc_hv_8t_8multx1mult_lsx(src, src_stride, dst, dst_stride,
+                               filter_x, filter_y, height, 48);
+}
+
+static void hevc_hv_8t_64w_lsx(uint8_t *src, int32_t src_stride,
+                               int16_t *dst, int32_t dst_stride,
+                               const int8_t *filter_x, const int8_t *filter_y,
+                               int32_t height)
+{
+    hevc_hv_8t_8multx1mult_lsx(src, src_stride, dst, dst_stride,
+                               filter_x, filter_y, height, 64);
+}
+
 #define MC_COPY(WIDTH)                                                    \
 void ff_hevc_put_hevc_pel_pixels##WIDTH##_8_lsx(int16_t *dst,             \
                                                 uint8_t *src,             \
@@ -1755,3 +2279,30 @@ MC(qpel, v, 48, 8, vt, my);
 MC(qpel, v, 64, 8, vt, my);
 
 #undef MC
+
+#define MC_HV(PEL, WIDTH, TAP)                                          \
+void ff_hevc_put_hevc_##PEL##_hv##WIDTH##_8_lsx(int16_t *dst,           \
+                                                uint8_t *src,           \
+                                                ptrdiff_t src_stride,   \
+                                                int height,             \
+                                                intptr_t mx,            \
+                                                intptr_t my,            \
+                                                int width)              \
+{                                                                       \
+    const int8_t *filter_x = ff_hevc_##PEL##_filters[mx - 1];           \
+    const int8_t *filter_y = ff_hevc_##PEL##_filters[my - 1];           \
+                                                                        \
+    hevc_hv_##TAP##t_##WIDTH##w_lsx(src, src_stride, dst, MAX_PB_SIZE,  \
+                                          filter_x, filter_y, height);  \
+}
+
+MC_HV(qpel, 4, 8);
+MC_HV(qpel, 8, 8);
+MC_HV(qpel, 12, 8);
+MC_HV(qpel, 16, 8);
+MC_HV(qpel, 24, 8);
+MC_HV(qpel, 32, 8);
+MC_HV(qpel, 48, 8);
+MC_HV(qpel, 64, 8);
+
+#undef MC_HV

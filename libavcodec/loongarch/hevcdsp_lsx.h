@@ -61,6 +61,15 @@ MC(qpel, v, 32);
 MC(qpel, v, 48);
 MC(qpel, v, 64);
 
+MC(qpel, hv, 4);
+MC(qpel, hv, 8);
+MC(qpel, hv, 12);
+MC(qpel, hv, 16);
+MC(qpel, hv, 24);
+MC(qpel, hv, 32);
+MC(qpel, hv, 48);
+MC(qpel, hv, 64);
+
 #undef MC
 
 void ff_hevc_idct_4x4_lsx(int16_t *coeffs, int col_limit);
