@@ -49,7 +49,7 @@
  * MICRO version: Comment changes or implementation changes.
  */
 #define LSOM_LSX_VERSION_MAJOR 0
-#define LSOM_LSX_VERSION_MINOR 3
+#define LSOM_LSX_VERSION_MINOR 4
 #define LSOM_LSX_VERSION_MICRO 0
 
 #define LSX_DUP2_ARG1(_LSX_INS, _IN0, _IN1, _OUT0, _OUT1) \
@@ -243,20 +243,41 @@ static inline __m128i __lsx_dp2add_w_h(__m128i in_c, __m128i in_h, __m128i in_l)
 /*
  * =============================================================================
  * Description : Set each element of vector between 0 and 255
- * Arguments   : Inputs  - in_l
+ * Arguments   : Inputs  - _in
  *               Outputs - out
  *               Retrun Type - halfword
- * Details     : Signed byte elements from in_l are clamped between 0 and 255.
- * Example     : out = __lsx_clamp255_w(in_l)
- *        in_l : -8,255,280,249
- *         out : 0,255,255,249
+ * Details     : Signed byte elements from _in are clamped between 0 and 255.
+ * Example     : out = __lsx_clamp255_h(_in)
+ *         _in : -8,255,280,249, -8,255,280,249
+ *         out : 0,255,255,249, 0,255,255,249
  * =============================================================================
  */
-static inline __m128i __lsx_clamp255_w(__m128i in_l)
+static inline __m128i __lsx_clamp255_h(__m128i _in)
 {
     __m128i out;
 
-    out = __lsx_vmaxi_w(in_l, 0);
+    out = __lsx_vmaxi_h(_in, 0);
+    out = __lsx_vsat_hu(out, 7);
+    return out;
+}
+
+/*
+ * =============================================================================
+ * Description : Set each element of vector between 0 and 255
+ * Arguments   : Inputs  - _in
+ *               Outputs - out
+ *               Retrun Type - word
+ * Details     : Signed byte elements from _in are clamped between 0 and 255.
+ * Example     : out = __lsx_clamp255_w(_in)
+ *         _in : -8,255,280,249
+ *         out : 0,255,255,249
+ * =============================================================================
+ */
+static inline __m128i __lsx_clamp255_w(__m128i _in)
+{
+    __m128i out;
+
+    out = __lsx_vmaxi_w(_in, 0);
     out = __lsx_vsat_wu(out, 7);
     return out;
 }
