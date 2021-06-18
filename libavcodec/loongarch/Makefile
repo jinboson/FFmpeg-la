@@ -18,5 +18,6 @@ LASX-OBJS-$(CONFIG_VC1_DECODER)       += loongarch/vc1dsp_lasx.o
 LASX-OBJS-$(CONFIG_HPELDSP)           += loongarch/hpeldsp_lasx.o
 LSX-OBJS-$(CONFIG_HEVC_DECODER)       += loongarch/hevcdsp_lsx.o
 LSX-OBJS-$(CONFIG_HEVC_DECODER)       += loongarch/hevc_idct_lsx.o
+LSX-OBJS-$(CONFIG_HEVC_DECODER)       += loongarch/hevc_mc_bi_lsx.o
 LSX-OBJS-$(CONFIG_VP9_DECODER)        += loongarch/vp9_mc_lsx.o      \
                                          loongarch/vp9_intra_lsx.o
