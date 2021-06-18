@@ -172,5 +172,7 @@ void ff_loop_filter_h_16_16_lsx(uint8_t *dst, ptrdiff_t stride, int32_t e,
                                 int32_t i, int32_t h);
 void ff_loop_filter_v_16_16_lsx(uint8_t *dst, ptrdiff_t stride, int32_t e,
                                 int32_t i, int32_t h);
+void ff_idct_idct_32x32_add_lsx(uint8_t *dst, ptrdiff_t stride,
+                                int16_t *block, int eob);
 
 #endif /* AVCODEC_LOONGARCH_VP9DSP_LOONGARCH_H */

@@ -105,6 +105,21 @@ static av_cold void vp9dsp_intrapred_init_lsx(VP9DSPContext *dsp, int bpp)
     }
 }
 
+static av_cold void vp9dsp_itxfm_init_lsx(VP9DSPContext *dsp, int bpp)
+{
+    if (bpp == 8) {
+#define init_idct(tx, nm)                        \
+    dsp->itxfm_add[tx][DCT_DCT]   =              \
+    dsp->itxfm_add[tx][ADST_DCT]  =              \
+    dsp->itxfm_add[tx][DCT_ADST]  =              \
+    dsp->itxfm_add[tx][ADST_ADST] = nm##_add_lsx
+
+    init_idct(TX_32X32, ff_idct_idct_32x32);
+#undef init_idct
+    }
+}
+
+
 static av_cold void vp9dsp_loopfilter_init_lsx(VP9DSPContext *dsp, int bpp)
 {
     if (bpp == 8) {
@@ -134,6 +149,7 @@ static av_cold void vp9dsp_init_lsx(VP9DSPContext *dsp, int bpp)
     vp9dsp_mc_init_lsx(dsp, bpp);
     vp9dsp_intrapred_init_lsx(dsp, bpp);
     vp9dsp_loopfilter_init_lsx(dsp, bpp);
+    vp9dsp_itxfm_init_lsx(dsp, bpp);
 }
 
 av_cold void ff_vp9dsp_init_loongarch(VP9DSPContext *dsp, int bpp)
