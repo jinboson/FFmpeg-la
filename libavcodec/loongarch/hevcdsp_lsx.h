@@ -90,6 +90,20 @@ BI_MC(pel, pixels, 32);
 BI_MC(pel, pixels, 48);
 BI_MC(pel, pixels, 64);
 
+BI_MC(qpel, v, 8);
+BI_MC(qpel, v, 16);
+BI_MC(qpel, v, 24);
+BI_MC(qpel, v, 32);
+BI_MC(qpel, v, 48);
+BI_MC(qpel, v, 64);
+
+BI_MC(qpel, hv, 8);
+BI_MC(qpel, hv, 16);
+BI_MC(qpel, hv, 24);
+BI_MC(qpel, hv, 32);
+BI_MC(qpel, hv, 48);
+BI_MC(qpel, hv, 64);
+
 #undef BI_MC
 
 void ff_hevc_idct_4x4_lsx(int16_t *coeffs, int col_limit);
