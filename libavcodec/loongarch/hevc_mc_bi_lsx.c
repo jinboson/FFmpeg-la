@@ -31,12 +31,12 @@ static const uint8_t ff_hevc_mask_arr[16 * 2] __attribute__((aligned(0x40))) = {
 
 static av_always_inline
 void __lsx_hevc_bi_rnd_clip2(__m128i in0, __m128i in1, __m128i vec0, __m128i vec1,
-                             int rnd_val, __m128i *out0, __m128i *out1)
+                             __m128i *out0, __m128i *out1)
 {
     *out0 = __lsx_vsadd_h(vec0, in0);
     *out1 = __lsx_vsadd_h(vec1, in1);
-    *out0 = __lsx_vsrari_h(*out0, rnd_val);
-    *out1 = __lsx_vsrari_h(*out1, rnd_val);
+    *out0 = __lsx_vsrari_h(*out0, 7);
+    *out1 = __lsx_vsrari_h(*out1, 7);
     *out0 = __lsx_clamp255_h(*out0);
     *out1 = __lsx_clamp255_h(*out1);
 }
@@ -44,11 +44,11 @@ void __lsx_hevc_bi_rnd_clip2(__m128i in0, __m128i in1, __m128i vec0, __m128i vec
 static av_always_inline
 void __lsx_hevc_bi_rnd_clip4(__m128i in0, __m128i in1, __m128i in2, __m128i in3,
                              __m128i vec0, __m128i vec1, __m128i vec2,
-                             __m128i vec3, int rnd_val, __m128i *out0,
-                             __m128i *out1, __m128i *out2, __m128i *out3)
+                             __m128i vec3, __m128i *out0, __m128i *out1,
+                             __m128i *out2, __m128i *out3)
 {
-    __lsx_hevc_bi_rnd_clip2(in0, in1, vec0, vec1, rnd_val, out0, out1);
-    __lsx_hevc_bi_rnd_clip2(in2, in3, vec2, vec3, rnd_val, out2, out3);
+    __lsx_hevc_bi_rnd_clip2(in0, in1, vec0, vec1, out0, out1);
+    __lsx_hevc_bi_rnd_clip2(in2, in3, vec2, vec3, out2, out3);
 }
 
 
@@ -94,8 +94,8 @@ static void hevc_bi_copy_12w_lsx(uint8_t *src0_ptr,
         LSX_DUP2_ARG2(__lsx_vilvh_w, src1, src0, src3, src2, src0, src1);
         LSX_DUP2_ARG2(__lsx_vsllwil_hu_bu, src0, 6, src1, 6, dst4, dst5)
         __lsx_hevc_bi_rnd_clip4(in0, in1, in2, in3, dst0, dst1, dst2, dst3,
-                                7, &dst0, &dst1, &dst2, &dst3);
-        __lsx_hevc_bi_rnd_clip2(in4, in5, dst4, dst5, 7, &dst4, &dst5);
+                                &dst0, &dst1, &dst2, &dst3);
+        __lsx_hevc_bi_rnd_clip2(in4, in5, dst4, dst5, &dst4, &dst5);
         LSX_DUP2_ARG2(__lsx_vpickev_b, dst1, dst0, dst3, dst2, out0, out1);
         out2 = __lsx_vpickev_b(dst5, dst4);
         __lsx_vstelm_d(out0, dst, 0, 0);
@@ -154,9 +154,9 @@ static void hevc_bi_copy_16w_lsx(uint8_t *src0_ptr,
                       dst1_l, dst2_l, dst3_l);
 
         __lsx_hevc_bi_rnd_clip4(in0, in1, in4, in5, dst0_r, dst1_r, dst0_l,
-                                dst1_l, 7, &dst0_r, &dst1_r, &dst0_l, &dst1_l);
+                                dst1_l, &dst0_r, &dst1_r, &dst0_l, &dst1_l);
         __lsx_hevc_bi_rnd_clip4(in2, in3, in6, in7, dst2_r, dst3_r, dst2_l,
-                                dst3_l, 7, &dst2_r, &dst3_r, &dst2_l, &dst3_l);
+                                dst3_l, &dst2_r, &dst3_r, &dst2_l, &dst3_l);
         LSX_DUP2_ARG2(__lsx_vpickev_b, dst0_l, dst0_r, dst1_l, dst1_r, out0, out1);
         LSX_DUP2_ARG2(__lsx_vpickev_b, dst2_l, dst2_r, dst3_l, dst3_r, out2, out3);
         __lsx_vst(out0, dst, 0);
@@ -220,11 +220,11 @@ static void hevc_bi_copy_24w_lsx(uint8_t *src0_ptr,
         LSX_DUP4_ARG2(__lsx_vsllwil_hu_bu, src4, 6, src5, 6, src6, 6, src7, 6,
                       dst6, dst8, dst10, dst11)
 
-        __lsx_hevc_bi_rnd_clip4(in0, in4, in1, in5, dst0, dst1, dst2, dst3, 7,
+        __lsx_hevc_bi_rnd_clip4(in0, in4, in1, in5, dst0, dst1, dst2, dst3,
                                 &dst0, &dst1, &dst2, &dst3);
-        __lsx_hevc_bi_rnd_clip4(in8, in9, in2, in6, dst4, dst5, dst6, dst7, 7,
+        __lsx_hevc_bi_rnd_clip4(in8, in9, in2, in6, dst4, dst5, dst6, dst7,
                                 &dst4, &dst5, &dst6, &dst7);
-        __lsx_hevc_bi_rnd_clip4(in3, in7, in10, in11, dst8, dst9, dst10, dst11, 7,
+        __lsx_hevc_bi_rnd_clip4(in3, in7, in10, in11, dst8, dst9, dst10, dst11,
                                 &dst8, &dst9, &dst10, &dst11);
         LSX_DUP4_ARG2(__lsx_vpickev_b, dst1, dst0, dst3, dst2, dst5, dst4, dst7, dst6,
                       out0, out1, out2, out3);
@@ -275,9 +275,9 @@ static void hevc_bi_copy_32w_lsx(uint8_t *src0_ptr,
         LSX_DUP4_ARG2(__lsx_vslli_h, dst1, 6, dst3, 6, dst5, 6, dst7, 6, dst1, dst3,
                       dst5, dst7);
         __lsx_hevc_bi_rnd_clip4(in0, in1, in2, in3, dst0, dst1, dst2, dst3,
-                                7, &dst0, &dst1, &dst2, &dst3);
+                                &dst0, &dst1, &dst2, &dst3);
         __lsx_hevc_bi_rnd_clip4(in4, in5, in6, in7, dst4, dst5, dst6, dst7,
-                                7, &dst4, &dst5, &dst6, &dst7);
+                                &dst4, &dst5, &dst6, &dst7);
         LSX_DUP2_ARG2(__lsx_vpickev_b, dst1, dst0, dst3, dst2, out0, out1);
         LSX_DUP2_ARG2(__lsx_vpickev_b, dst5, dst4, dst7, dst6, out2, out3);
         __lsx_vst(out0, dst, 0);
@@ -332,11 +332,11 @@ static void hevc_bi_copy_48w_lsx(uint8_t *src0_ptr,
         LSX_DUP2_ARG2(__lsx_vslli_h, dst9, 6, dst11, 6, dst9, dst11);
 
 
-        __lsx_hevc_bi_rnd_clip4(in0, in1, in2, in3, dst0, dst1, dst2, dst3, 7,
+        __lsx_hevc_bi_rnd_clip4(in0, in1, in2, in3, dst0, dst1, dst2, dst3,
                                 &dst0, &dst1, &dst2, &dst3);
-        __lsx_hevc_bi_rnd_clip4(in4, in5, in6, in7, dst4, dst5, dst6, dst7, 7,
+        __lsx_hevc_bi_rnd_clip4(in4, in5, in6, in7, dst4, dst5, dst6, dst7,
                                 &dst4, &dst5, &dst6, &dst7);
-        __lsx_hevc_bi_rnd_clip4(in8, in9, in10, in11, dst8, dst9, dst10, dst11, 7,
+        __lsx_hevc_bi_rnd_clip4(in8, in9, in10, in11, dst8, dst9, dst10, dst11,
                                 &dst8, &dst9, &dst10, &dst11);
         LSX_DUP4_ARG2(__lsx_vpickev_b, dst1, dst0, dst3, dst2, dst5, dst4, dst7, dst6,
                       out0, out1, out2, out3);
@@ -384,9 +384,9 @@ static void hevc_bi_copy_64w_lsx(uint8_t *src0_ptr,
         LSX_DUP4_ARG2(__lsx_vslli_h, dst1, 6, dst3, 6, dst5, 6, dst7, 6, dst1, dst3,
                       dst5, dst7);
 
-        __lsx_hevc_bi_rnd_clip4(in0, in1, in2, in3, dst0, dst1, dst2, dst3, 7,
+        __lsx_hevc_bi_rnd_clip4(in0, in1, in2, in3, dst0, dst1, dst2, dst3,
                                 &dst0, &dst1, &dst2, &dst3);
-        __lsx_hevc_bi_rnd_clip4(in4, in5, in6, in7, dst4, dst5, dst6, dst7, 7,
+        __lsx_hevc_bi_rnd_clip4(in4, in5, in6, in7, dst4, dst5, dst6, dst7,
                                 &dst4, &dst5, &dst6, &dst7);
         LSX_DUP2_ARG2(__lsx_vpickev_b, dst1, dst0, dst3, dst2, out0, out1);
         LSX_DUP2_ARG2(__lsx_vpickev_b, dst5, dst4, dst7, dst6, out2, out3);
@@ -475,7 +475,7 @@ static void hevc_vt_bi_8t_8w_lsx(uint8_t *src0_ptr,
                       filt1, dst3_r, src87_r, filt2, dst3_r, src109_r, filt3, dst3_r,
                       dst3_r, dst3_r, dst3_r);
 
-        __lsx_hevc_bi_rnd_clip4(in0, in1, in2, in3, dst0_r, dst1_r, dst2_r, dst3_r, 7,
+        __lsx_hevc_bi_rnd_clip4(in0, in1, in2, in3, dst0_r, dst1_r, dst2_r, dst3_r,
                                 &dst0_r, &dst1_r, &dst2_r, &dst3_r);
 
         LSX_DUP2_ARG2(__lsx_vpickev_b, dst1_r, dst0_r, dst3_r, dst2_r, dst0_r, dst1_r);
@@ -584,7 +584,7 @@ static void hevc_vt_bi_8t_16multx2mult_lsx(uint8_t *src0_ptr,
                           dst1_l, dst1_l, dst1_l);
 
             __lsx_hevc_bi_rnd_clip4(in0, in1, in2, in3, dst0_r, dst1_r, dst0_l, dst1_l,
-                                    7, &dst0_r, &dst1_r, &dst0_l, &dst1_l);
+                                    &dst0_r, &dst1_r, &dst0_l, &dst1_l);
 
             LSX_DUP2_ARG2(__lsx_vpickev_b, dst0_l, dst0_r, dst1_l, dst1_r, dst0_r, dst1_r);
 
