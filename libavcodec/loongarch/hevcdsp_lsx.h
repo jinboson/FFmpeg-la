@@ -104,6 +104,16 @@ BI_MC(qpel, hv, 32);
 BI_MC(qpel, hv, 48);
 BI_MC(qpel, hv, 64);
 
+BI_MC(qpel, h, 32);
+BI_MC(qpel, h, 64);
+
+BI_MC(epel, v, 32);
+
+BI_MC(epel, hv, 6);
+BI_MC(epel, hv, 16);
+BI_MC(epel, hv, 24);
+BI_MC(epel, hv, 32);
+
 #undef BI_MC
 
 void ff_hevc_idct_4x4_lsx(int16_t *coeffs, int col_limit);
