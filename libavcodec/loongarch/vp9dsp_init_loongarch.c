@@ -75,7 +75,7 @@ static av_cold void vp9dsp_mc_init_lsx(VP9DSPContext *dsp, int bpp)
 #undef init_copy
 #undef init_fpel
 
-#define init_intra_pred_lsx(tx, sz)                             \
+#define init_intra_pred1_lsx(tx, sz)                            \
     dsp->intra_pred[tx][VERT_PRED]    = ff_vert_##sz##_lsx;     \
     dsp->intra_pred[tx][HOR_PRED]     = ff_hor_##sz##_lsx;      \
     dsp->intra_pred[tx][DC_PRED]      = ff_dc_##sz##_lsx;       \
@@ -86,7 +86,7 @@ static av_cold void vp9dsp_mc_init_lsx(VP9DSPContext *dsp, int bpp)
     dsp->intra_pred[tx][DC_129_PRED]  = ff_dc_129_##sz##_lsx;   \
     dsp->intra_pred[tx][TM_VP8_PRED]  = ff_tm_##sz##_lsx;       \
 
-#define init_intra_pred_lsx(tx, sz)                             \
+#define init_intra_pred2_lsx(tx, sz)                            \
     dsp->intra_pred[tx][DC_PRED]      = ff_dc_##sz##_lsx;       \
     dsp->intra_pred[tx][LEFT_DC_PRED] = ff_dc_left_##sz##_lsx;  \
     dsp->intra_pred[tx][TOP_DC_PRED]  = ff_dc_top_##sz##_lsx;   \
@@ -97,10 +97,10 @@ static av_cold void vp9dsp_intrapred_init_lsx(VP9DSPContext *dsp, int bpp)
     int cpu_flags = av_get_cpu_flags();
     if (have_lsx(cpu_flags)) {
         if (bpp == 8) {
-            init_intra_pred_lsx(TX_16X16, 16x16);
-            init_intra_pred_lsx(TX_32X32, 32x32);
-            init_intra_pred_lsx(TX_4X4, 4x4);
-            init_intra_pred_lsx(TX_8X8, 8x8);
+            init_intra_pred1_lsx(TX_16X16, 16x16);
+            init_intra_pred1_lsx(TX_32X32, 32x32);
+            init_intra_pred2_lsx(TX_4X4, 4x4);
+            init_intra_pred2_lsx(TX_8X8, 8x8);
         }
     }
 }
