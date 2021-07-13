@@ -114,17 +114,23 @@ static av_cold void vp9dsp_intrapred_init_lsx(VP9DSPContext *dsp, int bpp)
     dsp->itxfm_add[tx][DCT_ADST]  =              \
     dsp->itxfm_add[tx][ADST_ADST] = nm##_add_lsx
 
+#define init_itxfm(tx, sz)                                     \
+    dsp->itxfm_add[tx][DCT_DCT] = ff_idct_idct_##sz##_add_lsx
+
 static av_cold void vp9dsp_itxfm_init_lsx(VP9DSPContext *dsp, int bpp)
 {
     int cpu_flags = av_get_cpu_flags();
     if (have_lsx(cpu_flags)) {
         if (bpp == 8) {
+            init_itxfm(TX_8X8, 8x8);
+            init_itxfm(TX_16X16, 16x16);
             init_idct(TX_32X32, ff_idct_idct_32x32);
         }
     }
 }
 
 #undef init_idct
+#undef init_itxfm
 
 static av_cold void vp9dsp_loopfilter_init_lsx(VP9DSPContext *dsp, int bpp)
 {
