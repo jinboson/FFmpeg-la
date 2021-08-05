@@ -70,6 +70,18 @@ MC(qpel, hv, 32);
 MC(qpel, hv, 48);
 MC(qpel, hv, 64);
 
+MC(epel, h, 32);
+
+MC(epel, v, 16);
+MC(epel, v, 24);
+MC(epel, v, 32);
+
+MC(epel, hv, 8);
+MC(epel, hv, 12);
+MC(epel, hv, 16);
+MC(epel, hv, 24);
+MC(epel, hv, 32);
+
 #undef MC
 
 #define BI_MC(PEL, DIR, WIDTH)                                               \
