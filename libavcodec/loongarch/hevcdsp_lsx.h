@@ -83,12 +83,21 @@ void ff_hevc_put_hevc_bi_##PEL##_##DIR##WIDTH##_8_lsx(uint8_t *dst,          \
                                                       intptr_t my,           \
                                                       int width)
 
+BI_MC(pel, pixels, 4);
+BI_MC(pel, pixels, 6);
+BI_MC(pel, pixels, 8);
 BI_MC(pel, pixels, 12);
 BI_MC(pel, pixels, 16);
 BI_MC(pel, pixels, 24);
 BI_MC(pel, pixels, 32);
 BI_MC(pel, pixels, 48);
 BI_MC(pel, pixels, 64);
+
+BI_MC(qpel, h, 16);
+BI_MC(qpel, h, 24);
+BI_MC(qpel, h, 32);
+BI_MC(qpel, h, 48);
+BI_MC(qpel, h, 64);
 
 BI_MC(qpel, v, 8);
 BI_MC(qpel, v, 16);
@@ -103,9 +112,6 @@ BI_MC(qpel, hv, 24);
 BI_MC(qpel, hv, 32);
 BI_MC(qpel, hv, 48);
 BI_MC(qpel, hv, 64);
-
-BI_MC(qpel, h, 32);
-BI_MC(qpel, h, 64);
 
 BI_MC(epel, v, 32);
 

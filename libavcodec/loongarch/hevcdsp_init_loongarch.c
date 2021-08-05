@@ -73,6 +73,8 @@ void ff_hevc_dsp_init_loongarch(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_qpel[8][1][1] = ff_hevc_put_hevc_qpel_hv48_8_lsx;
             c->put_hevc_qpel[9][1][1] = ff_hevc_put_hevc_qpel_hv64_8_lsx;
 
+            c->put_hevc_qpel_bi[1][0][0] = ff_hevc_put_hevc_bi_pel_pixels4_8_lsx;
+            c->put_hevc_qpel_bi[3][0][0] = ff_hevc_put_hevc_bi_pel_pixels8_8_lsx;
             c->put_hevc_qpel_bi[4][0][0] = ff_hevc_put_hevc_bi_pel_pixels12_8_lsx;
             c->put_hevc_qpel_bi[5][0][0] = ff_hevc_put_hevc_bi_pel_pixels16_8_lsx;
             c->put_hevc_qpel_bi[6][0][0] = ff_hevc_put_hevc_bi_pel_pixels24_8_lsx;
@@ -80,6 +82,9 @@ void ff_hevc_dsp_init_loongarch(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_qpel_bi[8][0][0] = ff_hevc_put_hevc_bi_pel_pixels48_8_lsx;
             c->put_hevc_qpel_bi[9][0][0] = ff_hevc_put_hevc_bi_pel_pixels64_8_lsx;
 
+            c->put_hevc_epel_bi[1][0][0] = ff_hevc_put_hevc_bi_pel_pixels4_8_lsx;
+            c->put_hevc_epel_bi[2][0][0] = ff_hevc_put_hevc_bi_pel_pixels6_8_lsx;
+            c->put_hevc_epel_bi[3][0][0] = ff_hevc_put_hevc_bi_pel_pixels8_8_lsx;
             c->put_hevc_epel_bi[4][0][0] = ff_hevc_put_hevc_bi_pel_pixels12_8_lsx;
             c->put_hevc_epel_bi[5][0][0] = ff_hevc_put_hevc_bi_pel_pixels16_8_lsx;
             c->put_hevc_epel_bi[6][0][0] = ff_hevc_put_hevc_bi_pel_pixels24_8_lsx;
@@ -99,7 +104,10 @@ void ff_hevc_dsp_init_loongarch(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_qpel_bi[8][1][1] = ff_hevc_put_hevc_bi_qpel_hv48_8_lsx;
             c->put_hevc_qpel_bi[9][1][1] = ff_hevc_put_hevc_bi_qpel_hv64_8_lsx;
 
+            c->put_hevc_qpel_bi[5][0][1] = ff_hevc_put_hevc_bi_qpel_h16_8_lsx;
+            c->put_hevc_qpel_bi[6][0][1] = ff_hevc_put_hevc_bi_qpel_h24_8_lsx;
             c->put_hevc_qpel_bi[7][0][1] = ff_hevc_put_hevc_bi_qpel_h32_8_lsx;
+            c->put_hevc_qpel_bi[8][0][1] = ff_hevc_put_hevc_bi_qpel_h48_8_lsx;
             c->put_hevc_qpel_bi[9][0][1] = ff_hevc_put_hevc_bi_qpel_h64_8_lsx;
 
             c->put_hevc_epel_bi[7][1][0] = ff_hevc_put_hevc_bi_epel_v32_8_lsx;
