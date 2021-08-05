@@ -113,9 +113,16 @@ BI_MC(qpel, hv, 32);
 BI_MC(qpel, hv, 48);
 BI_MC(qpel, hv, 64);
 
+BI_MC(epel, h, 24);
+BI_MC(epel, h, 32);
+
+BI_MC(epel, v, 12);
+BI_MC(epel, v, 16);
+BI_MC(epel, v, 24);
 BI_MC(epel, v, 32);
 
 BI_MC(epel, hv, 6);
+BI_MC(epel, hv, 8);
 BI_MC(epel, hv, 16);
 BI_MC(epel, hv, 24);
 BI_MC(epel, hv, 32);
@@ -131,4 +138,5 @@ void ff_hevc_idct_4x4_lsx(int16_t *coeffs, int col_limit);
 void ff_hevc_idct_8x8_lsx(int16_t *coeffs, int col_limit);
 void ff_hevc_idct_16x16_lsx(int16_t *coeffs, int col_limit);
 void ff_hevc_idct_32x32_lsx(int16_t *coeffs, int col_limit);
+
 #endif  // #ifndef AVCODEC_LOONGARCH_HEVCDSP_LSX_H
