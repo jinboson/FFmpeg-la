@@ -116,6 +116,11 @@ BI_MC(epel, hv, 32);
 
 #undef BI_MC
 
+void ff_hevc_sao_edge_filter_8_lsx(uint8_t *dst, uint8_t *src,
+                                   ptrdiff_t stride_dst,
+                                   int16_t *sao_offset_val,
+                                   int eo, int width, int height);
+
 void ff_hevc_idct_4x4_lsx(int16_t *coeffs, int col_limit);
 void ff_hevc_idct_8x8_lsx(int16_t *coeffs, int col_limit);
 void ff_hevc_idct_16x16_lsx(int16_t *coeffs, int col_limit);
