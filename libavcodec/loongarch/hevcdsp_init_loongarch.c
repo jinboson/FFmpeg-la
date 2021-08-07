@@ -168,6 +168,12 @@ void ff_hevc_dsp_init_loongarch(HEVCDSPContext *c, const int bit_depth)
 
             c->sao_edge_filter[4] = ff_hevc_sao_edge_filter_8_lsx;
 
+            c->hevc_h_loop_filter_luma = ff_hevc_loop_filter_luma_h_8_lsx;
+            c->hevc_v_loop_filter_luma = ff_hevc_loop_filter_luma_v_8_lsx;
+
+            c->hevc_h_loop_filter_luma_c = ff_hevc_loop_filter_luma_h_8_lsx;
+            c->hevc_v_loop_filter_luma_c = ff_hevc_loop_filter_luma_v_8_lsx;
+
             c->idct[0] = ff_hevc_idct_4x4_lsx;
             c->idct[1] = ff_hevc_idct_8x8_lsx;
             c->idct[2] = ff_hevc_idct_16x16_lsx;

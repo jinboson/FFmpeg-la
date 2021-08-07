@@ -20,7 +20,804 @@
  */
 
 #include "libavutil/loongarch/generic_macros_lsx.h"
-#include "libavcodec/loongarch/hevcdsp_lsx.h"
+#include "hevcdsp_lsx.h"
+
+static void hevc_loopfilter_luma_hor_lsx(uint8_t *src, int32_t stride,
+                                         int32_t beta, int32_t *tc,
+                                         uint8_t *p_is_pcm, uint8_t *q_is_pcm)
+{
+    uint8_t *p3 = src - (stride << 2);
+    uint8_t *p2 = src - ((stride << 1) + stride);
+    uint8_t *p1 = src - (stride << 1);
+    uint8_t *p0 = src - stride;
+    uint8_t *q0 = src;
+    uint8_t *q1 = src + stride;
+    uint8_t *q2 = src + (stride << 1);
+    uint8_t *q3 = src + (stride << 1) + stride;
+    uint8_t flag0, flag1;
+    int32_t dp00, dq00, dp30, dq30, d00, d30, d0030, d0434;
+    int32_t dp04, dq04, dp34, dq34, d04, d34;
+    int32_t tc0, p_is_pcm0, q_is_pcm0, beta30, beta20, tc250;
+    int32_t tc4, p_is_pcm4, q_is_pcm4, tc254, tmp;
+    const int32_t stride_2x = (stride << 1);
+    const int32_t stride_4x = (stride << 2);
+    const int32_t stride_3x = stride_2x + stride;
+
+    __m128i dst0, dst1, dst2, dst3, dst4, dst5;
+    __m128i cmp0, cmp1, cmp2, cmp3, p_is_pcm_vec, q_is_pcm_vec;
+    __m128i temp0, temp1;
+    __m128i temp2, tc_pos, tc_neg;
+    __m128i diff0, diff1, delta0, delta1, delta2, abs_delta0;
+    __m128i zero = {0};
+    __m128i p3_src, p2_src, p1_src, p0_src, q0_src, q1_src, q2_src, q3_src;
+
+    dp00 = abs(p2[0] - (p1[0] << 1) + p0[0]);
+    dq00 = abs(q2[0] - (q1[0] << 1) + q0[0]);
+    dp30 = abs(p2[3] - (p1[3] << 1) + p0[3]);
+    dq30 = abs(q2[3] - (q1[3] << 1) + q0[3]);
+    d00 = dp00 + dq00;
+    d30 = dp30 + dq30;
+    dp04 = abs(p2[4] - (p1[4] << 1) + p0[4]);
+    dq04 = abs(q2[4] - (q1[4] << 1) + q0[4]);
+    dp34 = abs(p2[7] - (p1[7] << 1) + p0[7]);
+    dq34 = abs(q2[7] - (q1[7] << 1) + q0[7]);
+    d04 = dp04 + dq04;
+    d34 = dp34 + dq34;
+
+    p_is_pcm0 = p_is_pcm[0];
+    p_is_pcm4 = p_is_pcm[1];
+    q_is_pcm0 = q_is_pcm[0];
+    q_is_pcm4 = q_is_pcm[1];
+
+    LSX_DUP2_ARG1(__lsx_vreplgr2vr_d, p_is_pcm0, p_is_pcm4, cmp0, cmp1);
+    p_is_pcm_vec = __lsx_vpackev_d(cmp1, cmp0);
+    p_is_pcm_vec = __lsx_vseqi_d(p_is_pcm_vec, 0);
+    d0030 = (d00 + d30) >= beta;
+    d0434 = (d04 + d34) >= beta;
+    LSX_DUP2_ARG1(__lsx_vreplgr2vr_w, d0030, d0434, cmp0, cmp1);
+    cmp3 = __lsx_vpackev_w(cmp1, cmp0);
+    cmp3 = __lsx_vseqi_w(cmp3, 0);
+
+    if ((!p_is_pcm0 || !p_is_pcm4 || !q_is_pcm0 || !q_is_pcm4) &&
+        (!d0030 || !d0434)) {
+        LSX_DUP4_ARG2(__lsx_vld, p3, 0, p2, 0, p1, 0, p0, 0, p3_src, p2_src, p1_src,
+                      p0_src);
+        LSX_DUP2_ARG1(__lsx_vreplgr2vr_d, q_is_pcm0, q_is_pcm4, cmp0, cmp1);
+        q_is_pcm_vec = __lsx_vpackev_d(cmp1, cmp0);
+        q_is_pcm_vec = __lsx_vseqi_d(q_is_pcm_vec, 0);
+
+        tc0 = tc[0];
+        beta30 = beta >> 3;
+        beta20 = beta >> 2;
+        tc250 = (((tc0 << 2) + tc0 + 1) >> 1);
+        tc4 = tc[1];
+        tc254 = (((tc4 << 2) + tc4 + 1) >> 1);
+
+        LSX_DUP2_ARG1(__lsx_vreplgr2vr_h, tc0, tc4, cmp0, cmp1);
+        LSX_DUP4_ARG2(__lsx_vilvl_b, zero, p3_src, zero, p2_src, zero, p1_src, zero,
+                      p0_src, p3_src, p2_src, p1_src, p0_src);
+        LSX_DUP4_ARG2(__lsx_vld, q0, 0, q1, 0, q2, 0, q3, 0, q0_src, q1_src, q2_src,
+                      q3_src);
+        flag0 = abs(p3[0] - p0[0]) + abs(q3[0] - q0[0]) < beta30 && abs(p0[0] - q0[0])
+                < tc250;
+        flag0 = flag0 && (abs(p3[3] - p0[3]) + abs(q3[3] - q0[3]) < beta30 &&
+                abs(p0[3] - q0[3]) < tc250 && (d00 << 1) < beta20 && (d30 << 1) < beta20);
+        tc_pos = __lsx_vpackev_d(cmp1, cmp0);
+        LSX_DUP4_ARG2(__lsx_vilvl_b, zero, q0_src, zero, q1_src, zero, q2_src, zero,
+                      q3_src, q0_src, q1_src, q2_src, q3_src);
+
+        flag1 = abs(p3[4] - p0[4]) + abs(q3[4] - q0[4]) < beta30 && abs(p0[4] - q0[4])
+                < tc254;
+        flag1 = flag1 && (abs(p3[7] - p0[7]) + abs(q3[7] - q0[7]) < beta30 &&
+                abs(p0[7] - q0[7]) < tc254 && (d04 << 1) < beta20 && (d34 << 1) < beta20);
+        LSX_DUP2_ARG1(__lsx_vreplgr2vr_w, flag0, flag1, cmp0, cmp1);
+        cmp2 = __lsx_vpackev_w(cmp1, cmp0);
+        cmp2 = __lsx_vseqi_w(cmp2, 0);
+
+        if (flag0 && flag1) { /* strong only */
+            /* strong filter */
+            tc_pos = __lsx_vslli_h(tc_pos, 1);
+            tc_neg = __lsx_vneg_h(tc_pos);
+
+            /* p part */
+            LSX_DUP2_ARG2(__lsx_vadd_h, p1_src, p0_src, temp0, q0_src, temp0, temp0);
+            temp1 = __lsx_vadd_h(p3_src, p2_src);
+            temp1 = __lsx_vslli_h(temp1, 1);
+            LSX_DUP2_ARG2(__lsx_vadd_h, temp1, p2_src, temp1, temp0, temp1, temp1);
+            temp1 = __lsx_vsrari_h(temp1, 3);
+            temp2 = __lsx_vsub_h(temp1, p2_src);
+            temp2 = __lsx_clip_h(temp2, tc_neg, tc_pos);
+            dst0 = __lsx_vadd_h(temp2, p2_src);
+
+            temp1 = __lsx_vadd_h(temp0, p2_src);
+            temp1 = __lsx_vsrari_h(temp1, 2);
+            temp2 = __lsx_vsub_h(temp1, p1_src);
+            temp2 = __lsx_clip_h(temp2, tc_neg, tc_pos);
+            dst1 = __lsx_vadd_h(temp2, p1_src);
+
+            temp1 = __lsx_vslli_h(temp0, 1);
+            LSX_DUP2_ARG2(__lsx_vadd_h, temp1, p2_src, temp1, q1_src, temp1, temp1);
+            temp1 = __lsx_vsrari_h(temp1, 3);
+            temp2 = __lsx_vsub_h(temp1, p0_src);
+            temp2 = __lsx_clip_h(temp2, tc_neg, tc_pos);
+            dst2 = __lsx_vadd_h(temp2, p0_src);
+
+            p_is_pcm_vec = __lsx_vnor_v(p_is_pcm_vec, p_is_pcm_vec);
+            LSX_DUP2_ARG3(__lsx_vbitsel_v, dst0, p2_src, p_is_pcm_vec, dst1, p1_src,
+                          p_is_pcm_vec, dst0, dst1);
+            dst2 = __lsx_vbitsel_v(dst2, p0_src, p_is_pcm_vec);
+
+            /* q part */
+            LSX_DUP2_ARG2(__lsx_vadd_h, q1_src, p0_src, temp0, q0_src, temp0, temp0);
+            temp1 = __lsx_vadd_h(q3_src, q2_src);
+            temp1 = __lsx_vslli_h(temp1, 1);
+            LSX_DUP2_ARG2(__lsx_vadd_h, temp1, q2_src, temp1, temp0, temp1, temp1);
+            temp1 = __lsx_vsrari_h(temp1, 3);
+            temp2 = __lsx_vsub_h(temp1, q2_src);
+            temp2 = __lsx_clip_h(temp2, tc_neg, tc_pos);
+            dst5 = __lsx_vadd_h(temp2, q2_src);
+
+            temp1 = __lsx_vadd_h(temp0, q2_src);
+            temp1 = __lsx_vsrari_h(temp1, 2);
+            temp2 = __lsx_vsub_h(temp1, q1_src);
+            temp2 = __lsx_clip_h(temp2, tc_neg, tc_pos);
+            dst4 = __lsx_vadd_h(temp2, q1_src);
+
+            temp0 = __lsx_vslli_h(temp0, 1);
+            LSX_DUP2_ARG2(__lsx_vadd_h, temp0, p1_src, temp1, q2_src, temp1, temp1);
+            temp1 = __lsx_vsrari_h(temp1, 3);
+            temp2 = __lsx_vsub_h(temp1, q0_src);
+            temp2 = __lsx_clip_h(temp2, tc_neg, tc_pos);
+            dst3 = __lsx_vadd_h(temp2, q0_src);
+
+            q_is_pcm_vec = __lsx_vnor_v(q_is_pcm_vec, q_is_pcm_vec);
+            LSX_DUP2_ARG3(__lsx_vbitsel_v, dst3, q0_src, q_is_pcm_vec, dst4, q1_src,
+                          q_is_pcm_vec, dst3, dst4);
+            dst5 = __lsx_vbitsel_v(dst5, q2_src, q_is_pcm_vec);
+
+            /* pack results to 8 bit */
+            LSX_DUP2_ARG2(__lsx_vpickev_b, dst1, dst0, dst3, dst2, dst0, dst1);
+            dst2 = __lsx_vpickev_b(dst5, dst4);
+
+            /* pack src to 8 bit */
+            LSX_DUP2_ARG2(__lsx_vpickev_b, p1_src, p2_src, q0_src, p0_src, dst3, dst4);
+            dst5 = __lsx_vpickev_b(q2_src, q1_src);
+
+            cmp3 = __lsx_vnor_v(cmp3, cmp3);
+            LSX_DUP2_ARG3(__lsx_vbitsel_v, dst0, dst3, cmp3, dst1, dst4, cmp3, dst0, dst1);
+            dst2 = __lsx_vbitsel_v(dst2, dst5, cmp3);
+
+            __lsx_vstelm_d(dst0, p2, 0, 0);
+            __lsx_vstelm_d(dst0, p2 + stride, 0, 1);
+            __lsx_vstelm_d(dst1, p2 + stride_2x, 0, 0);
+            __lsx_vstelm_d(dst1, p2 + stride_3x, 0, 1);
+            __lsx_vstelm_d(dst2, p2 + stride_4x, 0, 0);
+            __lsx_vstelm_d(dst2, p2 + stride_4x + stride, 0, 1);
+            /* strong filter ends */
+        } else if (flag0 == flag1) { /* weak only */
+            /* weak filter */
+            tc_neg = __lsx_vneg_h(tc_pos);
+            LSX_DUP2_ARG2(__lsx_vsub_h, q0_src, p0_src, q1_src, p1_src, diff0, diff1);
+            LSX_DUP2_ARG2(__lsx_vadd_h, __lsx_vslli_h(diff0, 3), diff0, __lsx_vslli_h(
+                          diff1, 1), diff1, diff0, diff1);
+            delta0 = __lsx_vsub_h(diff0, diff1);
+            delta0 = __lsx_vsrari_h(delta0, 4);
+            temp1 = __lsx_vadd_h(__lsx_vslli_h(tc_pos, 3), __lsx_vslli_h(tc_pos, 1));
+            abs_delta0 = __lsx_vadda_h(delta0, zero);
+            abs_delta0 = __lsx_vsle_hu(temp1, abs_delta0);
+            abs_delta0 = __lsx_vnor_v(abs_delta0, abs_delta0);
+
+            delta0 = __lsx_clip_h(delta0, tc_neg, tc_pos);
+            temp2 = __lsx_vadd_h(delta0, p0_src);
+            temp2 = __lsx_clamp255_h(temp2);
+            temp0 = __lsx_vbitsel_v(temp2, p0_src, __lsx_vnor_v(p_is_pcm_vec,
+                                    p_is_pcm_vec));
+            temp2 = __lsx_vsub_h(q0_src, delta0);
+            temp2 = __lsx_clamp255_h(temp2);
+            temp2 = __lsx_vbitsel_v(temp2, q0_src, __lsx_vnor_v(q_is_pcm_vec,
+                                    q_is_pcm_vec));
+            LSX_DUP2_ARG2(__lsx_vnor_v, p_is_pcm_vec, p_is_pcm_vec, q_is_pcm_vec,
+                          q_is_pcm_vec, p_is_pcm_vec, q_is_pcm_vec);
+
+            tmp = (beta + (beta >> 1)) >> 3;
+            LSX_DUP2_ARG1(__lsx_vreplgr2vr_d, dp00 + dp30 < tmp, dp04 + dp34 < tmp,
+                          cmp0, cmp1);
+            cmp0 = __lsx_vpackev_d(cmp1, cmp0);
+            cmp0 = __lsx_vseqi_d(cmp0, 0);
+            p_is_pcm_vec = __lsx_vor_v(p_is_pcm_vec, cmp0);
+
+            LSX_DUP2_ARG1(__lsx_vreplgr2vr_d, dq00 + dq30 < tmp, dq04 + dq34 < tmp,
+                          cmp0, cmp1);
+            cmp0 = __lsx_vpackev_d(cmp1, cmp0);
+            cmp0 = __lsx_vseqi_d(cmp0, 0);
+            q_is_pcm_vec = __lsx_vor_v(q_is_pcm_vec, cmp0);
+            tc_pos = __lsx_vsrai_h(tc_pos, 1);
+            tc_neg = __lsx_vneg_h(tc_pos);
+
+            LSX_DUP2_ARG2(__lsx_vavgr_hu, p2_src, p0_src, q0_src, q2_src, delta1, delta2);
+            LSX_DUP2_ARG2(__lsx_vsub_h, delta1, p1_src, delta2, q1_src, delta1, delta2);
+            delta1 = __lsx_vadd_h(delta1, delta0);
+            delta2 = __lsx_vsub_h(delta2, delta0);
+            LSX_DUP2_ARG2(__lsx_vsrai_h, delta1, 1, delta2, 1, delta1, delta2);
+            LSX_DUP2_ARG3(__lsx_clip_h, delta1, tc_neg, tc_pos, delta2, tc_neg, tc_pos,
+                          delta1, delta2);
+            LSX_DUP2_ARG2(__lsx_vadd_h, p1_src, delta1, q1_src, delta2, delta1, delta2);
+            LSX_DUP2_ARG1(__lsx_clamp255_h, delta1, delta2, delta1, delta2);
+            LSX_DUP2_ARG3(__lsx_vbitsel_v, delta1, p1_src, p_is_pcm_vec, delta2, q1_src,
+                          q_is_pcm_vec, delta1, delta2);
+
+            abs_delta0 = __lsx_vnor_v(abs_delta0, abs_delta0);
+            LSX_DUP4_ARG3(__lsx_vbitsel_v, delta1, p1_src, abs_delta0, temp0, p0_src,
+                          abs_delta0, temp2, q0_src, abs_delta0, delta2, q1_src,
+                          abs_delta0, dst1, dst2, dst3, dst4);
+            /* pack results to 8 bit */
+            LSX_DUP2_ARG2(__lsx_vpickev_b, dst2, dst1, dst4, dst3, dst0, dst1);
+            /* pack src to 8 bit */
+            LSX_DUP2_ARG2(__lsx_vpickev_b, p0_src, p1_src, q1_src, q0_src, dst2, dst3);
+            cmp3 = __lsx_vnor_v(cmp3, cmp3);
+            LSX_DUP2_ARG3(__lsx_vbitsel_v, dst0, dst2, cmp3, dst1, dst3, cmp3, dst0,
+                          dst1);
+
+            p2 += stride;
+            __lsx_vstelm_d(dst0, p2, 0, 0);
+            __lsx_vstelm_d(dst0, p2 + stride, 0, 1);
+            __lsx_vstelm_d(dst1, p2 + stride_2x, 0, 0);
+            __lsx_vstelm_d(dst1, p2 + stride_3x, 0, 1);
+            /* weak filter ends */
+        } else { /* strong + weak */
+            /* strong filter */
+            tc_pos = __lsx_vslli_h(tc_pos, 1);
+            tc_neg = __lsx_vneg_h(tc_pos);
+
+            /* p part */
+            LSX_DUP2_ARG2(__lsx_vadd_h, p1_src, p0_src, temp0, q0_src, temp0, temp0);
+            temp1 = __lsx_vadd_h(p3_src, p2_src);
+            temp1 = __lsx_vslli_h(temp1, 1);
+            LSX_DUP2_ARG2(__lsx_vadd_h, temp1, p2_src, temp1, temp0, temp1, temp1);
+            temp1 = __lsx_vsrari_h(temp1, 3);
+            temp2 = __lsx_vsub_h(temp1, p2_src);
+            temp2 = __lsx_clip_h(temp2, tc_neg, tc_pos);
+            dst0 = __lsx_vadd_h(temp2, p2_src);
+
+            temp1 = __lsx_vadd_h(temp0, p2_src);
+            temp1 = __lsx_vsrari_h(temp1, 2);
+            temp2 = __lsx_vsub_h(temp1, p1_src);
+            temp2 = __lsx_clip_h(temp2, tc_neg, tc_pos);
+            dst1 = __lsx_vadd_h(temp2, p1_src);
+
+            temp1 = __lsx_vslli_h(temp0, 1);
+            LSX_DUP2_ARG2(__lsx_vadd_h, temp1, p2_src, temp1, q1_src, temp1, temp1);
+            temp1 = __lsx_vsrari_h(temp1, 3);
+            temp2 = __lsx_vsub_h(temp1, p0_src);
+            temp2 = __lsx_clip_h(temp2, tc_neg, tc_pos);
+            dst2 = __lsx_vadd_h(temp2, p0_src);
+
+            p_is_pcm_vec = __lsx_vnor_v(p_is_pcm_vec, p_is_pcm_vec);
+            LSX_DUP2_ARG3(__lsx_vbitsel_v, dst0, p2_src, p_is_pcm_vec, dst1, p1_src,
+                          p_is_pcm_vec, dst0, dst1);
+            dst2 = __lsx_vbitsel_v(dst2, p0_src, p_is_pcm_vec);
+
+            /* q part */
+            LSX_DUP2_ARG2(__lsx_vadd_h, q1_src, p0_src, temp0, q0_src, temp0, temp0);
+            temp1 = __lsx_vadd_h(q3_src, q2_src);
+            temp1 = __lsx_vslli_h(temp1, 1);
+            LSX_DUP2_ARG2(__lsx_vadd_h, temp1,  q2_src, temp1, temp0, temp1, temp1);
+            temp1 = __lsx_vsrari_h(temp1, 3);
+            temp2 = __lsx_vsub_h(temp1, q2_src);
+            temp2 = __lsx_clip_h(temp2, tc_neg, tc_pos);
+            dst5 = __lsx_vadd_h(temp2, q2_src);
+
+            temp1 = __lsx_vadd_h(temp0, q2_src);
+            temp1 = __lsx_vsrari_h(temp1, 2);
+            temp2 = __lsx_vsub_h(temp1, q1_src);
+            temp2 = __lsx_clip_h(temp2, tc_neg, tc_pos);
+            dst4 = __lsx_vadd_h(temp2, q1_src);
+
+            temp1 = __lsx_vslli_h(temp0, 1);
+            LSX_DUP2_ARG2(__lsx_vadd_h, temp1, p1_src, temp1, q2_src, temp1, temp1);
+            temp1 = __lsx_vsrari_h(temp1, 3);
+            temp2 = __lsx_vsub_h(temp1, q0_src);
+            temp2 = __lsx_clip_h(temp2, tc_neg, tc_pos);
+            dst3 = __lsx_vadd_h(temp2, q0_src);
+
+            q_is_pcm_vec = __lsx_vnor_v(q_is_pcm_vec, q_is_pcm_vec);
+            LSX_DUP2_ARG3(__lsx_vbitsel_v, dst3, q0_src, q_is_pcm_vec, dst4, q1_src,
+                          q_is_pcm_vec, dst3, dst4);
+            dst5 = __lsx_vbitsel_v(dst5, q2_src, q_is_pcm_vec);
+
+            /* pack strong results to 8 bit */
+            LSX_DUP2_ARG2(__lsx_vpickev_b, dst1, dst0, dst3, dst2, dst0, dst1);
+            dst2 = __lsx_vpickev_b(dst5, dst4);
+            /* strong filter ends */
+
+            /* weak filter */
+            tc_pos = __lsx_vsrai_h(tc_pos, 1);
+            tc_neg = __lsx_vneg_h(tc_pos);
+
+            LSX_DUP2_ARG2(__lsx_vsub_h, q0_src, p0_src, q1_src, p1_src, diff0, diff1);
+            LSX_DUP2_ARG2(__lsx_vadd_h, __lsx_vslli_h(diff0, 3), diff0, __lsx_vslli_h(
+                          diff1, 1), diff1, diff0, diff1);
+            delta0 = __lsx_vsub_h(diff0, diff1);
+            delta0 = __lsx_vsrari_h(delta0, 4);
+            temp1 = __lsx_vadd_h(__lsx_vslli_h(tc_pos, 3), __lsx_vslli_h(tc_pos, 1));
+            abs_delta0 = __lsx_vadda_h(delta0, zero);
+            abs_delta0 = __lsx_vsle_hu(temp1, abs_delta0);
+            abs_delta0 = __lsx_vnor_v(abs_delta0, abs_delta0);
+
+            delta0 = __lsx_clip_h(delta0, tc_neg, tc_pos);
+            temp2 = __lsx_vadd_h(delta0, p0_src);
+            temp2 = __lsx_clamp255_h(temp2);
+            temp0 = __lsx_vbitsel_v(temp2, p0_src, p_is_pcm_vec);
+
+            temp2 = __lsx_vsub_h(q0_src, delta0);
+            temp2 = __lsx_clamp255_h(temp2);
+            temp2 = __lsx_vbitsel_v(temp2, q0_src, q_is_pcm_vec);
+
+            tmp = (beta + (beta >> 1)) >> 3;
+            LSX_DUP2_ARG1(__lsx_vreplgr2vr_d, dp00 + dp30 < tmp, dp04 + dp34 < tmp,
+                          cmp0, cmp1);
+            cmp0 = __lsx_vpackev_d(cmp1, cmp0);
+            p_is_pcm_vec = __lsx_vor_v(p_is_pcm_vec, __lsx_vseqi_d(cmp0, 0));
+            LSX_DUP2_ARG1(__lsx_vreplgr2vr_d, dq00 + dq30 < tmp, dq04 + dq34 < tmp,
+                          cmp0, cmp1);
+            cmp0 = __lsx_vpackev_d(cmp1, cmp0);
+            q_is_pcm_vec = __lsx_vor_v(q_is_pcm_vec, __lsx_vseqi_d(cmp0, 0));
+
+            tc_pos = __lsx_vsrai_h(tc_pos, 1);
+            tc_neg = __lsx_vneg_h(tc_pos);
+
+            LSX_DUP2_ARG2(__lsx_vavgr_hu, p2_src, p0_src, q0_src, q2_src, delta1, delta2);
+            LSX_DUP2_ARG2(__lsx_vsub_h, delta1, p1_src, delta2, q1_src, delta1, delta2);
+            delta1 = __lsx_vadd_h(delta1, delta0);
+            delta2 = __lsx_vsub_h(delta2, delta0);
+            LSX_DUP2_ARG2(__lsx_vsrai_h, delta1, 1, delta2, 1, delta1, delta2);
+            LSX_DUP2_ARG3(__lsx_clip_h, delta1, tc_neg, tc_pos, delta2, tc_neg, tc_pos,
+                          delta1, delta2);
+            LSX_DUP2_ARG2(__lsx_vadd_h, p1_src, delta1, q1_src, delta2, delta1, delta2);
+            LSX_DUP2_ARG1(__lsx_clamp255_h, delta1, delta2, delta1, delta2);
+            LSX_DUP2_ARG3(__lsx_vbitsel_v, delta1, p1_src, p_is_pcm_vec, delta2, q1_src,
+                          q_is_pcm_vec, delta1, delta2);
+            abs_delta0 = __lsx_vnor_v(abs_delta0, abs_delta0);
+            LSX_DUP4_ARG3(__lsx_vbitsel_v, delta1, p1_src, abs_delta0, delta2, q1_src,
+                          abs_delta0, temp0, p0_src, abs_delta0, temp2, q0_src,
+                          abs_delta0, delta1, delta2, temp0, temp2);
+            /* weak filter ends */
+
+            /* pack weak results to 8 bit */
+            LSX_DUP2_ARG2(__lsx_vpickev_b, delta1, p2_src, temp2, temp0, dst3, dst4);
+            dst5 = __lsx_vpickev_b(q2_src, delta2);
+
+            /* select between weak or strong */
+            LSX_DUP2_ARG3(__lsx_vbitsel_v, dst0, dst3, cmp2, dst1, dst4, cmp2, dst0, dst1);
+            dst2 = __lsx_vbitsel_v(dst2, dst5, cmp2);
+
+            /* pack src to 8 bit */
+            LSX_DUP2_ARG2(__lsx_vpickev_b, p1_src, p2_src, q0_src, p0_src, dst3, dst4);
+            dst5 = __lsx_vpickev_b(q2_src, q1_src);
+
+            cmp3 = __lsx_vnor_v(cmp3, cmp3);
+            LSX_DUP2_ARG3(__lsx_vbitsel_v, dst0, dst3, cmp3, dst1, dst4, cmp3, dst0, dst1);
+            dst2 = __lsx_vbitsel_v(dst2, dst5, cmp3);
+
+            __lsx_vstelm_d(dst0, p2, 0, 0);
+            __lsx_vstelm_d(dst0, p2 + stride, 0, 1);
+            __lsx_vstelm_d(dst1, p2 + stride_2x, 0, 0);
+            __lsx_vstelm_d(dst1, p2 + stride_3x, 0, 1);
+            __lsx_vstelm_d(dst2, p2 + stride_4x, 0, 0);
+            __lsx_vstelm_d(dst2, p2 + stride_4x + stride, 0, 1);
+        }
+    }
+}
+
+static void hevc_loopfilter_luma_ver_lsx(uint8_t *src, int32_t stride,
+                                         int32_t beta, int32_t *tc,
+                                         uint8_t *p_is_pcm, uint8_t *q_is_pcm)
+{
+    const int32_t stride_2x = (stride << 1);
+    const int32_t stride_4x = (stride << 2);
+    const int32_t stride_3x = stride_2x + stride;
+    uint8_t *p3 = src;
+    uint8_t *p2 = src + stride_3x;
+    uint8_t *p1 = src + stride_4x;
+    uint8_t *p0 = src + stride_4x + stride_3x;
+    uint8_t flag0, flag1;
+    int32_t dp00, dq00, dp30, dq30, d00, d30;
+    int32_t d0030, d0434;
+    int32_t dp04, dq04, dp34, dq34, d04, d34;
+    int32_t tc0, p_is_pcm0, q_is_pcm0, beta30, beta20, tc250;
+    int32_t tc4, p_is_pcm4, q_is_pcm4, tc254, tmp;
+
+    __m128i dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
+    __m128i cmp0, cmp1, cmp2, p_is_pcm_vec, q_is_pcm_vec;
+    __m128i cmp3;
+    __m128i temp0, temp1;
+    __m128i temp2;
+    __m128i tc_pos, tc_neg;
+    __m128i diff0, diff1, delta0, delta1, delta2, abs_delta0;
+    __m128i zero = {0};
+    __m128i p3_src, p2_src, p1_src, p0_src, q0_src, q1_src, q2_src, q3_src;
+
+    dp00 = abs(p3[-3] - (p3[-2] << 1) + p3[-1]);
+    dq00 = abs(p3[2] - (p3[1] << 1) + p3[0]);
+    dp30 = abs(p2[-3] - (p2[-2] << 1) + p2[-1]);
+    dq30 = abs(p2[2] - (p2[1] << 1) + p2[0]);
+    d00 = dp00 + dq00;
+    d30 = dp30 + dq30;
+    p_is_pcm0 = p_is_pcm[0];
+    q_is_pcm0 = q_is_pcm[0];
+
+    dp04 = abs(p1[-3] - (p1[-2] << 1) + p1[-1]);
+    dq04 = abs(p1[2] - (p1[1] << 1) + p1[0]);
+    dp34 = abs(p0[-3] - (p0[-2] << 1) + p0[-1]);
+    dq34 = abs(p0[2] - (p0[1] << 1) + p0[0]);
+    d04 = dp04 + dq04;
+    d34 = dp34 + dq34;
+    p_is_pcm4 = p_is_pcm[1];
+    q_is_pcm4 = q_is_pcm[1];
+
+    LSX_DUP2_ARG1(__lsx_vreplgr2vr_d, p_is_pcm0, p_is_pcm4, cmp0, cmp1);
+    p_is_pcm_vec = __lsx_vpackev_d(cmp1, cmp0);
+    p_is_pcm_vec = __lsx_vseqi_d(p_is_pcm_vec, 0);
+
+    d0030 = (d00 + d30) >= beta;
+    d0434 = (d04 + d34) >= beta;
+
+    LSX_DUP2_ARG1(__lsx_vreplgr2vr_d, d0030, d0434, cmp0, cmp1);
+    cmp3 = __lsx_vpackev_d(cmp1, cmp0);
+    cmp3 = __lsx_vseqi_d(cmp3, 0);
+
+    if ((!p_is_pcm0 || !p_is_pcm4 || !q_is_pcm0 || !q_is_pcm4) &&
+        (!d0030 || !d0434)) {
+        src -= 4;
+        LSX_DUP4_ARG2(__lsx_vld, src, 0, src + stride, 0, src + stride_2x, 0,
+                      src + stride_3x, 0, p3_src, p2_src, p1_src, p0_src);
+        src += stride_4x;
+        LSX_DUP4_ARG2(__lsx_vld, src, 0, src + stride, 0, src + stride_2x, 0,
+                      src + stride_3x, 0, q0_src, q1_src, q2_src, q3_src);
+        src -= stride_4x;
+
+        LSX_DUP2_ARG1(__lsx_vreplgr2vr_d, q_is_pcm0, q_is_pcm4, cmp0, cmp1);
+        q_is_pcm_vec = __lsx_vpackev_d(cmp1, cmp0);
+        q_is_pcm_vec = __lsx_vseqi_d(q_is_pcm_vec, 0);
+
+        tc0 = tc[0];
+        beta30 = beta >> 3;
+        beta20 = beta >> 2;
+        tc250 = (((tc0 << 2) + tc0 + 1) >> 1);
+        tc4 = tc[1];
+        tc254 = (((tc4 << 2) + tc4 + 1) >> 1);
+        LSX_DUP2_ARG1( __lsx_vreplgr2vr_h, tc0 << 1, tc4 << 1, cmp0, cmp1);
+        tc_pos = __lsx_vpackev_d(cmp1, cmp0);
+        TRANSPOSE8x8_B(p3_src, p2_src, p1_src, p0_src, q0_src, q1_src,
+                       q2_src, q3_src, p3_src, p2_src, p1_src, p0_src,
+                       q0_src, q1_src, q2_src, q3_src);
+
+        flag0 = abs(p3[-4] - p3[-1]) + abs(p3[3] - p3[0]) < beta30 &&
+                abs(p3[-1] - p3[0]) < tc250;
+        flag0 = flag0 && (abs(p2[-4] - p2[-1]) + abs(p2[3] - p2[0]) < beta30 &&
+                abs(p2[-1] - p2[0]) < tc250 && (d00 << 1) < beta20 &&
+                (d30 << 1) < beta20);
+        cmp0 = __lsx_vreplgr2vr_d(flag0);
+        LSX_DUP4_ARG2(__lsx_vilvl_b, zero, p3_src, zero, p2_src, zero, p1_src, zero,
+                      p0_src, p3_src, p2_src, p1_src, p0_src);
+
+        flag1 = abs(p1[-4] - p1[-1]) + abs(p1[3] - p1[0]) < beta30 &&
+                abs(p1[-1] - p1[0]) < tc254;
+        flag1 = flag1 && (abs(p0[-4] - p0[-1]) + abs(p0[3] - p0[0]) < beta30 &&
+                abs(p0[-1] - p0[0]) < tc254 && (d04 << 1) < beta20 &&
+                (d34 << 1) < beta20);
+        LSX_DUP4_ARG2(__lsx_vilvl_b, zero, q0_src, zero, q1_src, zero, q2_src, zero,
+                      q3_src, q0_src, q1_src, q2_src, q3_src);
+
+        cmp1 = __lsx_vreplgr2vr_d(flag1);
+        cmp2 = __lsx_vpackev_d(cmp1, cmp0);
+        cmp2 = __lsx_vseqi_d(cmp2, 0);
+
+        if (flag0 && flag1) { /* strong only */
+            /* strong filter */
+            tc_neg = __lsx_vneg_h(tc_pos);
+            /* p part */
+            LSX_DUP2_ARG2(__lsx_vadd_h, p1_src, p0_src, temp0, q0_src, temp0, temp0);
+
+            temp1 = __lsx_vadd_h(p3_src, p2_src);
+            temp1 = __lsx_vslli_h(temp1, 1);
+            LSX_DUP2_ARG2(__lsx_vadd_h, temp1, p2_src, temp1, temp0, temp1, temp1);
+            temp1 = __lsx_vsrari_h(temp1, 3);
+            temp2 = __lsx_vsub_h(temp1, p2_src);
+            temp2 = __lsx_clip_h(temp2, tc_neg, tc_pos);
+            dst0 = __lsx_vadd_h(temp2, p2_src);
+
+            temp1 = __lsx_vadd_h(temp0, p2_src);
+            temp1 = __lsx_vsrari_h(temp1, 2);
+            temp2 = __lsx_vsub_h(temp1, p1_src);
+            temp2 = __lsx_clip_h(temp2, tc_neg, tc_pos);
+            dst1 = __lsx_vadd_h(temp2, p1_src);
+
+            temp1 = __lsx_vslli_h(temp0, 1);
+            LSX_DUP2_ARG2(__lsx_vadd_h, temp1, p2_src, temp1, q1_src, temp1, temp1);
+            temp1 = __lsx_vsrari_h(temp1, 3);
+            temp2 = __lsx_vsub_h(temp1, p0_src);
+            temp2 = __lsx_clip_h(temp2, tc_neg, tc_pos);
+            dst2 = __lsx_vadd_h(temp2, p0_src);
+
+            p_is_pcm_vec = __lsx_vnor_v(p_is_pcm_vec, p_is_pcm_vec);
+            LSX_DUP2_ARG3(__lsx_vbitsel_v, dst0, p2_src, p_is_pcm_vec, dst1, p1_src,
+                          p_is_pcm_vec, dst0, dst1);
+            dst2 = __lsx_vbitsel_v(dst2, p0_src, p_is_pcm_vec);
+
+            /* q part */
+            LSX_DUP2_ARG2(__lsx_vadd_h, q1_src, p0_src, temp0, q0_src, temp0, temp0);
+            temp1 = __lsx_vadd_h(q3_src, q2_src);
+            temp1 = __lsx_vslli_h(temp1, 1);
+            LSX_DUP2_ARG2(__lsx_vadd_h, temp1, q2_src, temp1, temp0, temp1, temp1);
+            temp1 = __lsx_vsrari_h(temp1, 3);
+            temp2 = __lsx_vsub_h(temp1, q2_src);
+            temp2 = __lsx_clip_h(temp2, tc_neg, tc_pos);
+            dst5 = __lsx_vadd_h(temp2, q2_src);
+
+            temp1 = __lsx_vadd_h(temp0, q2_src);
+            temp1 = __lsx_vsrari_h(temp1, 2);
+            temp2 = __lsx_vsub_h(temp1, q1_src);
+            temp2 = __lsx_clip_h(temp2, tc_neg, tc_pos);
+            dst4 = __lsx_vadd_h(temp2, q1_src);
+
+            temp1 = __lsx_vslli_h(temp0, 1);
+            LSX_DUP2_ARG2(__lsx_vadd_h, temp1, p1_src, temp1, q2_src, temp1, temp1);
+            temp1 = __lsx_vsrari_h(temp1, 3);
+            temp2 = __lsx_vsub_h(temp1, q0_src);
+            temp2 = __lsx_clip_h(temp2, tc_neg, tc_pos);
+            dst3 = __lsx_vadd_h(temp2, q0_src);
+
+            q_is_pcm_vec = __lsx_vnor_v(q_is_pcm_vec, q_is_pcm_vec);
+            LSX_DUP2_ARG3(__lsx_vbitsel_v, dst3, q0_src, q_is_pcm_vec, dst4, q1_src,
+                          q_is_pcm_vec, dst3, dst4);
+            dst5 = __lsx_vbitsel_v(dst5, q2_src, q_is_pcm_vec);
+            /* strong filter ends */
+        } else if (flag0 == flag1) { /* weak only */
+            /* weak filter */
+            tc_pos = __lsx_vsrai_h(tc_pos, 1);
+            tc_neg = __lsx_vneg_h(tc_pos);
+
+            LSX_DUP2_ARG2(__lsx_vsub_h, q0_src, p0_src, q1_src, p1_src, diff0, diff1);
+            LSX_DUP2_ARG2(__lsx_vadd_h, __lsx_vslli_h(diff0, 3), diff0, __lsx_vslli_h(
+                          diff1, 1), diff1, diff0, diff1);
+            delta0 = __lsx_vsub_h(diff0, diff1);
+            delta0 = __lsx_vsrari_h(delta0, 4);
+            temp1 = __lsx_vadd_h(__lsx_vslli_h(tc_pos, 3), __lsx_vslli_h(tc_pos, 1));
+            abs_delta0 = __lsx_vadda_h(delta0, zero);
+            abs_delta0 = __lsx_vsle_hu(temp1, abs_delta0);
+            abs_delta0 = __lsx_vnor_v(abs_delta0, abs_delta0);
+
+            delta0 = __lsx_clip_h(delta0, tc_neg, tc_pos);
+            temp2 = __lsx_vadd_h(delta0, p0_src);
+            temp2 = __lsx_clamp255_h(temp2);
+            p_is_pcm_vec = __lsx_vnor_v(p_is_pcm_vec, p_is_pcm_vec);
+            temp0 = __lsx_vbitsel_v(temp2, p0_src, p_is_pcm_vec);
+
+            temp2 = __lsx_vsub_h(q0_src, delta0);
+            temp2 = __lsx_clamp255_h(temp2);
+            q_is_pcm_vec = __lsx_vnor_v(q_is_pcm_vec, q_is_pcm_vec);
+            temp2 = __lsx_vbitsel_v(temp2, q0_src, q_is_pcm_vec);
+
+            tmp = ((beta + (beta >> 1)) >> 3);
+            LSX_DUP2_ARG1(__lsx_vreplgr2vr_d, !p_is_pcm0 && ((dp00 + dp30) < tmp),
+                          !p_is_pcm4 && ((dp04 + dp34) < tmp), cmp0, cmp1);
+            p_is_pcm_vec = __lsx_vpackev_d(cmp1, cmp0);
+            p_is_pcm_vec = __lsx_vseqi_d(p_is_pcm_vec, 0);
+
+            LSX_DUP2_ARG1(__lsx_vreplgr2vr_h, (!q_is_pcm0) && (dq00 + dq30 < tmp),
+                          (!q_is_pcm4) && (dq04 + dq34 < tmp), cmp0, cmp1);
+            q_is_pcm_vec = __lsx_vpackev_d(cmp1, cmp0);
+            q_is_pcm_vec = __lsx_vseqi_d(q_is_pcm_vec, 0);
+            tc_pos = __lsx_vsrai_h(tc_pos, 1);
+            tc_neg = __lsx_vneg_h(tc_pos);
+
+            LSX_DUP2_ARG2(__lsx_vavgr_hu, p2_src, p0_src, q0_src, q2_src, delta1, delta2);
+            LSX_DUP2_ARG2(__lsx_vsub_h, delta1, p1_src, delta2, q1_src, delta1, delta2);
+            delta1 = __lsx_vadd_h(delta1, delta0);
+            delta2 = __lsx_vsub_h(delta2, delta0);
+            LSX_DUP2_ARG2(__lsx_vsrai_h, delta1, 1, delta2, 1, delta1, delta2);
+            LSX_DUP2_ARG3(__lsx_clip_h, delta1, tc_neg, tc_pos, delta2, tc_neg, tc_pos,
+                          delta1, delta2);
+            LSX_DUP2_ARG2(__lsx_vadd_h, p1_src, delta1, q1_src, delta2, delta1, delta2);
+            LSX_DUP2_ARG1(__lsx_clamp255_h, delta1, delta2, delta1, delta2);
+            LSX_DUP2_ARG3(__lsx_vbitsel_v, delta1, p1_src, p_is_pcm_vec, delta2, q1_src,
+                          q_is_pcm_vec, delta1, delta2);
+
+            abs_delta0 = __lsx_vnor_v(abs_delta0, abs_delta0);
+            LSX_DUP4_ARG3(__lsx_vbitsel_v, delta1, p1_src, abs_delta0, temp0, p0_src,
+                          abs_delta0, temp2, q0_src, abs_delta0, delta2, q1_src,
+                          abs_delta0, dst0, dst1, dst2, dst3);
+            /* weak filter ends */
+
+            cmp3 = __lsx_vnor_v(cmp3, cmp3);
+            LSX_DUP4_ARG3(__lsx_vbitsel_v, dst0, p1_src, cmp3, dst1, p0_src, cmp3, dst2,
+                          q0_src, cmp3, dst3, q1_src, cmp3, dst0, dst1, dst2, dst3);
+            LSX_DUP2_ARG2(__lsx_vpickev_b, dst2, dst0, dst3, dst1, dst0, dst1);
+
+            /* transpose */
+            dst4 = __lsx_vilvl_b(dst1, dst0);
+            dst5 = __lsx_vilvh_b(dst1, dst0);
+            dst0 = __lsx_vilvl_h(dst5, dst4);
+            dst1 = __lsx_vilvh_h(dst5, dst4);
+
+            src += 2;
+            __lsx_vstelm_w(dst0, src, 0, 0);
+            __lsx_vstelm_w(dst0, src + stride, 0, 1);
+            __lsx_vstelm_w(dst0, src + stride_2x, 0, 2);
+            __lsx_vstelm_w(dst0, src + stride_3x, 0, 3);
+            src += stride_4x;
+            __lsx_vstelm_w(dst1, src, 0, 0);
+            __lsx_vstelm_w(dst1, src + stride, 0, 1);
+            __lsx_vstelm_w(dst1, src + stride_2x, 0, 2);
+            __lsx_vstelm_w(dst1, src + stride_3x, 0, 3);
+            return;
+        } else { /* strong + weak */
+            /* strong filter */
+            tc_neg = __lsx_vneg_h(tc_pos);
+
+            /* p part */
+            LSX_DUP2_ARG2(__lsx_vadd_h, p1_src, p0_src, temp0, q0_src, temp0, temp0);
+
+            temp1 = __lsx_vadd_h(p3_src, p2_src);
+            temp1 = __lsx_vslli_h(temp1, 1);
+            LSX_DUP2_ARG2(__lsx_vadd_h, temp1, p2_src, temp1, temp0, temp1, temp1);
+            temp1 = __lsx_vsrari_h(temp1, 3);
+            temp2 = __lsx_vsub_h(temp1, p2_src);
+            temp2 = __lsx_clip_h(temp2, tc_neg, tc_pos);
+            dst0 = __lsx_vadd_h(temp2, p2_src);
+
+            temp1 = __lsx_vadd_h(temp0, p2_src);
+            temp1 = __lsx_vsrari_h(temp1, 2);
+            temp2 = __lsx_vsub_h(temp1, p1_src);
+            temp2 = __lsx_clip_h(temp2, tc_neg, tc_pos);
+            dst1 = __lsx_vadd_h(temp2, p1_src);
+
+            temp1 = __lsx_vslli_h(temp0, 1);
+            LSX_DUP2_ARG2(__lsx_vadd_h, temp1, p2_src, temp1, q1_src, temp1, temp1);
+            temp1 = __lsx_vsrari_h(temp1, 3);
+            temp2 = __lsx_vsub_h(temp1, p0_src);
+            temp2 = __lsx_clip_h(temp2, tc_neg, tc_pos);
+            dst2 = __lsx_vadd_h(temp2, p0_src);
+
+            p_is_pcm_vec = __lsx_vnor_v(p_is_pcm_vec, p_is_pcm_vec);
+            LSX_DUP2_ARG3(__lsx_vbitsel_v, dst0, p2_src, p_is_pcm_vec, dst1, p1_src,
+                          p_is_pcm_vec, dst0, dst1);
+            dst2 = __lsx_vbitsel_v(dst2, p0_src, p_is_pcm_vec);
+
+            /* q part */
+            LSX_DUP2_ARG2(__lsx_vadd_h, q1_src, p0_src, temp0, q0_src, temp0, temp0);
+            temp1 = __lsx_vadd_h(q3_src, q2_src);
+            temp1 = __lsx_vslli_h(temp1, 1);
+            LSX_DUP2_ARG2(__lsx_vadd_h, temp1, q2_src, temp1, temp0, temp1, temp1);
+            temp1 = __lsx_vsrari_h(temp1, 3);
+            temp2 = __lsx_vsub_h(temp1, q2_src);
+            temp2 = __lsx_clip_h(temp2, tc_neg, tc_pos);
+            dst5 = __lsx_vadd_h(temp2, q2_src);
+
+            temp1 = __lsx_vadd_h(temp0, q2_src);
+            temp1 = __lsx_vsrari_h(temp1, 2);
+            temp2 = __lsx_vsub_h(temp1, q1_src);
+            temp2 = __lsx_clip_h(temp2, tc_neg, tc_pos);
+            dst4 = __lsx_vadd_h(temp2, q1_src);
+
+            temp1 = __lsx_vslli_h(temp0, 1);
+            LSX_DUP2_ARG2(__lsx_vadd_h, temp1, p1_src, temp1, q2_src, temp1, temp1);
+            temp1 = __lsx_vsrari_h(temp1, 3);
+            temp2 = __lsx_vsub_h(temp1, q0_src);
+            temp2 = __lsx_clip_h(temp2, tc_neg, tc_pos);
+            dst3 = __lsx_vadd_h(temp2, q0_src);
+
+            q_is_pcm_vec = __lsx_vnor_v(q_is_pcm_vec, q_is_pcm_vec);
+            LSX_DUP2_ARG3(__lsx_vbitsel_v, dst3, q0_src, q_is_pcm_vec, dst4, q1_src,
+                          q_is_pcm_vec, dst3, dst4);
+            dst5 = __lsx_vbitsel_v(dst5, q2_src, q_is_pcm_vec);
+            /* strong filter ends */
+
+            /* weak filter */
+            tc_pos = __lsx_vsrai_h(tc_pos, 1);
+            tc_neg = __lsx_vneg_h(tc_pos);
+
+            LSX_DUP2_ARG2(__lsx_vsub_h, q0_src, p0_src, q1_src, p1_src, diff0, diff1);
+            LSX_DUP2_ARG2(__lsx_vadd_h, __lsx_vslli_h(diff0, 3), diff0, __lsx_vslli_h(
+                          diff1, 1), diff1, diff0, diff1);
+            delta0 = __lsx_vsub_h(diff0, diff1);
+            delta0 = __lsx_vsrari_h(delta0, 4);
+
+            temp1 = __lsx_vadd_h(__lsx_vslli_h(tc_pos, 3),  __lsx_vslli_h(tc_pos, 1));
+            abs_delta0 = __lsx_vadda_h(delta0, zero);
+            abs_delta0 = __lsx_vsle_hu(temp1, abs_delta0);
+            abs_delta0 = __lsx_vnor_v(abs_delta0, abs_delta0);
+            delta0 = __lsx_clip_h(delta0, tc_neg, tc_pos);
+            temp2 = __lsx_vadd_h(delta0, p0_src);
+            temp2 = __lsx_clamp255_h(temp2);
+            temp0 = __lsx_vbitsel_v(temp2, p0_src, p_is_pcm_vec);
+            temp2 = __lsx_vsub_h(q0_src, delta0);
+            temp2 = __lsx_clamp255_h(temp2);
+            temp2 = __lsx_vbitsel_v(temp2, q0_src, q_is_pcm_vec);
+
+            tmp = (beta + (beta >> 1)) >> 3;
+            LSX_DUP2_ARG1(__lsx_vreplgr2vr_d, !p_is_pcm0 && ((dp00 + dp30) < tmp),
+                          !p_is_pcm4 && ((dp04 + dp34) < tmp), cmp0, cmp1);
+            p_is_pcm_vec = __lsx_vpackev_d(cmp1, cmp0);
+            p_is_pcm_vec = __lsx_vseqi_d(p_is_pcm_vec, 0);
+
+            LSX_DUP2_ARG1(__lsx_vreplgr2vr_h, (!q_is_pcm0) && (dq00 + dq30 < tmp),
+                          (!q_is_pcm4) && (dq04 + dq34 < tmp), cmp0, cmp1);
+            q_is_pcm_vec = __lsx_vpackev_d(cmp1, cmp0);
+            q_is_pcm_vec = __lsx_vseqi_d(q_is_pcm_vec, 0);
+            tc_pos = __lsx_vsrai_h(tc_pos, 1);
+            tc_neg = __lsx_vneg_h(tc_pos);
+
+            LSX_DUP2_ARG2(__lsx_vavgr_hu, p2_src, p0_src, q0_src, q2_src, delta1, delta2);
+            LSX_DUP2_ARG2(__lsx_vsub_h, delta1, p1_src, delta2, q1_src, delta1, delta2);
+            delta1 = __lsx_vadd_h(delta1, delta0);
+            delta2 = __lsx_vsub_h(delta2, delta0);
+            LSX_DUP2_ARG2(__lsx_vsrai_h, delta1, 1, delta2, 1, delta1, delta2);
+            LSX_DUP2_ARG3(__lsx_clip_h, delta1, tc_neg, tc_pos, delta2, tc_neg, tc_pos,
+                          delta1, delta2);
+            LSX_DUP2_ARG2(__lsx_vadd_h, p1_src, delta1, q1_src, delta2, delta1, delta2);
+            LSX_DUP2_ARG1(__lsx_clamp255_h, delta1, delta2, delta1, delta2);
+            LSX_DUP2_ARG3(__lsx_vbitsel_v, delta1, p1_src, p_is_pcm_vec, delta2, q1_src,
+                          q_is_pcm_vec, delta1, delta2);
+
+            abs_delta0 = __lsx_vnor_v(abs_delta0, abs_delta0);
+            LSX_DUP4_ARG3(__lsx_vbitsel_v, delta1, p1_src, abs_delta0, delta2, q1_src,
+                          abs_delta0, temp0, p0_src, abs_delta0, temp2, q0_src,
+                          abs_delta0, delta1, delta2, temp0, temp2);
+            /* weak filter ends*/
+
+            /* select between weak or strong */
+            LSX_DUP4_ARG3(__lsx_vbitsel_v, dst0, p2_src, cmp2, dst1, delta1, cmp2, dst2,
+                          temp0, cmp2, dst3, temp2, cmp2, dst0, dst1, dst2, dst3);
+            LSX_DUP2_ARG3(__lsx_vbitsel_v, dst4, delta2, cmp2, dst5, q2_src, cmp2, dst4,
+                          dst5);
+        }
+
+        cmp3 = __lsx_vnor_v(cmp3, cmp3);
+        LSX_DUP4_ARG3(__lsx_vbitsel_v, dst0, p2_src, cmp3, dst1, p1_src, cmp3, dst2,
+                      p0_src, cmp3, dst3, q0_src, cmp3, dst0, dst1, dst2, dst3);
+        LSX_DUP2_ARG3(__lsx_vbitsel_v, dst4, q1_src, cmp3, dst5, q2_src, cmp3, dst4, dst5);
+
+        /* pack results to 8 bit */
+        LSX_DUP4_ARG2(__lsx_vpickev_b, dst2, dst0, dst3, dst1, dst4, dst4, dst5, dst5,
+                      dst0, dst1, dst2, dst3);
+
+        /* transpose */
+        LSX_DUP2_ARG2(__lsx_vilvl_b, dst1, dst0, dst3, dst2, dst4, dst6);
+        LSX_DUP2_ARG2(__lsx_vilvh_b, dst1, dst0, dst3, dst2, dst5, dst7);
+        LSX_DUP2_ARG2(__lsx_vilvl_h, dst5, dst4, dst7, dst6, dst0, dst2);
+        LSX_DUP2_ARG2(__lsx_vilvh_h, dst5, dst4, dst7, dst6, dst1, dst3);
+
+        src += 1;
+        __lsx_vstelm_w(dst0, src, 0, 0);
+        __lsx_vstelm_h(dst2, src, 4, 0);
+        src += stride;
+        __lsx_vstelm_w(dst0, src, 0, 1);
+        __lsx_vstelm_h(dst2, src, 4, 2);
+        src += stride;
+
+        __lsx_vstelm_w(dst0, src, 0, 2);
+        __lsx_vstelm_h(dst2, src, 4, 4);
+        src += stride;
+        __lsx_vstelm_w(dst0, src, 0, 3);
+        __lsx_vstelm_h(dst2, src, 4, 6);
+        src += stride;
+
+        __lsx_vstelm_w(dst1, src, 0, 0);
+        __lsx_vstelm_h(dst3, src, 4, 0);
+        src += stride;
+        __lsx_vstelm_w(dst1, src, 0, 1);
+        __lsx_vstelm_h(dst3, src, 4, 2);
+        src += stride;
+
+        __lsx_vstelm_w(dst1, src, 0, 2);
+        __lsx_vstelm_h(dst3, src, 4, 4);
+        src += stride;
+        __lsx_vstelm_w(dst1, src, 0, 3);
+        __lsx_vstelm_h(dst3, src, 4, 6);
+    }
+}
 
 static void hevc_sao_edge_filter_0degree_4width_lsx(uint8_t *dst,
                                                     int32_t dst_stride,
@@ -1343,6 +2140,22 @@ static void hevc_sao_edge_filter_135degree_16multiple_lsx(uint8_t *dst,
         src += src_stride_4x;
         dst += dst_stride_4x;
     }
+}
+
+void ff_hevc_loop_filter_luma_h_8_lsx(uint8_t *src,
+                                      ptrdiff_t src_stride,
+                                      int32_t beta, int32_t *tc,
+                                      uint8_t *no_p, uint8_t *no_q)
+{
+    hevc_loopfilter_luma_hor_lsx(src, src_stride, beta, tc, no_p, no_q);
+}
+
+void ff_hevc_loop_filter_luma_v_8_lsx(uint8_t *src,
+                                      ptrdiff_t src_stride,
+                                      int32_t beta, int32_t *tc,
+                                      uint8_t *no_p, uint8_t *no_q)
+{
+    hevc_loopfilter_luma_ver_lsx(src, src_stride, beta, tc, no_p, no_q);
 }
 
 void ff_hevc_sao_edge_filter_8_lsx(uint8_t *dst, uint8_t *src,
