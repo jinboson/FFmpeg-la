@@ -210,6 +210,16 @@ void ff_hevc_loop_filter_luma_v_8_lsx(uint8_t *src,
                                       int32_t beta, int32_t *tc,
                                       uint8_t *no_p, uint8_t *no_q);
 
+void ff_hevc_loop_filter_chroma_h_8_lsx(uint8_t *src,
+                                        ptrdiff_t src_stride,
+                                        int32_t *tc, uint8_t *no_p,
+                                        uint8_t *no_q);
+
+void ff_hevc_loop_filter_chroma_v_8_lsx(uint8_t *src,
+                                        ptrdiff_t src_stride,
+                                        int32_t *tc, uint8_t *no_p,
+                                        uint8_t *no_q);
+
 void ff_hevc_sao_edge_filter_8_lsx(uint8_t *dst, uint8_t *src,
                                    ptrdiff_t stride_dst,
                                    int16_t *sao_offset_val,

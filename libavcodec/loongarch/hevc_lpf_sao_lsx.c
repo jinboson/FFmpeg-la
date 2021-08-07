@@ -819,6 +819,131 @@ static void hevc_loopfilter_luma_ver_lsx(uint8_t *src, int32_t stride,
     }
 }
 
+static void hevc_loopfilter_chroma_hor_lsx(uint8_t *src, int32_t stride,
+                                           int32_t *tc, uint8_t *p_is_pcm,
+                                           uint8_t *q_is_pcm)
+{
+    uint8_t *p1_ptr = src - (stride << 1);
+    uint8_t *p0_ptr = src - stride;
+    uint8_t *q0_ptr = src;
+    uint8_t *q1_ptr = src + stride;
+    __m128i cmp0, cmp1, p_is_pcm_vec, q_is_pcm_vec;
+    __m128i p1, p0, q0, q1;
+    __m128i tc_pos, tc_neg;
+    __m128i zero = {0};
+    __m128i temp0, temp1, delta;
+
+    if (!(tc[0] <= 0) || !(tc[1] <= 0)) {
+        LSX_DUP2_ARG1(__lsx_vreplgr2vr_h, tc[0], tc[1], cmp0, cmp1);
+        tc_pos = __lsx_vpackev_d(cmp1, cmp0);
+        tc_neg = __lsx_vneg_h(tc_pos);
+        LSX_DUP2_ARG1(__lsx_vreplgr2vr_d, p_is_pcm[0], p_is_pcm[1], cmp0, cmp1);
+        p_is_pcm_vec = __lsx_vpackev_d(cmp1, cmp0);
+        p_is_pcm_vec = __lsx_vseqi_d(p_is_pcm_vec, 0);
+
+        LSX_DUP2_ARG1(__lsx_vreplgr2vr_d, q_is_pcm[0], q_is_pcm[1], cmp0, cmp1);
+        q_is_pcm_vec = __lsx_vpackev_d(cmp1, cmp0);
+        q_is_pcm_vec = __lsx_vseqi_d(q_is_pcm_vec, 0);
+
+        LSX_DUP4_ARG2(__lsx_vld, p1_ptr, 0, p0_ptr, 0, q0_ptr, 0, q1_ptr, 0, p1,
+                      p0, q0, q1);
+        LSX_DUP4_ARG2(__lsx_vilvl_b, zero, p1, zero, p0, zero, q0, zero, q1, p1,
+                      p0, q0, q1);
+        LSX_DUP2_ARG2(__lsx_vsub_h, q0, p0, p1, q1, temp0, temp1);
+        temp0 = __lsx_vslli_h(temp0, 2);
+        temp0 = __lsx_vadd_h(temp0, temp1);
+        delta = __lsx_vsrari_h(temp0, 3);
+        delta = __lsx_clip_h(delta, tc_neg, tc_pos);
+        temp0 = __lsx_vadd_h(p0, delta);
+        temp0 = __lsx_clamp255_h(temp0);
+        p_is_pcm_vec = __lsx_vnor_v(p_is_pcm_vec, p_is_pcm_vec);
+        temp0 = __lsx_vbitsel_v(temp0, p0, p_is_pcm_vec);
+
+        temp1 = __lsx_vsub_h(q0, delta);
+        temp1 = __lsx_clamp255_h(temp1);
+        q_is_pcm_vec = __lsx_vnor_v(q_is_pcm_vec, q_is_pcm_vec);
+        temp1 = __lsx_vbitsel_v(temp1, q0, q_is_pcm_vec);
+
+        tc_pos = __lsx_vslei_d(tc_pos, 0);
+        LSX_DUP2_ARG3(__lsx_vbitsel_v, temp0, p0, tc_pos, temp1, q0, tc_pos,
+                      temp0, temp1);
+        temp0 = __lsx_vpickev_b(temp1, temp0);
+        __lsx_vstelm_d(temp0, p0_ptr, 0, 0);
+        __lsx_vstelm_d(temp0, p0_ptr + stride, 0, 1);
+    }
+}
+
+static void hevc_loopfilter_chroma_ver_lsx(uint8_t *src, int32_t stride,
+                                           int32_t *tc, uint8_t *p_is_pcm,
+                                           uint8_t *q_is_pcm)
+{
+    const int32_t stride_2x = (stride << 1);
+    const int32_t stride_4x = (stride << 2);
+    const int32_t stride_3x = stride_2x + stride;
+    __m128i cmp0, cmp1, p_is_pcm_vec, q_is_pcm_vec;
+    __m128i src0, src1, src2, src3, src4, src5, src6, src7;
+    __m128i p1, p0, q0, q1;
+    __m128i tc_pos, tc_neg;
+    __m128i zero = {0};
+    __m128i temp0, temp1, delta;
+
+    if (!(tc[0] <= 0) || !(tc[1] <= 0)) {
+        LSX_DUP2_ARG1(__lsx_vreplgr2vr_h, tc[0], tc[1], cmp0, cmp1);
+        tc_pos = __lsx_vpackev_d(cmp1, cmp0);
+        tc_neg = __lsx_vneg_h(tc_pos);
+
+        LSX_DUP2_ARG1(__lsx_vreplgr2vr_d, p_is_pcm[0], p_is_pcm[1], cmp0, cmp1);
+        p_is_pcm_vec = __lsx_vpackev_d(cmp1, cmp0);
+        p_is_pcm_vec = __lsx_vseqi_d(p_is_pcm_vec, 0);
+        LSX_DUP2_ARG1(__lsx_vreplgr2vr_d, q_is_pcm[0], q_is_pcm[1], cmp0, cmp1);
+        q_is_pcm_vec = __lsx_vpackev_d(cmp1, cmp0);
+        q_is_pcm_vec = __lsx_vseqi_d(q_is_pcm_vec, 0);
+
+        src -= 2;
+        LSX_DUP4_ARG2(__lsx_vld, src, 0, src + stride, 0, src + stride_2x, 0,
+                      src + stride_3x, 0, src0, src1, src2, src3);
+        src += stride_4x;
+        LSX_DUP4_ARG2(__lsx_vld, src, 0, src + stride, 0, src + stride_2x, 0,
+                      src + stride_3x, 0, src4, src5, src6, src7);
+        src -= stride_4x;
+        TRANSPOSE8x4_B(src0, src1, src2, src3, src4, src5, src6, src7,
+                       p1, p0, q0, q1);
+        LSX_DUP4_ARG2(__lsx_vilvl_b, zero, p1, zero, p0, zero, q0, zero, q1, p1, p0,
+                      q0, q1);
+
+        LSX_DUP2_ARG2(__lsx_vsub_h, q0, p0, p1, q1, temp0, temp1);
+        temp0 = __lsx_vslli_h(temp0, 2);
+        temp0 = __lsx_vadd_h(temp0, temp1);
+        delta = __lsx_vsrari_h(temp0, 3);
+        delta = __lsx_clip_h(delta, tc_neg, tc_pos);
+
+        temp0 = __lsx_vadd_h(p0, delta);
+        temp1 = __lsx_vsub_h(q0, delta);
+        LSX_DUP2_ARG1(__lsx_clamp255_h, temp0, temp1, temp0, temp1);
+        LSX_DUP2_ARG2(__lsx_vnor_v, p_is_pcm_vec, p_is_pcm_vec, q_is_pcm_vec,
+                      q_is_pcm_vec, p_is_pcm_vec, q_is_pcm_vec);
+        LSX_DUP2_ARG3(__lsx_vbitsel_v, temp0, p0, p_is_pcm_vec, temp1, q0,
+                      q_is_pcm_vec, temp0, temp1);
+
+        tc_pos = __lsx_vslei_d(tc_pos, 0);
+        LSX_DUP2_ARG3(__lsx_vbitsel_v, temp0, p0, tc_pos, temp1, q0, tc_pos,
+                      temp0, temp1);
+        temp0 = __lsx_vpackev_b(temp1, temp0);
+
+        src += 1;
+        __lsx_vstelm_h(temp0, src, 0, 0);
+        __lsx_vstelm_h(temp0, src + stride, 0, 1);
+        __lsx_vstelm_h(temp0, src + stride_2x, 0, 2);
+        __lsx_vstelm_h(temp0, src + stride_3x, 0, 3);
+        src += stride_4x;
+        __lsx_vstelm_h(temp0, src, 0, 4);
+        __lsx_vstelm_h(temp0, src + stride, 0, 5);
+        __lsx_vstelm_h(temp0, src + stride_2x, 0, 6);
+        __lsx_vstelm_h(temp0, src + stride_3x, 0, 7);
+        src -= stride_4x;
+    }
+}
+
 static void hevc_sao_edge_filter_0degree_4width_lsx(uint8_t *dst,
                                                     int32_t dst_stride,
                                                     uint8_t *src,
@@ -2156,6 +2281,22 @@ void ff_hevc_loop_filter_luma_v_8_lsx(uint8_t *src,
                                       uint8_t *no_p, uint8_t *no_q)
 {
     hevc_loopfilter_luma_ver_lsx(src, src_stride, beta, tc, no_p, no_q);
+}
+
+void ff_hevc_loop_filter_chroma_h_8_lsx(uint8_t *src,
+                                        ptrdiff_t src_stride,
+                                        int32_t *tc, uint8_t *no_p,
+                                        uint8_t *no_q)
+{
+    hevc_loopfilter_chroma_hor_lsx(src, src_stride, tc, no_p, no_q);
+}
+
+void ff_hevc_loop_filter_chroma_v_8_lsx(uint8_t *src,
+                                        ptrdiff_t src_stride,
+                                        int32_t *tc, uint8_t *no_p,
+                                        uint8_t *no_q)
+{
+    hevc_loopfilter_chroma_ver_lsx(src, src_stride, tc, no_p, no_q);
 }
 
 void ff_hevc_sao_edge_filter_8_lsx(uint8_t *dst, uint8_t *src,
