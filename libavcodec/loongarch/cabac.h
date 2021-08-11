@@ -76,7 +76,7 @@ static av_always_inline int get_cabac_inline_loongarch(CABACContext *c,
         "slli.d       %[tmp0],       %[tmp0],        0x01          \n\t"
         "sub.d        %[tmp0],       %[tmp0],        %[cabac_mask] \n\t"
 
-        "li           %[tmp1],       0x07                          \n\t"
+        "li.d         %[tmp1],       0x07                          \n\t"
         "sub.d        %[tmp1],       %[tmp1],        %[tmp2]       \n\t"
         "sll.d        %[tmp0],       %[tmp0],        %[tmp1]       \n\t"
         "add.d        %[c_low],      %[c_low],       %[tmp0]       \n\t"
