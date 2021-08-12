@@ -28,11 +28,23 @@
 #include "libavcodec/vp8dsp.h"
 #include "vp8dsp_loongarch.h"
 
+#define VP8_MC_LOONGARCH_FUNC(IDX, SIZE)                                          \
+    dsp->put_vp8_epel_pixels_tab[IDX][2][0] = ff_put_vp8_epel##SIZE##_v6_lsx;     \
+    dsp->put_vp8_epel_pixels_tab[IDX][2][2] = ff_put_vp8_epel##SIZE##_h6v6_lsx;
+
+#define VP8_MC_LOONGARCH_COPY(IDX, SIZE)                                          \
+    dsp->put_vp8_epel_pixels_tab[IDX][0][0] = ff_put_vp8_pixels##SIZE##_lsx;      \
+    dsp->put_vp8_bilinear_pixels_tab[IDX][0][0] = ff_put_vp8_pixels##SIZE##_lsx;
+
 av_cold void ff_vp8dsp_init_loongarch(VP8DSPContext *dsp)
 {
     int cpu_flags = av_get_cpu_flags();
 
     if (have_lsx(cpu_flags)) {
+        VP8_MC_LOONGARCH_FUNC(0, 16);
+
+        VP8_MC_LOONGARCH_COPY(0, 16);
+
         dsp->vp8_v_loop_filter16y = ff_vp8_v_loop_filter16_lsx;
         dsp->vp8_h_loop_filter16y = ff_vp8_h_loop_filter16_lsx;
         dsp->vp8_v_loop_filter8uv = ff_vp8_v_loop_filter8uv_lsx;
