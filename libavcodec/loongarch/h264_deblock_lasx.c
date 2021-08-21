@@ -42,10 +42,10 @@ do {                                                                        \
         out &= mask_dir; \
         if (!(mask_mv & b_idx)) { \
             if (bidir) { \
-                ref2 = LASX_LD(ref_t + d_idx_12); \
-                ref3 = LASX_LD(ref_t + d_idx_52); \
-                ref0 = LASX_LD(ref_t + 12); \
-                ref1 = LASX_LD(ref_t + 52); \
+                ref2 = __lasx_xvldx(ref_t, d_idx_12); \
+                ref3 = __lasx_xvldx(ref_t, d_idx_52); \
+                ref0 = __lasx_xvld(ref_t, 12); \
+                ref1 = __lasx_xvld(ref_t, 52); \
                 ref2 = __lasx_xvilvl_w(ref3, ref2); \
                 ref0 = __lasx_xvilvl_w(ref0, ref0); \
                 ref1 = __lasx_xvilvl_w(ref1, ref1); \
@@ -54,51 +54,53 @@ do {                                                                        \
                 ref1 = __lasx_xvsub_b(ref1, ref3); \
                 ref0 = __lasx_xvor_v(ref0, ref1); \
 \
-                tmp2 = LASX_LD(mv_t + d_idx_x4_48);   \
-                tmp3 = LASX_LD(mv_t + 48); \
-                tmp4 = LASX_LD(mv_t + 208); \
-                tmp5 = LASX_LD(mv_t + 208 + d_idx_x4); \
-                LASX_PCKEV_Q_2(tmp2, tmp2, tmp5, tmp5, tmp2, tmp5); \
-                LASX_PCKEV_Q(tmp4, tmp3, tmp3); \
+                tmp2 = __lasx_xvldx(mv_t, d_idx_x4_48);   \
+                tmp3 = __lasx_xvld(mv_t, 48); \
+                tmp4 = __lasx_xvld(mv_t, 208); \
+                tmp5 = __lasx_xvld(mv_t + d_idx_x4, 208); \
+                LASX_DUP2_ARG3(__lasx_xvpermi_q, tmp2, tmp2, 0x20, tmp5, tmp5, 0x20, tmp2, tmp5); \
+                tmp3 =  __lasx_xvpermi_q(tmp4, tmp3, 0x20); \
                 tmp2 = __lasx_xvsub_h(tmp2, tmp3); \
                 tmp5 = __lasx_xvsub_h(tmp5, tmp3); \
-                LASX_SAT_H_2(tmp2, tmp5, tmp2, tmp5, 7); \
-                LASX_PCKEV_B(tmp5, tmp2, tmp0); \
+                LASX_DUP2_ARG2(__lasx_xvsat_h, tmp2, 7, tmp5, 7, tmp2, tmp5); \
+                tmp0 = __lasx_xvpickev_b(tmp5, tmp2); \
+                tmp0 = __lasx_xvpermi_d(tmp0, 0xd8); \
                 tmp0 = __lasx_xvadd_b(tmp0, cnst_1); \
                 tmp0 = __lasx_xvssub_bu(tmp0, cnst_0); \
-                LASX_SAT_H(tmp0, tmp0, 7); \
-                LASX_PCKEV_B(tmp0, tmp0, tmp0); \
-                LASX_PCKOD_D_128SV(tmp0, tmp0, tmp1); \
+                tmp0 = __lasx_xvsat_h(tmp0, 7); \
+                tmp0 = __lasx_xvpickev_b(tmp0, tmp0); \
+                tmp0 = __lasx_xvpermi_d(tmp0, 0xd8); \
+                tmp1 = __lasx_xvpickod_d(tmp0, tmp0); \
                 out = __lasx_xvor_v(ref0, tmp0); \
                 tmp1 = __lasx_xvshuf4i_w(tmp1, 0xB1); \
                 out = __lasx_xvor_v(out, tmp1); \
                 tmp0 = __lasx_xvshuf4i_w(out, 0xB1); \
                 out = __lasx_xvmin_bu(out, tmp0); \
             } else { \
-                ref0 = LASX_LD(ref_t + d_idx_12); \
-                ref3 = LASX_LD(ref_t + 12); \
-                tmp2 = LASX_LD(mv_t + d_idx_x4_48); \
-                tmp3 = LASX_LD(mv_t + 48); \
+                ref0 = __lasx_xvld(ref_t, d_idx_12); \
+                ref3 = __lasx_xvld(ref_t, 12); \
+                tmp2 = __lasx_xvld(mv_t, d_idx_x4_48); \
+                tmp3 = __lasx_xvld(mv_t, 48); \
                 tmp4 = __lasx_xvsub_h(tmp3, tmp2); \
-                LASX_SAT_H(tmp4, tmp1, 7); \
+                tmp1 = __lasx_xvsat_h(tmp4, 7); \
                 tmp1 = __lasx_xvpickev_b(tmp1, tmp1); \
                 tmp1 = __lasx_xvadd_b(tmp1, cnst_1); \
                 out = __lasx_xvssub_bu(tmp1, cnst_0); \
-                LASX_SAT_H(out, out, 7); \
+                out = __lasx_xvsat_h(out, 7); \
                 out = __lasx_xvpickev_b(out, out); \
                 ref0 = __lasx_xvsub_b(ref3, ref0); \
                 out = __lasx_xvor_v(out, ref0); \
             } \
         } \
-        tmp0 = LASX_LD(nnz_t + 12); \
-        tmp1 = LASX_LD(nnz_t + d_idx_12); \
+        tmp0 = __lasx_xvld(nnz_t, 12); \
+        tmp1 = __lasx_xvldx(nnz_t, d_idx_12); \
         tmp0 = __lasx_xvor_v(tmp0, tmp1); \
         tmp0 = __lasx_xvmin_bu(tmp0, cnst_2); \
         out  = __lasx_xvmin_bu(out, cnst_2); \
         tmp0 = __lasx_xvslli_h(tmp0, 1); \
         tmp0 = __lasx_xvmax_bu(out, tmp0); \
-        LASX_UNPCK_L_HU_BU(tmp0, tmp0); \
-        LASX_ST_D(tmp0, 0,  bS_t + dir_x32); \
+        tmp0 = __lasx_vext2xv_hu_bu(tmp0); \
+        __lasx_xvstelm_d(tmp0, bS_t + dir_x32, 0, 0); \
         ref_t += step; \
         mv_t  += step_x4; \
         nnz_t += step; \
@@ -124,8 +126,7 @@ void ff_h264_loop_filter_strength_lasx(int16_t bS[2][4][4], uint8_t nnz[40],
         cnst_1 = __lasx_xvreplgr2vr_d(cnst4);
         cnst_2 = __lasx_xvldi(0x01);
     } else {
-        cnst_0 = __lasx_xvldi(0x06);
-        cnst_1 = __lasx_xvldi(0x03);
+        LASX_DUP2_ARG1(__lasx_xvldi, 0x06, 0x03, cnst_0, cnst_1);
         cnst_2 = __lasx_xvldi(0x01);
     }
     step  <<= 3;
@@ -134,8 +135,8 @@ void ff_h264_loop_filter_strength_lasx(int16_t bS[2][4][4], uint8_t nnz[40],
     H264_LOOP_FILTER_STRENGTH_ITERATION_LASX(edges, step, mask_mv1, 1, -8, zero);
     H264_LOOP_FILTER_STRENGTH_ITERATION_LASX(32, 8, mask_mv0, 0, -1, one);
 
-    LASX_LD_2((int8_t*)bS, 16, tmp0, tmp1);
-    LASX_ILVH_D_2_128SV(tmp0, tmp0, tmp1, tmp1, tmp2, tmp3);
+    LASX_DUP2_ARG2(__lasx_xvld, (int8_t*)bS, 0, (int8_t*)bS, 16, tmp0, tmp1);
+    LASX_DUP2_ARG2(__lasx_xvilvh_d, tmp0, tmp0, tmp1, tmp1, tmp2, tmp3);
     LASX_TRANSPOSE4x4_H_128SV(tmp0, tmp2, tmp1, tmp3, tmp2, tmp3, tmp4, tmp5);
      __lasx_xvstelm_d(tmp2, (int8_t*)bS, 0, 0);
      __lasx_xvstelm_d(tmp3, (int8_t*)bS + 8, 0, 0);

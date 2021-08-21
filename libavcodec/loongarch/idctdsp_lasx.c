@@ -27,13 +27,23 @@ static void put_pixels_clamped_lasx(const int16_t *block, uint8_t *pixels,
 {
     __m256i b0, b1, b2, b3;
     __m256i temp0, temp1;
+    int32_t stride_2x = stride << 1;
+    int32_t stride_4x = stride << 2;
+    int32_t stride_3x = stride_2x + stride;
 
-    LASX_LD_4(block, 16, b0, b1, b2, b3);
-    LASX_CLIP_H_0_255_4(b0, b1, b2, b3, b0, b1, b2, b3);
-    LASX_PCKEV_B_2_128SV(b1, b0, b3, b2, temp0, temp1);
-    LASX_ST_D_4(temp0, 0, 2, 1, 3, pixels, stride);
-    pixels += (stride << 2);
-    LASX_ST_D_4(temp1, 0, 2, 1, 3, pixels, stride);
+    LASX_DUP4_ARG2(__lasx_xvld, block, 0, block, 32, block, 64, block, 96,
+                   b0, b1, b2, b3);
+    LASX_DUP4_ARG1(__lasx_xvclip255_h, b0, b1, b2, b3, b0, b1, b2, b3);
+    LASX_DUP2_ARG2(__lasx_xvpickev_b, b1, b0, b3, b2, temp0, temp1);
+    __lasx_xvstelm_d(temp0, pixels, 0, 0);
+    __lasx_xvstelm_d(temp0, pixels + stride, 0, 2);
+    __lasx_xvstelm_d(temp0, pixels + stride_2x, 0, 1);
+    __lasx_xvstelm_d(temp0, pixels + stride_3x, 0, 3);
+    pixels += stride_4x;
+    __lasx_xvstelm_d(temp1, pixels, 0, 0);
+    __lasx_xvstelm_d(temp1, pixels + stride, 0, 2);
+    __lasx_xvstelm_d(temp1, pixels + stride_2x, 0, 1);
+    __lasx_xvstelm_d(temp1, pixels + stride_3x, 0, 3);
 }
 
 static void put_signed_pixels_clamped_lasx(const int16_t *block, uint8_t *pixels,
@@ -42,17 +52,27 @@ static void put_signed_pixels_clamped_lasx(const int16_t *block, uint8_t *pixels
     __m256i b0, b1, b2, b3;
     __m256i temp0, temp1;
     __m256i const_128 = {0x0080008000800080, 0x0080008000800080, 0x0080008000800080, 0x0080008000800080};
+    int32_t stride_2x = stride << 1;
+    int32_t stride_4x = stride << 2;
+    int32_t stride_3x = stride_2x + stride;
 
-    LASX_LD_4(block, 16, b0, b1, b2, b3);
+    LASX_DUP4_ARG2(__lasx_xvld, block, 0, block, 32, block, 64, block, 96,
+                   b0, b1, b2, b3);
     b0 = __lasx_xvadd_h(b0, const_128);
     b1 = __lasx_xvadd_h(b1, const_128);
     b2 = __lasx_xvadd_h(b2, const_128);
     b3 = __lasx_xvadd_h(b3, const_128);
-    LASX_CLIP_H_0_255_4(b0, b1, b2, b3, b0, b1, b2, b3);
-    LASX_PCKEV_B_2_128SV(b1, b0, b3, b2, temp0, temp1);
-    LASX_ST_D_4(temp0, 0, 2, 1, 3, pixels, stride);
-    pixels += (stride << 2);
-    LASX_ST_D_4(temp1, 0, 2, 1, 3, pixels, stride);
+    LASX_DUP4_ARG1(__lasx_xvclip255_h, b0, b1, b2, b3, b0, b1, b2, b3);
+    LASX_DUP2_ARG2(__lasx_xvpickev_b, b1, b0, b3, b2, temp0, temp1);
+    __lasx_xvstelm_d(temp0, pixels, 0, 0);
+    __lasx_xvstelm_d(temp0, pixels + stride, 0, 2);
+    __lasx_xvstelm_d(temp0, pixels + stride_2x, 0, 1);
+    __lasx_xvstelm_d(temp0, pixels + stride_3x, 0, 3);
+    pixels += stride_4x;
+    __lasx_xvstelm_d(temp1, pixels, 0, 0);
+    __lasx_xvstelm_d(temp1, pixels + stride, 0, 2);
+    __lasx_xvstelm_d(temp1, pixels + stride_2x, 0, 1);
+    __lasx_xvstelm_d(temp1, pixels + stride_3x, 0, 3);
 }
 
 static void add_pixels_clamped_lasx(const int16_t *block, uint8_t *pixels,
@@ -62,8 +82,12 @@ static void add_pixels_clamped_lasx(const int16_t *block, uint8_t *pixels,
     __m256i p0, p1, p2, p3, p4, p5, p6, p7;
     __m256i temp0, temp1, temp2, temp3;
     uint8_t *pix = pixels;
+    int32_t stride_2x = stride << 1;
+    int32_t stride_4x = stride << 2;
+    int32_t stride_3x = stride_2x + stride;
 
-    LASX_LD_4(block, 16, b0, b1, b2, b3);
+    LASX_DUP4_ARG2(__lasx_xvld, block, 0, block, 32, block, 64, block, 96,
+                   b0, b1, b2, b3);
     p0   = __lasx_xvldrepl_d(pix, 0);
     pix += stride;
     p1   = __lasx_xvldrepl_d(pix, 0);
@@ -83,15 +107,20 @@ static void add_pixels_clamped_lasx(const int16_t *block, uint8_t *pixels,
     temp1 = __lasx_xvpermi_q(p3, p2, 0x20);
     temp2 = __lasx_xvpermi_q(p5, p4, 0x20);
     temp3 = __lasx_xvpermi_q(p7, p6, 0x20);
-    LASX_ADDW_H_H_BU_128SV(b0, temp0, temp0);
-    LASX_ADDW_H_H_BU_128SV(b1, temp1, temp1);
-    LASX_ADDW_H_H_BU_128SV(b2, temp2, temp2);
-    LASX_ADDW_H_H_BU_128SV(b3, temp3, temp3);
-    LASX_CLIP_H_0_255_4(temp0, temp1, temp2, temp3, temp0, temp1, temp2, temp3);
-    LASX_PCKEV_B_2_128SV(temp1, temp0, temp3, temp2, temp0, temp1);
-    LASX_ST_D_4(temp0, 0, 2, 1, 3, pixels, stride);
-    pixels += (stride << 2);
-    LASX_ST_D_4(temp1, 0, 2, 1, 3, pixels, stride);
+    LASX_DUP4_ARG2(__lasx_xvaddw_h_h_bu, b0, temp0, b1, temp1, b2, temp2, b3, temp3,
+                   temp0, temp1, temp2, temp3);
+    LASX_DUP4_ARG1(__lasx_xvclip255_h, temp0, temp1, temp2, temp3, temp0, temp1,
+                   temp2, temp3);
+    LASX_DUP2_ARG2(__lasx_xvpickev_b, temp1, temp0, temp3, temp2, temp0, temp1);
+    __lasx_xvstelm_d(temp0, pixels, 0, 0);
+    __lasx_xvstelm_d(temp0, pixels + stride, 0, 2);
+    __lasx_xvstelm_d(temp0, pixels + stride_2x, 0, 1);
+    __lasx_xvstelm_d(temp0, pixels + stride_3x, 0, 3);
+    pixels += stride_4x;
+    __lasx_xvstelm_d(temp1, pixels, 0, 0);
+    __lasx_xvstelm_d(temp1, pixels + stride, 0, 2);
+    __lasx_xvstelm_d(temp1, pixels + stride_2x, 0, 1);
+    __lasx_xvstelm_d(temp1, pixels + stride_3x, 0, 3);
 }
 
 void ff_put_pixels_clamped_lasx(const int16_t *block,

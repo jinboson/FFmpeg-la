@@ -36,11 +36,11 @@
     __m256i vr_coeff = __lasx_xvreplgr2vr_d(c->vrCoeff);     \
 
 #define LOAD_YUV_16                                          \
-    m_y  = LASX_LD(py + (w << 4));                           \
+    m_y  = __lasx_xvld(py + (w << 4), 0);                    \
     m_u  = __lasx_xvldrepl_d(pu + (w << 3), 0);              \
     m_v  = __lasx_xvldrepl_d(pv + (w << 3), 0);              \
-    LASX_UNPCK_L_HU_BU(m_y, m_y);                            \
-    LASX_UNPCK_L_HU_BU_2(m_u, m_v, m_u, m_v);                \
+    m_y = __lasx_vext2xv_hu_bu(m_y);                         \
+    LASX_DUP2_ARG1(__lasx_vext2xv_hu_bu, m_u, m_v, m_u, m_v);\
 
 /* YUV2RGB method
  * The conversion method is as follows:
@@ -70,14 +70,15 @@
     v2g = __lasx_xvsadd_h(v2g, u2g);                                       \
     g   = __lasx_xvsadd_h(v2g, y_1);                                       \
     b   = __lasx_xvsadd_h(y_1, u2b);                                       \
-    LASX_CLIP_H_0_255_2(r, g, r, g);                                       \
-    LASX_CLIP_H_0_255(b, b);                                               \
+    LASX_DUP2_ARG1(__lasx_xvclip255_h, r, g, r, g);                        \
+    b = __lasx_xvclip255_h(b);                                             \
 
 #define RGB_PACK_16(r, g, b, rgb_l, rgb_h)                                 \
 {                                                                          \
     __m256i rg;                                                            \
     rg = __lasx_xvpackev_b(g, r);                                          \
-    LASX_SHUF_B_2_128SV(b, rg, b, rg, shuf2, shuf3, rgb_l, rgb_h);         \
+    LASX_DUP2_ARG3(__lasx_xvshuf_b, b, rg, shuf2, b, rg, shuf3, rgb_l,     \
+                   rgb_h);                                                 \
 }
 
 #define RGB_PACK_32(r, g, b, a, rgb_l, rgb_h)                              \
@@ -85,8 +86,8 @@
     __m256i rg, ba;                                                        \
     rgb_l = __lasx_xvpackev_b(g, r);                                       \
     rgb_h = __lasx_xvpackev_b(a, b);                                       \
-    LASX_ILVL_H_128SV(rgb_h, rgb_l, rg);                                   \
-    LASX_ILVH_H_128SV(rgb_h, rgb_l, ba);                                   \
+    rg = __lasx_xvilvl_h(rgb_h, rgb_l);                                    \
+    ba = __lasx_xvilvh_h(rgb_h, rgb_l);                                    \
     rgb_l = __lasx_xvpermi_q(ba, rg, 0x20);                                \
     rgb_h = __lasx_xvpermi_q(ba, rg, 0x31);                                \
 }
@@ -94,7 +95,8 @@
 #define RGB_STORE_32(rgb_l, rgb_h, iamge, w)                               \
 {                                                                          \
     uint8_t *index = image + (w * 64);                                     \
-    LASX_ST_2(rgb_l, rgb_h, index, 32);                                    \
+    __lasx_xvst(rgb_l, index, 0);                                          \
+    __lasx_xvst(rgb_h, index + 32, 0);                                     \
 }
 
 #define RGB_STORE(rgb_l, rgb_h, image, w)                                      \

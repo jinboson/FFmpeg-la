@@ -35,12 +35,11 @@ void ff_interleave_bytes_lasx(const uint8_t *src1, const uint8_t *src2,
         __m256i src_1, src_2, dst;
 
         for (w = 0; w < len; w += 16) {
-            src_1 = LASX_LD(src1 + w);
-            src_2 = LASX_LD(src2 + w);
+            LASX_DUP2_ARG2(__lasx_xvld, src1 + w, 0, src2 + w, 0, src_1, src_2);
             src_1 = __lasx_xvpermi_d(src_1, 0xD8);
             src_2 = __lasx_xvpermi_d(src_2, 0xD8);
             dst   = __lasx_xvilvl_b(src_2, src_1);
-            LASX_ST(dst, dest + index);
+            __lasx_xvst(dst, dest + index, 0);
             index  += 32;
         }
         for (w = 0; w < width; w++) {
