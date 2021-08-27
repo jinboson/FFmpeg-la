@@ -31,7 +31,9 @@
 #define VP8_MC_LOONGARCH_FUNC(IDX, SIZE)                                          \
     dsp->put_vp8_epel_pixels_tab[IDX][0][2] = ff_put_vp8_epel##SIZE##_h6_lsx;     \
     dsp->put_vp8_epel_pixels_tab[IDX][1][0] = ff_put_vp8_epel##SIZE##_v4_lsx;     \
+    dsp->put_vp8_epel_pixels_tab[IDX][1][2] = ff_put_vp8_epel##SIZE##_h6v4_lsx;   \
     dsp->put_vp8_epel_pixels_tab[IDX][2][0] = ff_put_vp8_epel##SIZE##_v6_lsx;     \
+    dsp->put_vp8_epel_pixels_tab[IDX][2][1] = ff_put_vp8_epel##SIZE##_h4v6_lsx;   \
     dsp->put_vp8_epel_pixels_tab[IDX][2][2] = ff_put_vp8_epel##SIZE##_h6v6_lsx;
 
 #define VP8_MC_LOONGARCH_COPY(IDX, SIZE)                                          \
