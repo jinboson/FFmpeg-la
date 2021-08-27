@@ -60,6 +60,11 @@ void ff_put_vp8_epel8_h6_lsx(uint8_t *dst, ptrdiff_t dst_stride,
                              int h, int mx, int my);
 
 /* loop filter */
+void ff_vp8_v_loop_filter16_inner_lsx(uint8_t *dst, ptrdiff_t stride,
+                                      int32_t e, int32_t i, int32_t h);
+void ff_vp8_h_loop_filter16_inner_lsx(uint8_t *src, ptrdiff_t stride,
+                                      int32_t e, int32_t i, int32_t h);
+
 void ff_vp8_v_loop_filter16_lsx(uint8_t *dst, ptrdiff_t stride,
                                 int flim_e, int flim_i, int hev_thresh);
 void ff_vp8_h_loop_filter16_lsx(uint8_t *dst, ptrdiff_t stride,

@@ -53,5 +53,8 @@ av_cold void ff_vp8dsp_init_loongarch(VP8DSPContext *dsp)
         dsp->vp8_h_loop_filter16y = ff_vp8_h_loop_filter16_lsx;
         dsp->vp8_v_loop_filter8uv = ff_vp8_v_loop_filter8uv_lsx;
         dsp->vp8_h_loop_filter8uv = ff_vp8_h_loop_filter8uv_lsx;
+
+        dsp->vp8_v_loop_filter16y_inner = ff_vp8_v_loop_filter16_inner_lsx;
+        dsp->vp8_h_loop_filter16y_inner = ff_vp8_h_loop_filter16_inner_lsx;
     }
 }
