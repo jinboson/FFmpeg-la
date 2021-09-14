@@ -21,7 +21,7 @@
  */
 
 #include "swscale_loongarch.h"
-#include "libavutil/loongarch/generic_macros_lasx.h"
+#include "libavutil/loongarch/loongson_intrinsics.h"
 
 #define YUV2RGB_LOAD_COE                                     \
     /* Load x_offset */                                      \
@@ -40,7 +40,7 @@
     m_u  = __lasx_xvldrepl_d(pu + (w << 3), 0);              \
     m_v  = __lasx_xvldrepl_d(pv + (w << 3), 0);              \
     m_y = __lasx_vext2xv_hu_bu(m_y);                         \
-    LASX_DUP2_ARG1(__lasx_vext2xv_hu_bu, m_u, m_v, m_u, m_v);\
+    DUP2_ARG1(__lasx_vext2xv_hu_bu, m_u, m_v, m_u, m_v);     \
 
 /* YUV2RGB method
  * The conversion method is as follows:
@@ -70,15 +70,14 @@
     v2g = __lasx_xvsadd_h(v2g, u2g);                                       \
     g   = __lasx_xvsadd_h(v2g, y_1);                                       \
     b   = __lasx_xvsadd_h(y_1, u2b);                                       \
-    LASX_DUP2_ARG1(__lasx_xvclip255_h, r, g, r, g);                        \
+    DUP2_ARG1(__lasx_xvclip255_h, r, g, r, g);                             \
     b = __lasx_xvclip255_h(b);                                             \
 
 #define RGB_PACK_16(r, g, b, rgb_l, rgb_h)                                 \
 {                                                                          \
     __m256i rg;                                                            \
     rg = __lasx_xvpackev_b(g, r);                                          \
-    LASX_DUP2_ARG3(__lasx_xvshuf_b, b, rg, shuf2, b, rg, shuf3, rgb_l,     \
-                   rgb_h);                                                 \
+    DUP2_ARG3(__lasx_xvshuf_b, b, rg, shuf2, b, rg, shuf3, rgb_l, rgb_h);  \
 }
 
 #define RGB_PACK_32(r, g, b, a, rgb_l, rgb_h)                              \

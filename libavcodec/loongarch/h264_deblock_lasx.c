@@ -21,7 +21,7 @@
 
 #include "libavcodec/bit_depth_template.c"
 #include "h264dsp_lasx.h"
-#include "libavutil/loongarch/generic_macros_lasx.h"
+#include "libavutil/loongarch/loongson_intrinsics.h"
 
 #define H264_LOOP_FILTER_STRENGTH_ITERATION_LASX(edges, step, mask_mv, dir, \
                                                  d_idx, mask_dir)           \
@@ -58,11 +58,11 @@ do {                                                                        \
                 tmp3 = __lasx_xvld(mv_t, 48); \
                 tmp4 = __lasx_xvld(mv_t, 208); \
                 tmp5 = __lasx_xvld(mv_t + d_idx_x4, 208); \
-                LASX_DUP2_ARG3(__lasx_xvpermi_q, tmp2, tmp2, 0x20, tmp5, tmp5, 0x20, tmp2, tmp5); \
+                DUP2_ARG3(__lasx_xvpermi_q, tmp2, tmp2, 0x20, tmp5, tmp5, 0x20, tmp2, tmp5); \
                 tmp3 =  __lasx_xvpermi_q(tmp4, tmp3, 0x20); \
                 tmp2 = __lasx_xvsub_h(tmp2, tmp3); \
                 tmp5 = __lasx_xvsub_h(tmp5, tmp3); \
-                LASX_DUP2_ARG2(__lasx_xvsat_h, tmp2, 7, tmp5, 7, tmp2, tmp5); \
+                DUP2_ARG2(__lasx_xvsat_h, tmp2, 7, tmp5, 7, tmp2, tmp5); \
                 tmp0 = __lasx_xvpickev_b(tmp5, tmp2); \
                 tmp0 = __lasx_xvpermi_d(tmp0, 0xd8); \
                 tmp0 = __lasx_xvadd_b(tmp0, cnst_1); \
@@ -126,7 +126,7 @@ void ff_h264_loop_filter_strength_lasx(int16_t bS[2][4][4], uint8_t nnz[40],
         cnst_1 = __lasx_xvreplgr2vr_d(cnst4);
         cnst_2 = __lasx_xvldi(0x01);
     } else {
-        LASX_DUP2_ARG1(__lasx_xvldi, 0x06, 0x03, cnst_0, cnst_1);
+        DUP2_ARG1(__lasx_xvldi, 0x06, 0x03, cnst_0, cnst_1);
         cnst_2 = __lasx_xvldi(0x01);
     }
     step  <<= 3;
@@ -135,11 +135,11 @@ void ff_h264_loop_filter_strength_lasx(int16_t bS[2][4][4], uint8_t nnz[40],
     H264_LOOP_FILTER_STRENGTH_ITERATION_LASX(edges, step, mask_mv1, 1, -8, zero);
     H264_LOOP_FILTER_STRENGTH_ITERATION_LASX(32, 8, mask_mv0, 0, -1, one);
 
-    LASX_DUP2_ARG2(__lasx_xvld, (int8_t*)bS, 0, (int8_t*)bS, 16, tmp0, tmp1);
-    LASX_DUP2_ARG2(__lasx_xvilvh_d, tmp0, tmp0, tmp1, tmp1, tmp2, tmp3);
-    LASX_TRANSPOSE4x4_H_128SV(tmp0, tmp2, tmp1, tmp3, tmp2, tmp3, tmp4, tmp5);
-     __lasx_xvstelm_d(tmp2, (int8_t*)bS, 0, 0);
-     __lasx_xvstelm_d(tmp3, (int8_t*)bS + 8, 0, 0);
-     __lasx_xvstelm_d(tmp4, (int8_t*)bS + 16, 0, 0);
-     __lasx_xvstelm_d(tmp5, (int8_t*)bS + 24, 0, 0);
+    DUP2_ARG2(__lasx_xvld, (int8_t*)bS, 0, (int8_t*)bS, 16, tmp0, tmp1);
+    DUP2_ARG2(__lasx_xvilvh_d, tmp0, tmp0, tmp1, tmp1, tmp2, tmp3);
+    LASX_TRANSPOSE4x4_H(tmp0, tmp2, tmp1, tmp3, tmp2, tmp3, tmp4, tmp5);
+    __lasx_xvstelm_d(tmp2, (int8_t*)bS, 0, 0);
+    __lasx_xvstelm_d(tmp3, (int8_t*)bS + 8, 0, 0);
+    __lasx_xvstelm_d(tmp4, (int8_t*)bS + 16, 0, 0);
+    __lasx_xvstelm_d(tmp5, (int8_t*)bS + 24, 0, 0);
 }

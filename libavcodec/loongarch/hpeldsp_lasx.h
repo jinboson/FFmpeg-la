@@ -22,6 +22,7 @@
 #ifndef AVCODEC_LOONGARCH_HPELDSP_LASX_H
 #define AVCODEC_LOONGARCH_HPELDSP_LASX_H
 
+#include <stdint.h>
 #include <stddef.h>
 #include "libavutil/attributes.h"
 

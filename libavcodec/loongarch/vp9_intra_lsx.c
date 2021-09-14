@@ -20,7 +20,7 @@
  */
 
 #include "libavcodec/vp9dsp.h"
-#include "libavutil/loongarch/generic_macros_lsx.h"
+#include "libavutil/loongarch/loongson_intrinsics.h"
 #include "vp9dsp_loongarch.h"
 
 #define LSX_ST_8(_dst0, _dst1, _dst2, _dst3, _dst4,   \
@@ -89,7 +89,7 @@ void ff_vert_32x32_lsx(uint8_t *dst, ptrdiff_t dst_stride, const uint8_t *left,
     uint32_t row;
     __m128i src0, src1;
 
-    LSX_DUP2_ARG2(__lsx_vld, src, 0, src, 16, src0, src1);
+    DUP2_ARG2(__lsx_vld, src, 0, src, 16, src0, src1);
     for (row = 32; row--;) {
         __lsx_vst(src0, dst, 0);
         __lsx_vst(src1, dst, 16);
@@ -285,7 +285,7 @@ void ff_dc_16x16_lsx(uint8_t *dst, ptrdiff_t dst_stride,
 
     tmp0 = __lsx_vld(src_top, 0);
     tmp1 = __lsx_vld(src_left, 0);
-    LSX_DUP2_ARG2(__lsx_vhaddw_hu_bu, tmp0, tmp0, tmp1, tmp1, tmp0, tmp1);
+    DUP2_ARG2(__lsx_vhaddw_hu_bu, tmp0, tmp0, tmp1, tmp1, tmp0, tmp1);
     dst0 = __lsx_vadd_h(tmp0, tmp1);
     dst0 = __lsx_vhaddw_wu_hu(dst0, dst0);
     dst0 = __lsx_vhaddw_du_wu(dst0, dst0);
@@ -322,11 +322,11 @@ void ff_dc_32x32_lsx(uint8_t *dst, ptrdiff_t dst_stride,
 {
     __m128i tmp0, tmp1, tmp2, tmp3, dst0;
 
-    LSX_DUP2_ARG2(__lsx_vld, src_top, 0, src_top, 16, tmp0, tmp1);
-    LSX_DUP2_ARG2(__lsx_vld, src_left, 0, src_left, 16, tmp2, tmp3);
-    LSX_DUP4_ARG2(__lsx_vhaddw_hu_bu, tmp0, tmp0, tmp1, tmp1, tmp2, tmp2,
-                  tmp3, tmp3, tmp0, tmp1, tmp2, tmp3);
-    LSX_DUP2_ARG2(__lsx_vadd_h, tmp0, tmp1, tmp2, tmp3, tmp0, tmp1);
+    DUP2_ARG2(__lsx_vld, src_top, 0, src_top, 16, tmp0, tmp1);
+    DUP2_ARG2(__lsx_vld, src_left, 0, src_left, 16, tmp2, tmp3);
+    DUP4_ARG2(__lsx_vhaddw_hu_bu, tmp0, tmp0, tmp1, tmp1, tmp2, tmp2,
+              tmp3, tmp3, tmp0, tmp1, tmp2, tmp3);
+    DUP2_ARG2(__lsx_vadd_h, tmp0, tmp1, tmp2, tmp3, tmp0, tmp1);
     dst0 = __lsx_vadd_h(tmp0, tmp1);
     dst0 = __lsx_vhaddw_wu_hu(dst0, dst0);
     dst0 = __lsx_vhaddw_du_wu(dst0, dst0);
@@ -346,8 +346,8 @@ void ff_dc_##dir##_32x32_lsx(uint8_t *dst, ptrdiff_t dst_stride,                
 {                                                                                \
     __m128i tmp0, tmp1, dst0;                                                    \
                                                                                  \
-    LSX_DUP2_ARG2(__lsx_vld, dir, 0, dir, 16, tmp0, tmp1);                       \
-    LSX_DUP2_ARG2(__lsx_vhaddw_hu_bu, tmp0, tmp0, tmp1, tmp1, tmp0, tmp1);       \
+    DUP2_ARG2(__lsx_vld, dir, 0, dir, 16, tmp0, tmp1);                           \
+    DUP2_ARG2(__lsx_vhaddw_hu_bu, tmp0, tmp0, tmp1, tmp1, tmp0, tmp1);           \
     dst0 = __lsx_vadd_h(tmp0, tmp1);                                             \
     dst0 = __lsx_vhaddw_wu_hu(dst0, dst0);                                       \
     dst0 = __lsx_vhaddw_du_wu(dst0, dst0);                                       \
@@ -403,17 +403,17 @@ void ff_tm_4x4_lsx(uint8_t *dst, ptrdiff_t dst_stride,
 
     reg0 = __lsx_vreplgr2vr_h(top_left);
     reg1 = __lsx_vld(src_top_ptr, 0);
-    LSX_DUP4_ARG2(__lsx_vldrepl_b, src_left, 0, src_left, 1, src_left, 2, src_left,
-                  3, tmp3, tmp2, tmp1, tmp0);
-    LSX_DUP4_ARG2(__lsx_vilvl_b, tmp0, reg1, tmp1, reg1, tmp2, reg1, tmp3, reg1,
-                  src0, src1, src2, src3);
-    LSX_DUP4_ARG2(__lsx_vhaddw_hu_bu, src0, src0, src1, src1, src2, src2, src3,
-                  src3, dst0, dst1, dst2, dst3);
-    LSX_DUP4_ARG2(__lsx_vssub_hu, dst0, reg0, dst1, reg0, dst2, reg0, dst3, reg0,
-                  dst0, dst1, dst2, dst3);
-    LSX_DUP4_ARG2(__lsx_vsat_hu, dst0, 7, dst1, 7, dst2, 7, dst3, 7,
-                  dst0, dst1, dst2, dst3);
-    LSX_DUP2_ARG2(__lsx_vpickev_b, dst1, dst0, dst3, dst2, dst0, dst1);
+    DUP4_ARG2(__lsx_vldrepl_b, src_left, 0, src_left, 1, src_left, 2, src_left,
+              3, tmp3, tmp2, tmp1, tmp0);
+    DUP4_ARG2(__lsx_vilvl_b, tmp0, reg1, tmp1, reg1, tmp2, reg1, tmp3, reg1,
+              src0, src1, src2, src3);
+    DUP4_ARG2(__lsx_vhaddw_hu_bu, src0, src0, src1, src1, src2, src2, src3,
+              src3, dst0, dst1, dst2, dst3);
+    DUP4_ARG2(__lsx_vssub_hu, dst0, reg0, dst1, reg0, dst2, reg0, dst3, reg0,
+              dst0, dst1, dst2, dst3);
+    DUP4_ARG2(__lsx_vsat_hu, dst0, 7, dst1, 7, dst2, 7, dst3, 7,
+              dst0, dst1, dst2, dst3);
+    DUP2_ARG2(__lsx_vpickev_b, dst1, dst0, dst3, dst2, dst0, dst1);
     __lsx_vstelm_w(dst0, dst, 0, 0);
     dst += dst_stride;
     __lsx_vstelm_w(dst0, dst, 0, 2);
@@ -433,28 +433,26 @@ void ff_tm_8x8_lsx(uint8_t *dst, ptrdiff_t dst_stride,
 
     reg0 = __lsx_vreplgr2vr_h(top_left);
     reg1 = __lsx_vld(src_top_ptr, 0);
-    LSX_DUP4_ARG2(__lsx_vldrepl_b, src_left, 0, src_left, 1, src_left, 2, src_left,
-                  3, tmp7, tmp6, tmp5, tmp4);
-    LSX_DUP4_ARG2(__lsx_vldrepl_b, src_left, 4, src_left, 5, src_left, 6, src_left,
-                  7, tmp3, tmp2, tmp1, tmp0);
-    LSX_DUP4_ARG2(__lsx_vilvl_b, tmp0, reg1, tmp1, reg1, tmp2, reg1, tmp3, reg1,
-                  src0, src1, src2, src3);
-    LSX_DUP4_ARG2(__lsx_vilvl_b, tmp4, reg1, tmp5, reg1, tmp6, reg1, tmp7, reg1,
-                  src4, src5, src6, src7);
-    LSX_DUP4_ARG2(__lsx_vhaddw_hu_bu, src0, src0, src1, src1, src2, src2, src3,
-                  src3, src0, src1, src2, src3);
-    LSX_DUP4_ARG2(__lsx_vhaddw_hu_bu, src4, src4, src5, src5, src6, src6, src7,
-                  src7, src4, src5, src6, src7);
-    LSX_DUP4_ARG2(__lsx_vssub_hu, src0, reg0, src1, reg0, src2, reg0, src3, reg0,
-                  src0, src1, src2, src3);
-    LSX_DUP4_ARG2(__lsx_vssub_hu, src4, reg0, src5, reg0, src6, reg0, src7, reg0,
-                  src4, src5, src6, src7);
-    LSX_DUP4_ARG2(__lsx_vsat_hu, src0, 7, src1, 7, src2, 7, src3, 7,
-                  src0, src1, src2, src3);
-    LSX_DUP4_ARG2(__lsx_vsat_hu, src4, 7, src5, 7, src6, 7, src7, 7,
-                  src4, src5, src6, src7);
-    LSX_DUP4_ARG2(__lsx_vpickev_b, src1, src0, src3, src2, src5, src4, src7, src6,
-                  src0, src1, src2, src3);
+    DUP4_ARG2(__lsx_vldrepl_b, src_left, 0, src_left, 1, src_left, 2, src_left,
+              3, tmp7, tmp6, tmp5, tmp4);
+    DUP4_ARG2(__lsx_vldrepl_b, src_left, 4, src_left, 5, src_left, 6, src_left,
+              7, tmp3, tmp2, tmp1, tmp0);
+    DUP4_ARG2(__lsx_vilvl_b, tmp0, reg1, tmp1, reg1, tmp2, reg1, tmp3, reg1,
+              src0, src1, src2, src3);
+    DUP4_ARG2(__lsx_vilvl_b, tmp4, reg1, tmp5, reg1, tmp6, reg1, tmp7, reg1,
+              src4, src5, src6, src7);
+    DUP4_ARG2(__lsx_vhaddw_hu_bu, src0, src0, src1, src1, src2, src2, src3,
+              src3, src0, src1, src2, src3);
+    DUP4_ARG2(__lsx_vhaddw_hu_bu, src4, src4, src5, src5, src6, src6, src7,
+              src7, src4, src5, src6, src7);
+    DUP4_ARG2(__lsx_vssub_hu, src0, reg0, src1, reg0, src2, reg0, src3, reg0,
+              src0, src1, src2, src3);
+    DUP4_ARG2(__lsx_vssub_hu, src4, reg0, src5, reg0, src6, reg0, src7, reg0,
+              src4, src5, src6, src7);
+    DUP4_ARG2(__lsx_vsat_hu, src0, 7, src1, 7, src2, 7, src3, 7, src0, src1, src2, src3);
+    DUP4_ARG2(__lsx_vsat_hu, src4, 7, src5, 7, src6, 7, src7, 7, src4, src5, src6, src7);
+    DUP4_ARG2(__lsx_vpickev_b, src1, src0, src3, src2, src5, src4, src7, src6,
+              src0, src1, src2, src3);
     __lsx_vstelm_d(src0, dst, 0, 0);
     dst += dst_stride;
     __lsx_vstelm_d(src0, dst, 0, 1);
@@ -483,70 +481,64 @@ void ff_tm_16x16_lsx(uint8_t *dst, ptrdiff_t dst_stride,
 
     reg0 = __lsx_vreplgr2vr_h(top_left);
     reg1 = __lsx_vld(src_top_ptr, 0);
-    LSX_DUP4_ARG2(__lsx_vldrepl_b, src_left, 0, src_left, 1, src_left, 2, src_left,
-                  3, tmp15, tmp14, tmp13, tmp12);
-    LSX_DUP4_ARG2(__lsx_vldrepl_b, src_left, 4, src_left, 5, src_left, 6, src_left,
-                  7, tmp11, tmp10, tmp9, tmp8);
-    LSX_DUP4_ARG2(__lsx_vldrepl_b, src_left, 8, src_left, 9, src_left, 10, src_left,
-                  11, tmp7, tmp6, tmp5, tmp4);
-    LSX_DUP4_ARG2(__lsx_vldrepl_b, src_left, 12, src_left, 13, src_left, 14, src_left,
-                  15, tmp3, tmp2, tmp1, tmp0);
-    LSX_DUP4_ARG2(__lsx_vaddwev_h_bu, tmp0, reg1, tmp1, reg1, tmp2, reg1, tmp3, reg1,
-                  src0, src1, src2, src3);
-    LSX_DUP4_ARG2(__lsx_vaddwod_h_bu, tmp0, reg1, tmp1, reg1, tmp2, reg1, tmp3, reg1,
-                  src4, src5, src6, src7);
-    LSX_DUP4_ARG2(__lsx_vssub_hu, src0, reg0, src1, reg0, src2, reg0, src3, reg0,
-                  src0, src1, src2, src3);
-    LSX_DUP4_ARG2(__lsx_vssub_hu, src4, reg0, src5, reg0, src6, reg0, src7, reg0,
-                  src4, src5, src6, src7);
-    LSX_DUP4_ARG2(__lsx_vsat_hu, src0, 7, src1, 7, src2, 7, src3, 7,
-                  src0, src1, src2, src3);
-    LSX_DUP4_ARG2(__lsx_vsat_hu, src4, 7, src5, 7, src6, 7, src7, 7,
-                  src4, src5, src6, src7);
-    LSX_DUP4_ARG2(__lsx_vpackev_b, src4, src0, src5, src1, src6, src2, src7, src3,
-                  tmp0, tmp1, tmp2, tmp3);
-    LSX_DUP4_ARG2(__lsx_vaddwev_h_bu, tmp4, reg1, tmp5, reg1, tmp6, reg1, tmp7, reg1,
-                  src0, src1, src2, src3);
-    LSX_DUP4_ARG2(__lsx_vaddwod_h_bu, tmp4, reg1, tmp5, reg1, tmp6, reg1, tmp7, reg1,
-                  src4, src5, src6, src7);
-    LSX_DUP4_ARG2(__lsx_vssub_hu, src0, reg0, src1, reg0, src2, reg0, src3, reg0,
-                  src0, src1, src2, src3);
-    LSX_DUP4_ARG2(__lsx_vssub_hu, src4, reg0, src5, reg0, src6, reg0, src7, reg0,
-                  src4, src5, src6, src7);
-    LSX_DUP4_ARG2(__lsx_vsat_hu, src0, 7, src1, 7, src2, 7, src3, 7,
-                  src0, src1, src2, src3);
-    LSX_DUP4_ARG2(__lsx_vsat_hu, src4, 7, src5, 7, src6, 7, src7, 7,
-                  src4, src5, src6, src7);
-    LSX_DUP4_ARG2(__lsx_vpackev_b, src4, src0, src5, src1, src6, src2, src7, src3,
-                  tmp4, tmp5, tmp6, tmp7);
-    LSX_DUP4_ARG2(__lsx_vaddwev_h_bu, tmp8, reg1, tmp9, reg1, tmp10, reg1, tmp11, reg1,
-                  src0, src1, src2, src3);
-    LSX_DUP4_ARG2(__lsx_vaddwod_h_bu, tmp8, reg1, tmp9, reg1, tmp10, reg1, tmp11, reg1,
-                  src4, src5, src6, src7);
-    LSX_DUP4_ARG2(__lsx_vssub_hu, src0, reg0, src1, reg0, src2, reg0, src3, reg0,
-                  src0, src1, src2, src3);
-    LSX_DUP4_ARG2(__lsx_vssub_hu, src4, reg0, src5, reg0, src6, reg0, src7, reg0,
-                  src4, src5, src6, src7);
-    LSX_DUP4_ARG2(__lsx_vsat_hu, src0, 7, src1, 7, src2, 7, src3, 7,
-                  src0, src1, src2, src3);
-    LSX_DUP4_ARG2(__lsx_vsat_hu, src4, 7, src5, 7, src6, 7, src7, 7,
-                  src4, src5, src6, src7);
-    LSX_DUP4_ARG2(__lsx_vpackev_b, src4, src0, src5, src1, src6, src2, src7, src3,
-                  tmp8, tmp9, tmp10, tmp11);
-    LSX_DUP4_ARG2(__lsx_vaddwev_h_bu, tmp12, reg1, tmp13, reg1, tmp14, reg1, tmp15, reg1,
-                  src0, src1, src2, src3);
-    LSX_DUP4_ARG2(__lsx_vaddwod_h_bu, tmp12, reg1, tmp13, reg1, tmp14, reg1, tmp15, reg1,
-                  src4, src5, src6, src7);
-    LSX_DUP4_ARG2(__lsx_vssub_hu, src0, reg0, src1, reg0, src2, reg0, src3, reg0,
-                  src0, src1, src2, src3);
-    LSX_DUP4_ARG2(__lsx_vssub_hu, src4, reg0, src5, reg0, src6, reg0, src7, reg0,
-                  src4, src5, src6, src7);
-    LSX_DUP4_ARG2(__lsx_vsat_hu, src0, 7, src1, 7, src2, 7, src3, 7,
-                  src0, src1, src2, src3);
-    LSX_DUP4_ARG2(__lsx_vsat_hu, src4, 7, src5, 7, src6, 7, src7, 7,
-                  src4, src5, src6, src7);
-    LSX_DUP4_ARG2(__lsx_vpackev_b, src4, src0, src5, src1, src6, src2, src7, src3,
-                  tmp12, tmp13, tmp14, tmp15);
+    DUP4_ARG2(__lsx_vldrepl_b, src_left, 0, src_left, 1, src_left, 2, src_left,
+              3, tmp15, tmp14, tmp13, tmp12);
+    DUP4_ARG2(__lsx_vldrepl_b, src_left, 4, src_left, 5, src_left, 6, src_left,
+              7, tmp11, tmp10, tmp9, tmp8);
+    DUP4_ARG2(__lsx_vldrepl_b, src_left, 8, src_left, 9, src_left, 10, src_left,
+              11, tmp7, tmp6, tmp5, tmp4);
+    DUP4_ARG2(__lsx_vldrepl_b, src_left, 12, src_left, 13, src_left, 14, src_left,
+              15, tmp3, tmp2, tmp1, tmp0);
+    DUP4_ARG2(__lsx_vaddwev_h_bu, tmp0, reg1, tmp1, reg1, tmp2, reg1, tmp3, reg1,
+              src0, src1, src2, src3);
+    DUP4_ARG2(__lsx_vaddwod_h_bu, tmp0, reg1, tmp1, reg1, tmp2, reg1, tmp3, reg1,
+              src4, src5, src6, src7);
+    DUP4_ARG2(__lsx_vssub_hu, src0, reg0, src1, reg0, src2, reg0, src3, reg0,
+              src0, src1, src2, src3);
+    DUP4_ARG2(__lsx_vssub_hu, src4, reg0, src5, reg0, src6, reg0, src7, reg0,
+              src4, src5, src6, src7);
+    DUP4_ARG2(__lsx_vsat_hu, src0, 7, src1, 7, src2, 7, src3, 7, src0, src1, src2, src3);
+    DUP4_ARG2(__lsx_vsat_hu, src4, 7, src5, 7, src6, 7, src7, 7, src4, src5, src6, src7);
+    DUP4_ARG2(__lsx_vpackev_b, src4, src0, src5, src1, src6, src2, src7, src3,
+              tmp0, tmp1, tmp2, tmp3);
+    DUP4_ARG2(__lsx_vaddwev_h_bu, tmp4, reg1, tmp5, reg1, tmp6, reg1, tmp7, reg1,
+              src0, src1, src2, src3);
+    DUP4_ARG2(__lsx_vaddwod_h_bu, tmp4, reg1, tmp5, reg1, tmp6, reg1, tmp7, reg1,
+              src4, src5, src6, src7);
+    DUP4_ARG2(__lsx_vssub_hu, src0, reg0, src1, reg0, src2, reg0, src3, reg0,
+              src0, src1, src2, src3);
+    DUP4_ARG2(__lsx_vssub_hu, src4, reg0, src5, reg0, src6, reg0, src7, reg0,
+              src4, src5, src6, src7);
+    DUP4_ARG2(__lsx_vsat_hu, src0, 7, src1, 7, src2, 7, src3, 7,
+              src0, src1, src2, src3);
+    DUP4_ARG2(__lsx_vsat_hu, src4, 7, src5, 7, src6, 7, src7, 7,
+              src4, src5, src6, src7);
+    DUP4_ARG2(__lsx_vpackev_b, src4, src0, src5, src1, src6, src2, src7, src3,
+              tmp4, tmp5, tmp6, tmp7);
+    DUP4_ARG2(__lsx_vaddwev_h_bu, tmp8, reg1, tmp9, reg1, tmp10, reg1, tmp11, reg1,
+              src0, src1, src2, src3);
+    DUP4_ARG2(__lsx_vaddwod_h_bu, tmp8, reg1, tmp9, reg1, tmp10, reg1, tmp11, reg1,
+              src4, src5, src6, src7);
+    DUP4_ARG2(__lsx_vssub_hu, src0, reg0, src1, reg0, src2, reg0, src3, reg0,
+              src0, src1, src2, src3);
+    DUP4_ARG2(__lsx_vssub_hu, src4, reg0, src5, reg0, src6, reg0, src7, reg0,
+              src4, src5, src6, src7);
+    DUP4_ARG2(__lsx_vsat_hu, src0, 7, src1, 7, src2, 7, src3, 7, src0, src1, src2, src3);
+    DUP4_ARG2(__lsx_vsat_hu, src4, 7, src5, 7, src6, 7, src7, 7, src4, src5, src6, src7);
+    DUP4_ARG2(__lsx_vpackev_b, src4, src0, src5, src1, src6, src2, src7, src3,
+              tmp8, tmp9, tmp10, tmp11);
+    DUP4_ARG2(__lsx_vaddwev_h_bu, tmp12, reg1, tmp13, reg1, tmp14, reg1, tmp15, reg1,
+              src0, src1, src2, src3);
+    DUP4_ARG2(__lsx_vaddwod_h_bu, tmp12, reg1, tmp13, reg1, tmp14, reg1, tmp15, reg1,
+              src4, src5, src6, src7);
+    DUP4_ARG2(__lsx_vssub_hu, src0, reg0, src1, reg0, src2, reg0, src3, reg0,
+              src0, src1, src2, src3);
+    DUP4_ARG2(__lsx_vssub_hu, src4, reg0, src5, reg0, src6, reg0, src7, reg0,
+              src4, src5, src6, src7);
+    DUP4_ARG2(__lsx_vsat_hu, src0, 7, src1, 7, src2, 7, src3, 7, src0, src1, src2, src3);
+    DUP4_ARG2(__lsx_vsat_hu, src4, 7, src5, 7, src6, 7, src7, 7, src4, src5, src6, src7);
+    DUP4_ARG2(__lsx_vpackev_b, src4, src0, src5, src1, src6, src2, src7, src3,
+              tmp12, tmp13, tmp14, tmp15);
     LSX_ST_8(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, dst, dst_stride);
     LSX_ST_8(tmp8, tmp9, tmp10, tmp11, tmp12, tmp13, tmp14, tmp15, dst, dst_stride);
 }
@@ -561,41 +553,41 @@ void ff_tm_32x32_lsx(uint8_t *dst, ptrdiff_t dst_stride,
     __m128i dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
 
     reg0 = __lsx_vreplgr2vr_h(top_left);
-    LSX_DUP2_ARG2(__lsx_vld, src_top_ptr, 0, src_top_ptr, 16, reg1, reg2);
+    DUP2_ARG2(__lsx_vld, src_top_ptr, 0, src_top_ptr, 16, reg1, reg2);
 
     src_left += 28;
     for (loop_cnt = 8; loop_cnt--;) {
-        LSX_DUP4_ARG2(__lsx_vldrepl_b, src_left, 0, src_left, 1, src_left, 2, src_left, 3,
-                      tmp3, tmp2, tmp1, tmp0);
+        DUP4_ARG2(__lsx_vldrepl_b, src_left, 0, src_left, 1, src_left, 2, src_left, 3,
+                  tmp3, tmp2, tmp1, tmp0);
         src_left -= 4;
-        LSX_DUP4_ARG2(__lsx_vaddwev_h_bu, tmp0, reg1, tmp1, reg1, tmp2, reg1, tmp3, reg1,
-                      src0, src1, src2, src3);
-        LSX_DUP4_ARG2(__lsx_vaddwod_h_bu, tmp0, reg1, tmp1, reg1, tmp2, reg1, tmp3, reg1,
-                      src4, src5, src6, src7);
-        LSX_DUP4_ARG2(__lsx_vssub_hu, src0, reg0, src1, reg0, src2, reg0, src3, reg0,
-                      src0, src1, src2, src3);
-        LSX_DUP4_ARG2(__lsx_vssub_hu, src4, reg0, src5, reg0, src6, reg0, src7, reg0,
-                      src4, src5, src6, src7);
-        LSX_DUP4_ARG2(__lsx_vaddwev_h_bu, tmp0, reg2, tmp1, reg2, tmp2, reg2, tmp3, reg2,
-                      dst0, dst1, dst2, dst3);
-        LSX_DUP4_ARG2(__lsx_vaddwod_h_bu, tmp0, reg2, tmp1, reg2, tmp2, reg2, tmp3, reg2,
-                      dst4, dst5, dst6, dst7);
-        LSX_DUP4_ARG2(__lsx_vssub_hu, dst0, reg0, dst1, reg0, dst2, reg0, dst3, reg0,
-                      dst0, dst1, dst2, dst3);
-        LSX_DUP4_ARG2(__lsx_vssub_hu, dst4, reg0, dst5, reg0, dst6, reg0, dst7, reg0,
-                      dst4, dst5, dst6, dst7);
-        LSX_DUP4_ARG2(__lsx_vsat_hu, src0, 7, src1, 7, src2, 7, src3, 7,
-                      src0, src1, src2, src3);
-        LSX_DUP4_ARG2(__lsx_vsat_hu, src4, 7, src5, 7, src6, 7, src7, 7,
-                      src4, src5, src6, src7);
-        LSX_DUP4_ARG2(__lsx_vsat_hu, dst0, 7, dst1, 7, dst2, 7, dst3, 7,
-                      dst0, dst1, dst2, dst3);
-        LSX_DUP4_ARG2(__lsx_vsat_hu, dst4, 7, dst5, 7, dst6, 7, dst7, 7,
-                      dst4, dst5, dst6, dst7);
-        LSX_DUP4_ARG2(__lsx_vpackev_b, src4, src0, src5, src1, src6, src2, src7, src3,
-                      src0, src1, src2, src3);
-        LSX_DUP4_ARG2(__lsx_vpackev_b, dst4, dst0, dst5, dst1, dst6, dst2, dst7, dst3,
-                      dst0, dst1, dst2, dst3);
+        DUP4_ARG2(__lsx_vaddwev_h_bu, tmp0, reg1, tmp1, reg1, tmp2, reg1, tmp3, reg1,
+                  src0, src1, src2, src3);
+        DUP4_ARG2(__lsx_vaddwod_h_bu, tmp0, reg1, tmp1, reg1, tmp2, reg1, tmp3, reg1,
+                  src4, src5, src6, src7);
+        DUP4_ARG2(__lsx_vssub_hu, src0, reg0, src1, reg0, src2, reg0, src3, reg0,
+                  src0, src1, src2, src3);
+        DUP4_ARG2(__lsx_vssub_hu, src4, reg0, src5, reg0, src6, reg0, src7, reg0,
+                  src4, src5, src6, src7);
+        DUP4_ARG2(__lsx_vaddwev_h_bu, tmp0, reg2, tmp1, reg2, tmp2, reg2, tmp3, reg2,
+                  dst0, dst1, dst2, dst3);
+        DUP4_ARG2(__lsx_vaddwod_h_bu, tmp0, reg2, tmp1, reg2, tmp2, reg2, tmp3, reg2,
+                  dst4, dst5, dst6, dst7);
+        DUP4_ARG2(__lsx_vssub_hu, dst0, reg0, dst1, reg0, dst2, reg0, dst3, reg0,
+                  dst0, dst1, dst2, dst3);
+        DUP4_ARG2(__lsx_vssub_hu, dst4, reg0, dst5, reg0, dst6, reg0, dst7, reg0,
+                  dst4, dst5, dst6, dst7);
+        DUP4_ARG2(__lsx_vsat_hu, src0, 7, src1, 7, src2, 7, src3, 7,
+                  src0, src1, src2, src3);
+        DUP4_ARG2(__lsx_vsat_hu, src4, 7, src5, 7, src6, 7, src7, 7,
+                  src4, src5, src6, src7);
+        DUP4_ARG2(__lsx_vsat_hu, dst0, 7, dst1, 7, dst2, 7, dst3, 7,
+                  dst0, dst1, dst2, dst3);
+        DUP4_ARG2(__lsx_vsat_hu, dst4, 7, dst5, 7, dst6, 7, dst7, 7,
+                  dst4, dst5, dst6, dst7);
+        DUP4_ARG2(__lsx_vpackev_b, src4, src0, src5, src1, src6, src2, src7, src3,
+                  src0, src1, src2, src3);
+        DUP4_ARG2(__lsx_vpackev_b, dst4, dst0, dst5, dst1, dst6, dst2, dst7, dst3,
+                  dst0, dst1, dst2, dst3);
         __lsx_vst(src0, dst, 0);
         __lsx_vst(dst0, dst, 16);
         dst += dst_stride;

@@ -28,10 +28,10 @@ static inline __m128i __lsx_hevc_filt_8tap_h(__m128i in0, __m128i in1, __m128i i
 {
     __m128i out_m;
 
-    out_m = __lsx_dp2_h_b(in0, filt0);
-    out_m = __lsx_dp2add_h_b(out_m, in1, filt1);
-    out_m = __lsx_dp2add_h_b(out_m, in2, filt2);
-    out_m = __lsx_dp2add_h_b(out_m, in3, filt3);
+    out_m = __lsx_vdp2_h_b(in0, filt0);
+    out_m = __lsx_vdp2add_h_b(out_m, in1, filt1);
+    out_m = __lsx_vdp2add_h_b(out_m, in2, filt2);
+    out_m = __lsx_vdp2add_h_b(out_m, in3, filt3);
     return out_m;
 }
 
@@ -41,10 +41,10 @@ static inline __m128i __lsx_hevc_filt_8tap_w(__m128i in0, __m128i in1, __m128i i
 {
     __m128i out_m;
 
-    out_m = __lsx_dp2_w_h(in0, filt0);
-    out_m = __lsx_dp2add_w_h(out_m, in1, filt1);
-    out_m = __lsx_dp2add_w_h(out_m, in2, filt2);
-    out_m = __lsx_dp2add_w_h(out_m, in3, filt3);
+    out_m = __lsx_vdp2_w_h(in0, filt0);
+    out_m = __lsx_vdp2add_w_h(out_m, in1, filt1);
+    out_m = __lsx_vdp2add_w_h(out_m, in2, filt2);
+    out_m = __lsx_vdp2add_w_h(out_m, in3, filt3);
     return out_m;
 }
 
@@ -53,8 +53,8 @@ static inline __m128i __lsx_hevc_filt_4tap_h(__m128i in0, __m128i in1, __m128i f
 {
     __m128i out_m;
 
-    out_m = __lsx_dp2_h_b(in0, filt0);
-    out_m = __lsx_dp2add_h_b(out_m, in1, filt1);
+    out_m = __lsx_vdp2_h_b(in0, filt0);
+    out_m = __lsx_vdp2add_h_b(out_m, in1, filt1);
     return out_m;
 }
 
@@ -63,8 +63,8 @@ static inline __m128i __lsx_hevc_filt_4tap_w(__m128i in0, __m128i in1, __m128i f
 {
     __m128i out_m;
 
-    out_m = __lsx_dp2_w_h(in0, filt0);
-    out_m = __lsx_dp2add_w_h(out_m, in1, filt1);
+    out_m = __lsx_vdp2_w_h(in0, filt0);
+    out_m = __lsx_vdp2add_w_h(out_m, in1, filt1);
     return out_m;
 }
 

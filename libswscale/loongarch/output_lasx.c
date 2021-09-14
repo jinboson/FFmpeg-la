@@ -20,7 +20,7 @@
  */
 
 #include "swscale_loongarch.h"
-#include "libavutil/loongarch/generic_macros_lasx.h"
+#include "libavutil/loongarch/loongson_intrinsics.h"
 
 void ff_yuv2planeX_8_lasx(const int16_t *filter, int filterSize,
                           const int16_t **src, uint8_t *dest, int dstW,
@@ -42,7 +42,7 @@ void ff_yuv2planeX_8_lasx(const int16_t *filter, int filterSize,
     int val_2[8] = {dither4, dither5, dither6, dither7, dither4, dither5, dither6, dither7};
     int val_3[8] = {dither0, dither1, dither2, dither3, dither4, dither5, dither6, dither7};
 
-    LASX_DUP2_ARG2(__lasx_xvld, val_1, 0, val_2, 0, val1, val2);
+    DUP2_ARG2(__lasx_xvld, val_1, 0, val_2, 0, val1, val2);
     val3 = __lasx_xvld(val_3, 0);
 
     for (i = 0; i < len; i += 16) {
@@ -762,9 +762,9 @@ yuv2rgb_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
         v2_od  = yl1_ev;
         for (j = 0; j < lumFilterSize; j++) {
             temp    = __lasx_xvldrepl_h((lumFilter + j), 0);
-            LASX_DUP4_ARG2(__lasx_xvld, lumSrc[j] + count_lum, 0, lumSrc[j] + count_lum,
-                           32, lumSrc[j] + count_lum, 64, lumSrc[j] + count_lum, 96, l_src1,
-                           l_src2, l_src3, l_src4);
+            DUP4_ARG2(__lasx_xvld, lumSrc[j] + count_lum, 0, lumSrc[j] + count_lum,
+                      32, lumSrc[j] + count_lum, 64, lumSrc[j] + count_lum, 96, l_src1,
+                      l_src2, l_src3, l_src4);
 
             yl1_ev  = __lasx_xvmaddwev_w_h(yl1_ev, temp, l_src1);
             yl1_od  = __lasx_xvmaddwod_w_h(yl1_od, temp, l_src1);
@@ -776,10 +776,10 @@ yuv2rgb_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
             yh2_od  = __lasx_xvmaddwod_w_h(yh2_od, temp, l_src4);
         }
         for (j = 0; j < chrFilterSize; j++) {
-            LASX_DUP2_ARG2(__lasx_xvld, chrUSrc[j] + count, 0, chrUSrc[j] + count, 32,
-                           u_src1, u_src2);
-            LASX_DUP2_ARG2(__lasx_xvld, chrVSrc[j] + count, 0, chrVSrc[j] + count, 32,
-                           v_src1, v_src2);
+            DUP2_ARG2(__lasx_xvld, chrUSrc[j] + count, 0, chrUSrc[j] + count, 32,
+                      u_src1, u_src2);
+            DUP2_ARG2(__lasx_xvld, chrVSrc[j] + count, 0, chrVSrc[j] + count, 32,
+                      v_src1, v_src2);
             temp  = __lasx_xvldrepl_h((chrFilter + j), 0);
             u1_ev  = __lasx_xvmaddwev_w_h(u1_ev, temp, u_src1);
             u1_od  = __lasx_xvmaddwod_w_h(u1_od, temp, u_src1);
@@ -839,16 +839,16 @@ yuv2rgb_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
         v_od  = yl_ev;
         for (j = 0; j < lumFilterSize; j++) {
             temp   = __lasx_xvldrepl_h((lumFilter + j), 0);
-            LASX_DUP2_ARG2(__lasx_xvld, lumSrc[j] + count_lum, 0, lumSrc[j] + count_lum,
-                           32, l_src1, l_src2);
+            DUP2_ARG2(__lasx_xvld, lumSrc[j] + count_lum, 0, lumSrc[j] + count_lum,
+                      32, l_src1, l_src2);
             yl_ev  = __lasx_xvmaddwev_w_h(yl_ev, temp, l_src1);
             yl_od  = __lasx_xvmaddwod_w_h(yl_od, temp, l_src1);
             yh_ev  = __lasx_xvmaddwev_w_h(yh_ev, temp, l_src2);
             yh_od  = __lasx_xvmaddwod_w_h(yh_od, temp, l_src2);
         }
         for (j = 0; j < chrFilterSize; j++) {
-            LASX_DUP2_ARG2(__lasx_xvld, chrUSrc[j] + count, 0, chrVSrc[j] + count, 0,
-                           u_src, v_src);
+            DUP2_ARG2(__lasx_xvld, chrUSrc[j] + count, 0, chrVSrc[j] + count, 0,
+                      u_src, v_src);
             temp  = __lasx_xvldrepl_h((chrFilter + j), 0);
             u_ev  = __lasx_xvmaddwev_w_h(u_ev, temp, u_src);
             u_od  = __lasx_xvmaddwod_w_h(u_od, temp, u_src);
@@ -890,8 +890,8 @@ yuv2rgb_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
             y_od  = __lasx_xvmaddwod_w_h(y_od, temp, l_src);
         }
         for (j = 0; j < chrFilterSize; j++) {
-            LASX_DUP2_ARG2(__lasx_xvld, chrUSrc[j] + count, 0, chrVSrc[j] + count,
-                           0, u_src, v_src);
+            DUP2_ARG2(__lasx_xvld, chrUSrc[j] + count, 0, chrVSrc[j] + count,
+                      0, u_src, v_src);
             temp  = __lasx_xvldrepl_h((chrFilter + j), 0);
             u_src = __lasx_vext2xv_w_h(u_src);
             v_src = __lasx_vext2xv_w_h(v_src);
@@ -991,14 +991,14 @@ yuv2rgb_2_template_lasx(SwsContext *c, const int16_t *buf[2],
         __m256i y1_h, y1_l, y1, u1, v1;
         __m256i y_l, y_h, u, v;
 
-        LASX_DUP4_ARG2(__lasx_xvld, buf0 + i, 0, ubuf0 + count, 0, vbuf0 + count,
-                       0, buf1 + i, 0, y0, u0, v0, y1);
-        LASX_DUP2_ARG2(__lasx_xvld, ubuf1 + count, 0, vbuf1 + count, 0, u1, v1);
-        LASX_DUP2_ARG1(__lasx_vext2xv_w_h, y0, y1, y0_l, y1_l);
+        DUP4_ARG2(__lasx_xvld, buf0 + i, 0, ubuf0 + count, 0, vbuf0 + count,
+                  0, buf1 + i, 0, y0, u0, v0, y1);
+        DUP2_ARG2(__lasx_xvld, ubuf1 + count, 0, vbuf1 + count, 0, u1, v1);
+        DUP2_ARG1(__lasx_vext2xv_w_h, y0, y1, y0_l, y1_l);
         y0   = __lasx_xvpermi_d(y0, 0x4E);
         y1   = __lasx_xvpermi_d(y1, 0x4E);
-        LASX_DUP2_ARG1(__lasx_vext2xv_w_h, y0, y1, y0_h, y1_h);
-        LASX_DUP4_ARG1(__lasx_vext2xv_w_h, u0, u1, v0, v1, u0, u1, v0, v1);
+        DUP2_ARG1(__lasx_vext2xv_w_h, y0, y1, y0_h, y1_h);
+        DUP4_ARG1(__lasx_vext2xv_w_h, u0, u1, v0, v1, u0, u1, v0, v1);
         y0_l = __lasx_xvmul_w(y0_l, v_yalpha1);
         y0_h = __lasx_xvmul_w(y0_h, v_yalpha1);
         u0   = __lasx_xvmul_w(u0, v_uvalpha1);
@@ -1028,8 +1028,8 @@ yuv2rgb_2_template_lasx(SwsContext *c, const int16_t *buf[2],
         y1   = __lasx_xvld(buf1 + i, 0);
         u1   = __lasx_xvldrepl_d((ubuf1 + count), 0);
         v1   = __lasx_xvldrepl_d((vbuf1 + count), 0);
-        LASX_DUP2_ARG1(__lasx_vext2xv_w_h, y0, y1, y0_l, y1_l);
-        LASX_DUP4_ARG1(__lasx_vext2xv_w_h, u0, u1, v0, v1, u0, u1, v0, v1);
+        DUP2_ARG1(__lasx_vext2xv_w_h, y0, y1, y0_l, y1_l);
+        DUP4_ARG1(__lasx_vext2xv_w_h, u0, u1, v0, v1, u0, u1, v0, v1);
         y0_l = __lasx_xvmul_w(y0_l, v_yalpha1);
         u0   = __lasx_xvmul_w(u0, v_uvalpha1);
         v0   = __lasx_xvmul_w(v0, v_uvalpha1);
@@ -1087,13 +1087,13 @@ yuv2rgb_1_template_lasx(SwsContext *c, const int16_t *buf0,
             __m256i src_y, src_u, src_v;
             __m256i y_h, y_l, u, v;
 
-            LASX_DUP2_ARG2(__lasx_xvld, buf0 + i, 0, ubuf0 + count, 0, src_y, src_u);
+            DUP2_ARG2(__lasx_xvld, buf0 + i, 0, ubuf0 + count, 0, src_y, src_u);
             src_v = __lasx_xvld(vbuf0 + count, 0);
             y_l = __lasx_xvaddwl_w_h(src_y, bias_64);
             y_h = __lasx_xvaddwh_w_h(src_y, bias_64);
             src_u = __lasx_xvpermi_d(src_u, 0xD8);
             src_v = __lasx_xvpermi_d(src_v, 0xD8);
-            LASX_DUP2_ARG2(__lasx_xvaddwl_w_h, src_u, bias_64, src_v, bias_64, u, v);
+            DUP2_ARG2(__lasx_xvaddwl_w_h, src_u, bias_64, src_v, bias_64, u, v);
             y_l   = __lasx_xvsrai_w(y_l, 7);
             y_h   = __lasx_xvsrai_w(y_h, 7);
             u     = __lasx_xvsrai_w(u, 7);
@@ -1111,7 +1111,7 @@ yuv2rgb_1_template_lasx(SwsContext *c, const int16_t *buf0,
             src_u = __lasx_xvldrepl_d((ubuf0 + count), 0);
             src_v = __lasx_xvldrepl_d((vbuf0 + count), 0);
             src_y = __lasx_xvpermi_d(src_y, 0xD8);
-            LASX_DUP2_ARG2(__lasx_xvaddwl_w_h, src_y, bias_64, src_u, bias_64, y_l, u);
+            DUP2_ARG2(__lasx_xvaddwl_w_h, src_y, bias_64, src_u, bias_64, y_l, u);
             v = __lasx_xvaddwl_w_h(src_v, bias_64);
             y_l   = __lasx_xvsrai_w(y_l, 7);
             u     = __lasx_xvsrai_w(u, 7);
@@ -1150,8 +1150,8 @@ yuv2rgb_1_template_lasx(SwsContext *c, const int16_t *buf0,
             __m256i src_y, src_u0, src_v0, src_u1, src_v1;
             __m256i y_h, y_l, u, v;
 
-            LASX_DUP4_ARG2(__lasx_xvld, buf0 + i, 0, ubuf0 + count, 0, vbuf0 + count,
-                           0, ubuf1 + count, 0, src_y, src_u0, src_v0, src_u1);
+            DUP4_ARG2(__lasx_xvld, buf0 + i, 0, ubuf0 + count, 0, vbuf0 + count,
+                      0, ubuf1 + count, 0, src_y, src_u0, src_v0, src_u1);
             src_v1 = __lasx_xvld(vbuf1 + count, 0);
             src_u0 = __lasx_xvpermi_d(src_u0, 0xD8);
             src_v0 = __lasx_xvpermi_d(src_v0, 0xD8);
@@ -1159,7 +1159,7 @@ yuv2rgb_1_template_lasx(SwsContext *c, const int16_t *buf0,
             src_v1 = __lasx_xvpermi_d(src_v1, 0xD8);
             y_l = __lasx_xvaddwl_w_h(src_y, bias_64);
             y_h =  __lasx_xvaddwh_w_h(src_y, bias_64);
-            LASX_DUP2_ARG2(__lasx_xvaddwl_w_h, src_u0, src_u1, src_v0, src_v1, u, v);
+            DUP2_ARG2(__lasx_xvaddwl_w_h, src_u0, src_u1, src_v0, src_v1, u, v);
             u      = __lasx_xvadd_w(u, bias_128);
             v      = __lasx_xvadd_w(v, bias_128);
             y_l    = __lasx_xvsrai_w(y_l, 7);
@@ -1183,7 +1183,7 @@ yuv2rgb_1_template_lasx(SwsContext *c, const int16_t *buf0,
 
             src_y  = __lasx_xvpermi_d(src_y, 0xD8);
             y_l = __lasx_xvaddwl_w_h(src_y, bias_64);
-            LASX_DUP2_ARG2(__lasx_xvaddwl_w_h, src_u0, src_u1, src_v0, src_v1, u, v);
+            DUP2_ARG2(__lasx_xvaddwl_w_h, src_u0, src_u1, src_v0, src_v1, u, v);
             u      = __lasx_xvadd_w(u, bias_128);
             v      = __lasx_xvadd_w(v, bias_128);
             y_l    = __lasx_xvsrai_w(y_l, 7);
@@ -1586,10 +1586,9 @@ yuv2rgb_full_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
         }
         for (j = 0; j < chrFilterSize; j++) {
             temp  = __lasx_xvldrepl_h((chrFilter + j), 0);
-            LASX_DUP2_ARG2(__lasx_xvld, chrUSrc[j] + i, 0, chrVSrc[j] + i, 0,
-                           u_src, v_src);
-            LASX_DUP2_ARG3(__lasx_xvmaddwl_w_h, u_l, u_src, temp, v_l, v_src, temp, u_l, v_l);
-            LASX_DUP2_ARG3(__lasx_xvmaddwh_w_h, u_h, u_src, temp, v_h, v_src, temp, u_h, v_h);
+            DUP2_ARG2(__lasx_xvld, chrUSrc[j] + i, 0, chrVSrc[j] + i, 0, u_src, v_src);
+            DUP2_ARG3(__lasx_xvmaddwl_w_h, u_l, u_src, temp, v_l, v_src, temp, u_l, v_l);
+            DUP2_ARG3(__lasx_xvmaddwh_w_h, u_h, u_src, temp, v_h, v_src, temp, u_h, v_h);
         }
         y_l = __lasx_xvsrai_w(y_l, 10);
         y_h = __lasx_xvsrai_w(y_h, 10);
@@ -1648,11 +1647,10 @@ yuv2rgb_full_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
         }
         for (j = 0; j < chrFilterSize; j++) {
             temp  = __lasx_xvldrepl_h((chrFilter + j), 0);
-            LASX_DUP2_ARG2(__lasx_xvld, chrUSrc[j] + i, 0, chrVSrc[j] + i, 0,
-                           u_src, v_src);
+            DUP2_ARG2(__lasx_xvld, chrUSrc[j] + i, 0, chrVSrc[j] + i, 0, u_src, v_src);
             u_src = __lasx_xvpermi_d(u_src, 0xD8);
             v_src = __lasx_xvpermi_d(v_src, 0xD8);
-            LASX_DUP2_ARG3(__lasx_xvmaddwl_w_h, u_l, u_src, temp, v_l, v_src, temp, u_l, v_l);
+            DUP2_ARG3(__lasx_xvmaddwl_w_h, u_l, u_src, temp, v_l, v_src, temp, u_l, v_l);
         }
         y_l = __lasx_xvsrai_w(y_l, 10);
         u_l = __lasx_xvsrai_w(u_l, 10);
@@ -1766,19 +1764,19 @@ yuv2rgb_full_2_template_lasx(SwsContext *c, const int16_t *buf[2],
         __m256i y_l, y_h, v_l, v_h, u_l, u_h;
         __m256i R_l, R_h, G_l, G_h, B_l, B_h;
 
-        LASX_DUP4_ARG2(__lasx_xvld, buf0 + i, 0, buf1 + i, 0, ubuf0 + i, 0,
-                       ubuf1 + i, 0, b0, b1, ub0, ub1);
-        LASX_DUP2_ARG2(__lasx_xvld, vbuf0 + i, 0, vbuf1 + i, 0, vb0 , vb1);
-        LASX_DUP2_ARG1(__lasx_vext2xv_w_h, b0, b1, y0_l, y1_l);
-        LASX_DUP4_ARG1(__lasx_vext2xv_w_h, ub0, ub1, vb0, vb1, u0_l, u1_l, v0_l, v1_l);
+        DUP4_ARG2(__lasx_xvld, buf0 + i, 0, buf1 + i, 0, ubuf0 + i, 0, ubuf1 + i, 0,
+                  b0, b1, ub0, ub1);
+        DUP2_ARG2(__lasx_xvld, vbuf0 + i, 0, vbuf1 + i, 0, vb0 , vb1);
+        DUP2_ARG1(__lasx_vext2xv_w_h, b0, b1, y0_l, y1_l);
+        DUP4_ARG1(__lasx_vext2xv_w_h, ub0, ub1, vb0, vb1, u0_l, u1_l, v0_l, v1_l);
         b0   = __lasx_xvpermi_d(b0, 0x4E);
         b1   = __lasx_xvpermi_d(b1, 0x4E);
         ub0  = __lasx_xvpermi_d(ub0, 0x4E);
         ub1  = __lasx_xvpermi_d(ub1, 0x4E);
         vb0  = __lasx_xvpermi_d(vb0, 0x4E);
         vb1  = __lasx_xvpermi_d(vb1, 0x4E);
-        LASX_DUP2_ARG1(__lasx_vext2xv_w_h, b0, b1, y0_h, y1_h);
-        LASX_DUP4_ARG1(__lasx_vext2xv_w_h, ub0, ub1, vb0, vb1, u0_h, u1_h, v0_h, v1_h);
+        DUP2_ARG1(__lasx_vext2xv_w_h, b0, b1, y0_h, y1_h);
+        DUP4_ARG1(__lasx_vext2xv_w_h, ub0, ub1, vb0, vb1, u0_h, u1_h, v0_h, v1_h);
         y0_l = __lasx_xvmul_w(y0_l, v_yalpha1);
         y0_h = __lasx_xvmul_w(y0_h, v_yalpha1);
         u0_l = __lasx_xvmul_w(u0_l, v_uvalpha1);
@@ -1810,11 +1808,11 @@ yuv2rgb_full_2_template_lasx(SwsContext *c, const int16_t *buf[2],
             __m256i a0, a1, a0_l, a0_h;
             __m256i a_l, a_h, a1_l, a1_h;
 
-            LASX_DUP2_ARG2(__lasx_xvld, abuf0 + i, 0, abuf1 + i, 0, a0, a1);
-            LASX_DUP2_ARG1(__lasx_vext2xv_w_h, a0, a1, a0_l, a1_l);
+            DUP2_ARG2(__lasx_xvld, abuf0 + i, 0, abuf1 + i, 0, a0, a1);
+            DUP2_ARG1(__lasx_vext2xv_w_h, a0, a1, a0_l, a1_l);
             a0  = __lasx_xvpermi_d(a0, 0x4E);
             a1  = __lasx_xvpermi_d(a1, 0x4E);
-            LASX_DUP2_ARG1(__lasx_vext2xv_w_h, a0, a1, a0_h, a1_h);
+            DUP2_ARG1(__lasx_vext2xv_w_h, a0, a1, a0_h, a1_h);
             a_l = __lasx_xvmadd_w(a_bias, a0_l, v_yalpha1);
             a_h = __lasx_xvmadd_w(a_bias, a0_h, v_yalpha1);
             a_l = __lasx_xvmadd_w(a_l, v_yalpha, a1_l);
@@ -1847,11 +1845,11 @@ yuv2rgb_full_2_template_lasx(SwsContext *c, const int16_t *buf[2],
         __m256i y_l, u_l, v_l;
         __m256i R_l, G_l, B_l;
 
-        LASX_DUP4_ARG2(__lasx_xvld, buf0 + i, 0, buf1 + i, 0, ubuf0 + i, 0,
-                       ubuf1 + i, 0, b0, b1, ub0, ub1);
-        LASX_DUP2_ARG2(__lasx_xvld, vbuf0 + i, 0, vbuf1 + i, 0, vb0, vb1);
-        LASX_DUP2_ARG1(__lasx_vext2xv_w_h, b0, b1, y0_l, y1_l);
-        LASX_DUP4_ARG1(__lasx_vext2xv_w_h, ub0, ub1, vb0, vb1, u0_l, u1_l, v0_l, v1_l);
+        DUP4_ARG2(__lasx_xvld, buf0 + i, 0, buf1 + i, 0, ubuf0 + i, 0, ubuf1 + i, 0,
+                  b0, b1, ub0, ub1);
+        DUP2_ARG2(__lasx_xvld, vbuf0 + i, 0, vbuf1 + i, 0, vb0, vb1);
+        DUP2_ARG1(__lasx_vext2xv_w_h, b0, b1, y0_l, y1_l);
+        DUP4_ARG1(__lasx_vext2xv_w_h, ub0, ub1, vb0, vb1, u0_l, u1_l, v0_l, v1_l);
         y0_l = __lasx_xvmul_w(y0_l, v_yalpha1);
         u0_l = __lasx_xvmul_w(u0_l, v_uvalpha1);
         v0_l = __lasx_xvmul_w(v0_l, v_uvalpha1);
@@ -1870,8 +1868,8 @@ yuv2rgb_full_2_template_lasx(SwsContext *c, const int16_t *buf[2],
             __m256i a0, a1, a0_l;
             __m256i a_l, a1_l;
 
-            LASX_DUP2_ARG2(__lasx_xvld, abuf0 + i, 0, abuf1 + i, 0, a0, a1);
-            LASX_DUP2_ARG1(__lasx_vext2xv_w_h, a0, a1, a0_l, a1_l);
+            DUP2_ARG2(__lasx_xvld, abuf0 + i, 0, abuf1 + i, 0, a0, a1);
+            DUP2_ARG1(__lasx_vext2xv_w_h, a0, a1, a0_l, a1_l);
             a_l = __lasx_xvmadd_w(a_bias, a0_l, v_yalpha1);
             a_l = __lasx_xvmadd_w(a_l, v_yalpha, a1_l);
             a_l = __lasx_xvsrai_w(a_l, 19);
@@ -1943,15 +1941,15 @@ yuv2rgb_full_1_template_lasx(SwsContext *c, const int16_t *buf0,
             __m256i y_l, y_h, u_l, u_h, v_l, v_h;
             __m256i R_l, R_h, G_l, G_h, B_l, B_h;
 
-            LASX_DUP2_ARG2(__lasx_xvld, buf0 + i, 0, ubuf0 + i, 0, b, ub);
+            DUP2_ARG2(__lasx_xvld, buf0 + i, 0, ubuf0 + i, 0, b, ub);
             vb  = __lasx_xvld(vbuf0 + i, 0);
             y_l = __lasx_vext2xv_w_h(b);
-            LASX_DUP2_ARG1(__lasx_vext2xv_w_h, ub, vb, ub_l, vb_l);
+            DUP2_ARG1(__lasx_vext2xv_w_h, ub, vb, ub_l, vb_l);
             b   = __lasx_xvpermi_d(b, 0x4E);
             ub  = __lasx_xvpermi_d(ub, 0x4E);
             vb  = __lasx_xvpermi_d(vb, 0x4E);
             y_h = __lasx_vext2xv_w_h(b);
-            LASX_DUP2_ARG1(__lasx_vext2xv_w_h, ub, vb, ub_h, vb_h);
+            DUP2_ARG1(__lasx_vext2xv_w_h, ub, vb, ub_h, vb_h);
             y_l = __lasx_xvslli_w(y_l, 2);
             y_h = __lasx_xvslli_w(y_h, 2);
             u_l = __lasx_xvsub_w(ub_l, uv);
@@ -2002,10 +2000,10 @@ yuv2rgb_full_1_template_lasx(SwsContext *c, const int16_t *buf0,
             __m256i y_l, u_l, v_l;
             __m256i R_l, G_l, B_l;
 
-            LASX_DUP2_ARG2(__lasx_xvld, buf0 + i, 0, ubuf0 + i, 0, b, ub);
+            DUP2_ARG2(__lasx_xvld, buf0 + i, 0, ubuf0 + i, 0, b, ub);
             vb  = __lasx_xvld(vbuf0 + i, 0);
             y_l = __lasx_vext2xv_w_h(b);
-            LASX_DUP2_ARG1(__lasx_vext2xv_w_h, ub, vb, ub_l, vb_l);
+            DUP2_ARG1(__lasx_vext2xv_w_h, ub, vb, ub_l, vb_l);
             y_l = __lasx_xvslli_w(y_l, 2);
             u_l = __lasx_xvsub_w(ub_l, uv);
             v_l = __lasx_xvsub_w(vb_l, uv);
@@ -2063,8 +2061,8 @@ yuv2rgb_full_1_template_lasx(SwsContext *c, const int16_t *buf0,
             __m256i y_l, y_h, u_l, u_h, v_l, v_h;
             __m256i R_l, R_h, G_l, G_h, B_l, B_h;
 
-            LASX_DUP4_ARG2(__lasx_xvld, buf0 + i, 0, ubuf0 + i, 0, vbuf0 + i, 0,
-                           ubuf1 + i, 0, b, ub0, vb0, ub1);
+            DUP4_ARG2(__lasx_xvld, buf0 + i, 0, ubuf0 + i, 0, vbuf0 + i, 0, ubuf1 + i, 0,
+                      b, ub0, vb0, ub1);
             vb1 = __lasx_xvld(vbuf1 + i, 0);
             y_l = __lasx_vext2xv_w_h(b);
             b   = __lasx_xvpermi_d(b, 0X4E);
@@ -2076,8 +2074,8 @@ yuv2rgb_full_1_template_lasx(SwsContext *c, const int16_t *buf0,
             ub1 = __lasx_xvpermi_d(ub1, 0xD8);
             vb1 = __lasx_xvpermi_d(vb1, 0xD8);
 
-            LASX_DUP2_ARG2(__lasx_xvaddwl_w_h, ub0, ub1, vb0, vb1, u_l, v_l);
-            LASX_DUP2_ARG2(__lasx_xvaddwh_w_h, ub0, ub1, vb0, vb1, u_h, v_h);
+            DUP2_ARG2(__lasx_xvaddwl_w_h, ub0, ub1, vb0, vb1, u_l, v_l);
+            DUP2_ARG2(__lasx_xvaddwh_w_h, ub0, ub1, vb0, vb1, u_h, v_h);
             u_l = __lasx_xvsub_w(u_l, uv);
             u_h = __lasx_xvsub_w(u_h, uv);
             v_l = __lasx_xvsub_w(v_l, uv);
@@ -2126,8 +2124,8 @@ yuv2rgb_full_1_template_lasx(SwsContext *c, const int16_t *buf0,
             __m256i y_l, u_l, v_l;
             __m256i R_l, G_l, B_l;
 
-            LASX_DUP4_ARG2(__lasx_xvld, buf0 + i, 0, ubuf0 + i, 0, vbuf0 + i, 0,
-                           ubuf1 + i, 0, b, ub0, vb0, ub1);
+            DUP4_ARG2(__lasx_xvld, buf0 + i, 0, ubuf0 + i, 0, vbuf0 + i, 0, ubuf1 + i, 0,
+                      b, ub0, vb0, ub1);
             vb1 = __lasx_xvld(vbuf1 + i, 0);
             y_l = __lasx_vext2xv_w_h(b);
             y_l = __lasx_xvslli_w(y_l, 2);
@@ -2135,7 +2133,7 @@ yuv2rgb_full_1_template_lasx(SwsContext *c, const int16_t *buf0,
             vb0 = __lasx_xvpermi_d(vb0, 0xD8);
             ub1 = __lasx_xvpermi_d(ub1, 0xD8);
             vb1 = __lasx_xvpermi_d(vb1, 0xD8);
-            LASX_DUP2_ARG2(__lasx_xvaddwl_w_h, ub0, ub1, vb0, vb1, u_l, v_l);
+            DUP2_ARG2(__lasx_xvaddwl_w_h, ub0, ub1, vb0, vb1, u_l, v_l);
             u_l = __lasx_xvsub_w(u_l, uv);
             v_l = __lasx_xvsub_w(v_l, uv);
             u_l = __lasx_xvslli_w(u_l, 1);

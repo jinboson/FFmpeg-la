@@ -21,7 +21,7 @@
 
 #include "libavcodec/vp8dsp.h"
 #include "vp8dsp_loongarch.h"
-#include "libavutil/loongarch/generic_macros_lsx.h"
+#include "libavutil/loongarch/loongson_intrinsics.h"
 
 #define VP8_LPF_FILTER4_4W(p1_in_out, p0_in_out, q0_in_out, q1_in_out,  \
                            mask_in, hev_in)                             \
@@ -42,13 +42,13 @@
                                                                         \
     cnst3h = __lsx_vreplgr2vr_h(3);                                     \
     q0_sub_p0_l = __lsx_vilvl_b(q0_sub_p0, q0_sub_p0);                  \
-    q0_sub_p0_l = __lsx_dp2_h_b(q0_sub_p0_l, cnst3h);                   \
+    q0_sub_p0_l = __lsx_vdp2_h_b(q0_sub_p0_l, cnst3h);                  \
     filt_l = __lsx_vilvl_b(filt_sign, filt);                            \
     filt_l = __lsx_vadd_h(filt_l, q0_sub_p0_l);                         \
     filt_l = __lsx_vsat_h(filt_l, 7);                                   \
                                                                         \
     q0_sub_p0_h = __lsx_vilvh_b(q0_sub_p0, q0_sub_p0);                  \
-    q0_sub_p0_h = __lsx_dp2_h_b(q0_sub_p0_h, cnst3h);                   \
+    q0_sub_p0_h = __lsx_vdp2_h_b(q0_sub_p0_h, cnst3h);                  \
     filt_h = __lsx_vilvh_b(filt_sign, filt);                            \
     filt_h = __lsx_vadd_h(filt_h, q0_sub_p0_h);                         \
     filt_h = __lsx_vsat_h(filt_h, 7);                                   \
@@ -258,10 +258,10 @@ void ff_vp8_v_loop_filter16_lsx(uint8_t *dst, ptrdiff_t stride, int b_limit_in,
     thresh = __lsx_vreplgr2vr_b(thresh_in);
 
     /*load vector elements*/
-    LSX_DUP4_ARG2(__lsx_vld, dst - stride4, 0, dst - stride3, 0, dst - stride2, 0,
-                  dst - stride, 0, p3, p2, p1, p0);
-    LSX_DUP4_ARG2(__lsx_vld, dst, 0, dst + stride, 0, dst + stride2, 0, dst + stride3, 0,
-                  q0, q1, q2, q3);
+    DUP4_ARG2(__lsx_vld, dst - stride4, 0, dst - stride3, 0, dst - stride2, 0,
+              dst - stride, 0, p3, p2, p1, p0);
+    DUP4_ARG2(__lsx_vld, dst, 0, dst + stride, 0, dst + stride2, 0, dst + stride3, 0,
+              q0, q1, q2, q3);
     LPF_MASK_HEV(p3, p2, p1, p0, q0, q1, q2, q3, limit, b_limit, thresh, hev, mask, flat);
     VP8_MBFILTER(p2, p1, p0, q0, q1, q2, mask, hev);
 
@@ -292,19 +292,19 @@ void ff_vp8_v_loop_filter8uv_lsx(uint8_t *dst_u, uint8_t *dst_v,
     limit = __lsx_vreplgr2vr_b(limit_in);
     thresh = __lsx_vreplgr2vr_b(thresh_in);
 
-    LSX_DUP4_ARG2(__lsx_vld, dst_u - stride4, 0, dst_u - stride3, 0, dst_u - stride2, 0,
-                  dst_u - stride, 0, p3_u, p2_u, p1_u, p0_u);
-    LSX_DUP4_ARG2(__lsx_vld, dst_u, 0, dst_u + stride, 0, dst_u + stride2, 0,
-                  dst_u + stride3, 0, q0_u, q1_u, q2_u, q3_u);
+    DUP4_ARG2(__lsx_vld, dst_u - stride4, 0, dst_u - stride3, 0, dst_u - stride2, 0,
+              dst_u - stride, 0, p3_u, p2_u, p1_u, p0_u);
+    DUP4_ARG2(__lsx_vld, dst_u, 0, dst_u + stride, 0, dst_u + stride2, 0,
+              dst_u + stride3, 0, q0_u, q1_u, q2_u, q3_u);
 
-    LSX_DUP4_ARG2(__lsx_vld, dst_v - stride4, 0, dst_v - stride3, 0, dst_v - stride2, 0,
-                  dst_v - stride, 0, p3_v, p2_v, p1_v, p0_v);
-    LSX_DUP4_ARG2(__lsx_vld, dst_v, 0, dst_v + stride, 0, dst_v + stride2, 0,
-                  dst_v + stride3, 0, q0_v, q1_v, q2_v, q3_v);
+    DUP4_ARG2(__lsx_vld, dst_v - stride4, 0, dst_v - stride3, 0, dst_v - stride2, 0,
+              dst_v - stride, 0, p3_v, p2_v, p1_v, p0_v);
+    DUP4_ARG2(__lsx_vld, dst_v, 0, dst_v + stride, 0, dst_v + stride2, 0,
+              dst_v + stride3, 0, q0_v, q1_v, q2_v, q3_v);
 
     /* rht 8 element of p3 are u pixel and left 8 element of p3 are v pixei */
-    LSX_DUP4_ARG2(__lsx_vilvl_d, p3_v, p3_u, p2_v, p2_u, p1_v, p1_u, p0_v, p0_u, p3, p2, p1, p0);
-    LSX_DUP4_ARG2(__lsx_vilvl_d, q0_v, q0_u, q1_v, q1_u, q2_v, q2_u, q3_v, q3_u, q0, q1, q2, q3);
+    DUP4_ARG2(__lsx_vilvl_d, p3_v, p3_u, p2_v, p2_u, p1_v, p1_u, p0_v, p0_u, p3, p2, p1, p0);
+    DUP4_ARG2(__lsx_vilvl_d, q0_v, q0_u, q1_v, q1_u, q2_v, q2_u, q3_v, q3_u, q0, q1, q2, q3);
     LPF_MASK_HEV(p3, p2, p1, p0, q0, q1, q2, q3, limit, b_limit, thresh,
                  hev, mask, flat);
     VP8_MBFILTER(p2, p1, p0, q0, q1, q2, mask, hev);
@@ -345,20 +345,20 @@ void ff_vp8_h_loop_filter16_lsx(uint8_t *dst, ptrdiff_t stride, int b_limit_in,
     thresh = __lsx_vreplgr2vr_b(thresh_in);
 
     temp_src = dst - 4;
-    LSX_DUP4_ARG2(__lsx_vld, temp_src, 0, temp_src + stride, 0, temp_src + stride2, 0,
-                  temp_src + stride3, 0, row0, row1, row2, row3);
+    DUP4_ARG2(__lsx_vld, temp_src, 0, temp_src + stride, 0, temp_src + stride2, 0,
+              temp_src + stride3, 0, row0, row1, row2, row3);
     temp_src += stride4;
-    LSX_DUP4_ARG2(__lsx_vld, temp_src, 0, temp_src + stride, 0,
-                  temp_src + stride2, 0, temp_src + stride3, 0, row4, row5, row6, row7);
+    DUP4_ARG2(__lsx_vld, temp_src, 0, temp_src + stride, 0, temp_src + stride2, 0,
+              temp_src + stride3, 0, row4, row5, row6, row7);
 
     temp_src += stride4;
-    LSX_DUP4_ARG2(__lsx_vld, temp_src, 0, temp_src + stride, 0, temp_src + stride2, 0,
-                  temp_src + stride3, 0, row8, row9, row10, row11);
+    DUP4_ARG2(__lsx_vld, temp_src, 0, temp_src + stride, 0, temp_src + stride2, 0,
+              temp_src + stride3, 0, row8, row9, row10, row11);
     temp_src += stride4;
-    LSX_DUP4_ARG2(__lsx_vld, temp_src, 0, temp_src + stride, 0,
-                  temp_src + stride2, 0, temp_src + stride3, 0, row12, row13, row14, row15);
-    TRANSPOSE16x8_B(row0, row1, row2, row3, row4, row5, row6, row7, row8, row9, row10, row11,
-                    row12, row13, row14, row15, p3, p2, p1, p0, q0, q1, q2, q3);
+    DUP4_ARG2(__lsx_vld, temp_src, 0, temp_src + stride, 0, temp_src + stride2, 0,
+              temp_src + stride3, 0, row12, row13, row14, row15);
+    LSX_TRANSPOSE16x8_B(row0, row1, row2, row3, row4, row5, row6, row7, row8, row9, row10,
+                        row11, row12, row13, row14, row15, p3, p2, p1, p0, q0, q1, q2, q3);
 
     LPF_MASK_HEV(p3, p2, p1, p0, q0, q1, q2, q3, limit, b_limit, thresh, hev, mask, flat);
     VP8_MBFILTER(p2, p1, p0, q0, q1, q2, mask, hev);
@@ -432,22 +432,22 @@ void ff_vp8_h_loop_filter8uv_lsx(uint8_t *dst_u, uint8_t *dst_v,
     thresh = __lsx_vreplgr2vr_b(thresh_in);
 
     temp_src = dst_u - 4;
-    LSX_DUP4_ARG2(__lsx_vld, temp_src, 0, temp_src + stride, 0, temp_src + stride2, 0,
-                  temp_src + stride3, 0, row0, row1, row2, row3);
+    DUP4_ARG2(__lsx_vld, temp_src, 0, temp_src + stride, 0, temp_src + stride2, 0,
+              temp_src + stride3, 0, row0, row1, row2, row3);
     temp_src += stride4;
-    LSX_DUP4_ARG2(__lsx_vld, temp_src, 0, temp_src + stride, 0,
-                  temp_src + stride2, 0, temp_src + stride3, 0, row4, row5, row6, row7);
+    DUP4_ARG2(__lsx_vld, temp_src, 0, temp_src + stride, 0, temp_src + stride2, 0,
+              temp_src + stride3, 0, row4, row5, row6, row7);
 
     temp_src = dst_v - 4;
-    LSX_DUP4_ARG2(__lsx_vld, temp_src, 0, temp_src + stride, 0, temp_src + stride2, 0,
-                  temp_src + stride3, 0, row8, row9, row10, row11);
+    DUP4_ARG2(__lsx_vld, temp_src, 0, temp_src + stride, 0, temp_src + stride2, 0,
+              temp_src + stride3, 0, row8, row9, row10, row11);
     temp_src += stride4;
-    LSX_DUP4_ARG2(__lsx_vld, temp_src, 0, temp_src + stride, 0,
-                  temp_src + stride2, 0, temp_src + stride3, 0, row12, row13, row14, row15);
+    DUP4_ARG2(__lsx_vld, temp_src, 0, temp_src + stride, 0, temp_src + stride2, 0,
+              temp_src + stride3, 0, row12, row13, row14, row15);
 
-    TRANSPOSE16x8_B(row0, row1, row2, row3, row4, row5, row6, row7,
-                    row8, row9, row10, row11, row12, row13, row14, row15,
-                    p3, p2, p1, p0, q0, q1, q2, q3);
+    LSX_TRANSPOSE16x8_B(row0, row1, row2, row3, row4, row5, row6, row7,
+                        row8, row9, row10, row11, row12, row13, row14, row15,
+                        p3, p2, p1, p0, q0, q1, q2, q3);
 
     LPF_MASK_HEV(p3, p2, p1, p0, q0, q1, q2, q3, limit, b_limit, thresh, hev, mask, flat);
     VP8_MBFILTER(p2, p1, p0, q0, q1, q2, mask, hev);
@@ -515,11 +515,11 @@ void ff_vp8_v_loop_filter16_inner_lsx(uint8_t *src, ptrdiff_t stride,
 
     /* load vector elements */
     src -= stride4;
-    LSX_DUP4_ARG2(__lsx_vld, src, 0, src + stride, 0, src + stride2, 0,
-                  src + stride3, 0, p3, p2, p1, p0);
+    DUP4_ARG2(__lsx_vld, src, 0, src + stride, 0, src + stride2, 0,
+              src + stride3, 0, p3, p2, p1, p0);
     src += stride4;
-    LSX_DUP4_ARG2(__lsx_vld, src, 0, src + stride, 0, src + stride2, 0,
-                  src + stride3, 0, q0, q1, q2, q3);
+    DUP4_ARG2(__lsx_vld, src, 0, src + stride, 0, src + stride2, 0,
+              src + stride3, 0, q0, q1, q2, q3);
     thresh = __lsx_vreplgr2vr_b(h);
     b_limit = __lsx_vreplgr2vr_b(e);
     limit = __lsx_vreplgr2vr_b(i);
@@ -548,22 +548,22 @@ void ff_vp8_h_loop_filter16_inner_lsx(uint8_t *src, ptrdiff_t stride,
     ptrdiff_t stride4 = stride2 << 1;
 
     src -= 4;
-    LSX_DUP4_ARG2(__lsx_vld, src, 0, src + stride, 0, src + stride2, 0,
-                  src + stride3, 0, tmp0, tmp1, tmp2, tmp3);
+    DUP4_ARG2(__lsx_vld, src, 0, src + stride, 0, src + stride2, 0,
+              src + stride3, 0, tmp0, tmp1, tmp2, tmp3);
     src += stride4;
-    LSX_DUP4_ARG2(__lsx_vld, src, 0, src + stride, 0, src + stride2, 0,
-                  src + stride3, 0, tmp4, tmp5, tmp6, tmp7);
+    DUP4_ARG2(__lsx_vld, src, 0, src + stride, 0, src + stride2, 0,
+              src + stride3, 0, tmp4, tmp5, tmp6, tmp7);
     src += stride4;
-    LSX_DUP4_ARG2(__lsx_vld, src, 0, src + stride, 0, src + stride2, 0,
-                  src + stride3, 0, tmp8, tmp9, tmp10, tmp11);
+    DUP4_ARG2(__lsx_vld, src, 0, src + stride, 0, src + stride2, 0,
+              src + stride3, 0, tmp8, tmp9, tmp10, tmp11);
     src += stride4;
-    LSX_DUP4_ARG2(__lsx_vld, src, 0, src + stride, 0, src + stride2, 0,
-                  src + stride3, 0, tmp12, tmp13, tmp14, tmp15);
+    DUP4_ARG2(__lsx_vld, src, 0, src + stride, 0, src + stride2, 0,
+              src + stride3, 0, tmp12, tmp13, tmp14, tmp15);
     src -= 3 * stride4;
 
-    TRANSPOSE16x8_B(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7,
-                    tmp8, tmp9, tmp10, tmp11, tmp12, tmp13, tmp14, tmp15,
-                    p3, p2, p1, p0, q0, q1, q2, q3);
+    LSX_TRANSPOSE16x8_B(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7,
+                        tmp8, tmp9, tmp10, tmp11, tmp12, tmp13, tmp14, tmp15,
+                        p3, p2, p1, p0, q0, q1, q2, q3);
 
     thresh = __lsx_vreplgr2vr_b(h);
     b_limit = __lsx_vreplgr2vr_b(e);
@@ -573,7 +573,7 @@ void ff_vp8_h_loop_filter16_inner_lsx(uint8_t *src, ptrdiff_t stride,
                  hev, mask, flat);
     VP8_LPF_FILTER4_4W(p1, p0, q0, q1, mask, hev);
 
-    LSX_DUP2_ARG2(__lsx_vilvl_b, p0, p1, q1, q0, tmp0, tmp1);
+    DUP2_ARG2(__lsx_vilvl_b, p0, p1, q1, q0, tmp0, tmp1);
     tmp2 = __lsx_vilvl_h(tmp1, tmp0);
     tmp3 = __lsx_vilvh_h(tmp1, tmp0);
 
@@ -581,7 +581,7 @@ void ff_vp8_h_loop_filter16_inner_lsx(uint8_t *src, ptrdiff_t stride,
     ST_W4(tmp2, 0, 1, 2, 3, src, stride);
     ST_W4(tmp3, 0, 1, 2, 3, src, stride);
 
-    LSX_DUP2_ARG2(__lsx_vilvh_b, p0, p1, q1, q0, tmp0, tmp1);
+    DUP2_ARG2(__lsx_vilvh_b, p0, p1, q1, q0, tmp0, tmp1);
     tmp2 = __lsx_vilvl_h(tmp1, tmp0);
     tmp3 = __lsx_vilvh_h(tmp1, tmp0);
 
