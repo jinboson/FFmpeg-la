@@ -270,7 +270,7 @@ static void simple_idct_add_lasx(uint8_t *dst, int32_t dst_stride,
     int32_t dst_stride_3x = dst_stride_2x + dst_stride;
 
     __m256i w1 = {0x4B42539F58C50000, 0x11A822A332493FFF, 0x4B42539F58C50000, 0x11A822A332493FFF};
-    __m256i sh = {0x0003000200010000, 0x000B000A00090008, 0x0007000600050004, 0x000F000E000D000B};
+    __m256i sh = {0x0003000200010000, 0x000B000A00090008, 0x0007000600050004, 0x000F000E000D000C};
     __m256i in0, in1, in2, in3;
     __m256i w2, w3, w4, w5, w6, w7;
     __m256i a0, a1, a2, a3;
