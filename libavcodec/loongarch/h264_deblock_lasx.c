@@ -77,9 +77,9 @@ do {                                                                        \
                 tmp0 = __lasx_xvshuf4i_w(out, 0xB1); \
                 out = __lasx_xvmin_bu(out, tmp0); \
             } else { \
-                ref0 = __lasx_xvld(ref_t, d_idx_12); \
+                ref0 = __lasx_xvldx(ref_t, d_idx_12); \
                 ref3 = __lasx_xvld(ref_t, 12); \
-                tmp2 = __lasx_xvld(mv_t, d_idx_x4_48); \
+                tmp2 = __lasx_xvldx(mv_t, d_idx_x4_48); \
                 tmp3 = __lasx_xvld(mv_t, 48); \
                 tmp4 = __lasx_xvsub_h(tmp3, tmp2); \
                 tmp1 = __lasx_xvsat_h(tmp4, 7); \
