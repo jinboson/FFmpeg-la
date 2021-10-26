@@ -28,67 +28,121 @@
 #include "libavcodec/cabac.h"
 #include "config.h"
 
+#define GET_CABAC_LOONGARCH                                                                   \
+        "ld.bu        %[bit],        %[state],       0x0           \n\t"                      \
+        "andi         %[tmp0],       %[c_range],     0xC0          \n\t"                      \
+        "slli.d       %[tmp0],       %[tmp0],        0x01          \n\t"                      \
+        "add.d        %[tmp0],       %[tmp0],        %[tables]     \n\t"                      \
+        "add.d        %[tmp0],       %[tmp0],        %[bit]        \n\t"                      \
+        /* tmp1: RangeLPS */                                                                  \
+        "ld.bu        %[tmp1],       %[tmp0],        %[lps_off]    \n\t"                      \
+                                                                                              \
+        "sub.d        %[c_range],    %[c_range],     %[tmp1]       \n\t"                      \
+        "slli.d       %[tmp0],       %[c_range],     0x11          \n\t"                      \
+        "bge          %[tmp0],       %[c_low],       1f            \n\t"                      \
+        "move         %[c_range],    %[tmp1]                       \n\t"                      \
+        "nor          %[bit],        %[bit],         %[bit]        \n\t"                      \
+        "sub.d        %[c_low],      %[c_low],       %[tmp0]       \n\t"                      \
+                                                                                              \
+        "1:                                                        \n\t"                      \
+        /* tmp1: *state */                                                                    \
+        "add.d        %[tmp0],       %[tables],      %[bit]        \n\t"                      \
+        "ld.bu        %[tmp1],       %[tmp0],        %[mlps_off]   \n\t"                      \
+        /* tmp2: lps_mask */                                                                  \
+        "add.d        %[tmp0],       %[tables],      %[c_range]    \n\t"                      \
+        "ld.bu        %[tmp2],       %[tmp0],        %[norm_off]   \n\t"                      \
+                                                                                              \
+        "andi         %[bit],        %[bit],         0x01          \n\t"                      \
+        "st.b         %[tmp1],       %[state],       0x0           \n\t"                      \
+        "sll.d        %[c_range],    %[c_range],     %[tmp2]       \n\t"                      \
+        "sll.d        %[c_low],      %[c_low],       %[tmp2]       \n\t"                      \
+                                                                                              \
+        "and          %[tmp1],       %[c_low],       %[cabac_mask] \n\t"                      \
+        "bnez         %[tmp1],       1f                            \n\t"                      \
+        "ld.hu        %[tmp1],       %[c_bytestream], 0x0          \n\t"                      \
+        "addi.d       %[tmp0],       %[c_low],       -0X01         \n\t"                      \
+        "xor          %[tmp0],       %[c_low],       %[tmp0]       \n\t"                      \
+        "srai.d       %[tmp0],       %[tmp0],        0x0f          \n\t"                      \
+        "add.d        %[tmp0],       %[tmp0],        %[tables]     \n\t"                      \
+        /* tmp2: ff_h264_norm_shift[x >> (CABAC_BITS - 1)] */                                 \
+        "ld.bu        %[tmp2],       %[tmp0],        %[norm_off]   \n\t"                      \
+                                                                                              \
+        "revb.2h      %[tmp0],       %[tmp1]                       \n\t"                      \
+        "slli.d       %[tmp0],       %[tmp0],        0x01          \n\t"                      \
+        "sub.d        %[tmp0],       %[tmp0],        %[cabac_mask] \n\t"                      \
+                                                                                              \
+        "li.d         %[tmp1],       0x07                          \n\t"                      \
+        "sub.d        %[tmp1],       %[tmp1],        %[tmp2]       \n\t"                      \
+        "sll.d        %[tmp0],       %[tmp0],        %[tmp1]       \n\t"                      \
+        "add.d        %[c_low],      %[c_low],       %[tmp0]       \n\t"                      \
+                                                                                              \
+        "addi.d       %[c_bytestream], %[c_bytestream],     0x02                 \n\t"        \
+        "1:                                                        \n\t"                      \
+
+#define GET_CABAC_LOONGARCH_END                                                               \
+        "ld.bu        %[bit],        %[state],       0x0           \n\t"                      \
+        "andi         %[tmp0],       %[c_range],     0xC0          \n\t"                      \
+        "slli.d       %[tmp0],       %[tmp0],        0x01          \n\t"                      \
+        "add.d        %[tmp0],       %[tmp0],        %[tables]     \n\t"                      \
+        "add.d        %[tmp0],       %[tmp0],        %[bit]        \n\t"                      \
+        /* tmp1: RangeLPS */                                                                  \
+        "ld.bu        %[tmp1],       %[tmp0],        %[lps_off]    \n\t"                      \
+                                                                                              \
+        "sub.d        %[c_range],    %[c_range],     %[tmp1]       \n\t"                      \
+        "slli.d       %[tmp0],       %[c_range],     0x11          \n\t"                      \
+        "bge          %[tmp0],       %[c_low],       1f            \n\t"                      \
+        "move         %[c_range],    %[tmp1]                       \n\t"                      \
+        "nor          %[bit],        %[bit],         %[bit]        \n\t"                      \
+        "sub.d        %[c_low],      %[c_low],       %[tmp0]       \n\t"                      \
+                                                                                              \
+        "1:                                                        \n\t"                      \
+        /* tmp1: *state */                                                                    \
+        "add.d        %[tmp0],       %[tables],      %[bit]        \n\t"                      \
+        "ld.bu        %[tmp1],       %[tmp0],        %[mlps_off]   \n\t"                      \
+        /* tmp2: lps_mask */                                                                  \
+        "add.d        %[tmp0],       %[tables],      %[c_range]    \n\t"                      \
+        "ld.bu        %[tmp2],       %[tmp0],        %[norm_off]   \n\t"                      \
+                                                                                              \
+        "andi         %[bit],        %[bit],         0x01          \n\t"                      \
+        "st.b         %[tmp1],       %[state],       0x0           \n\t"                      \
+        "sll.d        %[c_range],    %[c_range],     %[tmp2]       \n\t"                      \
+        "sll.d        %[c_low],      %[c_low],       %[tmp2]       \n\t"                      \
+                                                                                              \
+        "and          %[tmp1],       %[c_low],       %[cabac_mask] \n\t"                      \
+        "bnez         %[tmp1],       1f                            \n\t"                      \
+        "ld.hu        %[tmp1],       %[c_bytestream], 0x0          \n\t"                      \
+        "addi.d       %[tmp0],       %[c_low],       -0X01         \n\t"                      \
+        "xor          %[tmp0],       %[c_low],       %[tmp0]       \n\t"                      \
+        "srai.d       %[tmp0],       %[tmp0],        0x0f          \n\t"                      \
+        "add.d        %[tmp0],       %[tmp0],        %[tables]     \n\t"                      \
+        /* tmp2: ff_h264_norm_shift[x >> (CABAC_BITS - 1)] */                                 \
+        "ld.bu        %[tmp2],       %[tmp0],        %[norm_off]   \n\t"                      \
+                                                                                              \
+        "revb.2h      %[tmp0],       %[tmp1]                       \n\t"                      \
+        "slli.d       %[tmp0],       %[tmp0],        0x01          \n\t"                      \
+        "sub.d        %[tmp0],       %[tmp0],        %[cabac_mask] \n\t"                      \
+                                                                                              \
+        "li.d         %[tmp1],       0x07                          \n\t"                      \
+        "sub.d        %[tmp1],       %[tmp1],        %[tmp2]       \n\t"                      \
+        "sll.d        %[tmp0],       %[tmp0],        %[tmp1]       \n\t"                      \
+        "add.d        %[c_low],      %[c_low],       %[tmp0]       \n\t"                      \
+                                                                                              \
+        "slt          %[tmp0],         %[c_bytestream],     %[c_bytestream_end]  \n\t"        \
+        "add.d        %[c_bytestream], %[c_bytestream],     %[tmp0]              \n\t"        \
+        "add.d        %[c_bytestream], %[c_bytestream],     %[tmp0]              \n\t"        \
+        "1:                                                        \n\t"                      \
+
 #define get_cabac_inline get_cabac_inline_loongarch
 static av_always_inline int get_cabac_inline_loongarch(CABACContext *c,
                                                        uint8_t * const state){
     int64_t tmp0, tmp1, tmp2, bit;
 
     __asm__ volatile (
-        "ld.bu        %[bit],        %[state],       0x0           \n\t"
-        "andi         %[tmp0],       %[c_range],     0xC0          \n\t"
-        "slli.d       %[tmp0],       %[tmp0],        0x01          \n\t"
-        "add.d        %[tmp0],       %[tmp0],        %[tables]     \n\t"
-        "add.d        %[tmp0],       %[tmp0],        %[bit]        \n\t"
-        /* tmp1: RangeLPS */
-        "ld.bu        %[tmp1],       %[tmp0],        %[lps_off]    \n\t"
-
-        "sub.d        %[c_range],    %[c_range],     %[tmp1]       \n\t"
-        "slli.d       %[tmp0],       %[c_range],     0x11          \n\t"
-        "bge          %[tmp0],       %[c_low],       1f            \n\t"
-        "move         %[c_range],    %[tmp1]                       \n\t"
-        "nor          %[bit],        %[bit],         %[bit]        \n\t"
-        "sub.d        %[c_low],      %[c_low],       %[tmp0]       \n\t"
-
-        "1:                                                        \n\t"
-        /* tmp1: *state */
-        "add.d        %[tmp0],       %[tables],      %[bit]        \n\t"
-        "ld.bu        %[tmp1],       %[tmp0],        %[mlps_off]   \n\t"
-        /* tmp2: lps_mask */
-        "add.d        %[tmp0],       %[tables],      %[c_range]    \n\t"
-        "ld.bu        %[tmp2],       %[tmp0],        %[norm_off]   \n\t"
-
-        "andi         %[bit],        %[bit],         0x01          \n\t"
-        "st.b         %[tmp1],       %[state],       0x0           \n\t"
-        "sll.d        %[c_range],    %[c_range],     %[tmp2]       \n\t"
-        "sll.d        %[c_low],      %[c_low],       %[tmp2]       \n\t"
-
-        "and          %[tmp1],       %[c_low],       %[cabac_mask] \n\t"
-        "bnez         %[tmp1],       1f                            \n\t"
-        "ld.hu        %[tmp1],       %[c_bytestream], 0x0          \n\t"
-        "addi.d       %[tmp0],       %[c_low],       -0X01         \n\t"
-        "xor          %[tmp0],       %[c_low],       %[tmp0]       \n\t"
-        "srai.d       %[tmp0],       %[tmp0],        0x0f          \n\t"
-        "add.d        %[tmp0],       %[tmp0],        %[tables]     \n\t"
-        /* tmp2: ff_h264_norm_shift[x >> (CABAC_BITS - 1)] */
-        "ld.bu        %[tmp2],       %[tmp0],        %[norm_off]   \n\t"
-
-        "revb.2h      %[tmp0],       %[tmp1]                       \n\t"
-        "slli.d       %[tmp0],       %[tmp0],        0x01          \n\t"
-        "sub.d        %[tmp0],       %[tmp0],        %[cabac_mask] \n\t"
-
-        "li.d         %[tmp1],       0x07                          \n\t"
-        "sub.d        %[tmp1],       %[tmp1],        %[tmp2]       \n\t"
-        "sll.d        %[tmp0],       %[tmp0],        %[tmp1]       \n\t"
-        "add.d        %[c_low],      %[c_low],       %[tmp0]       \n\t"
-
 #if UNCHECKED_BITSTREAM_READER
-        "addi.d       %[c_bytestream], %[c_bytestream],     0x02                 \n\t"
+    GET_CABAC_LOONGARCH
 #else
-        "slt          %[tmp0],         %[c_bytestream],     %[c_bytestream_end]  \n\t"
-        "add.d        %[c_bytestream], %[c_bytestream],     %[tmp0]              \n\t"
-        "add.d        %[c_bytestream], %[c_bytestream],     %[tmp0]              \n\t"
+    GET_CABAC_LOONGARCH_END
 #endif
-        "1:                                                        \n\t"
     : [bit]"=&r"(bit), [tmp0]"=&r"(tmp0), [tmp1]"=&r"(tmp1), [tmp2]"=&r"(tmp2),
       [c_range]"+&r"(c->range), [c_low]"+&r"(c->low),
       [c_bytestream]"+&r"(c->bytestream)
