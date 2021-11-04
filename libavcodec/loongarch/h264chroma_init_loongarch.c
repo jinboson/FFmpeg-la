@@ -30,6 +30,7 @@ av_cold void ff_h264chroma_init_loongarch(H264ChromaContext *c, int bit_depth)
         if (bit_depth <= 8) {
             c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_lasx;
             c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_lasx;
+            c->put_h264_chroma_pixels_tab[1] = ff_put_h264_chroma_mc4_lasx;
         }
     }
 }
