@@ -32,6 +32,9 @@
 #if ARCH_X86
 #   include "x86/intmath.h"
 #endif
+#if ARCH_LOONGARCH64
+#   include "loongarch/intmath.h"
+#endif
 
 #if HAVE_FAST_CLZ
 #if AV_GCC_VERSION_AT_LEAST(3,4)
