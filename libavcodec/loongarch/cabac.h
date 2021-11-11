@@ -60,23 +60,14 @@
         "and          %[tmp1],       %[c_low],       %[cabac_mask] \n\t"                      \
         "bnez         %[tmp1],       1f                            \n\t"                      \
         "ld.hu        %[tmp1],       %[c_bytestream], 0x0          \n\t"                      \
-        "addi.d       %[tmp0],       %[c_low],       -0X01         \n\t"                      \
-        "xor          %[tmp0],       %[c_low],       %[tmp0]       \n\t"                      \
-        "srai.d       %[tmp0],       %[tmp0],        0x0f          \n\t"                      \
-        "add.d        %[tmp0],       %[tmp0],        %[tables]     \n\t"                      \
-        /* tmp2: ff_h264_norm_shift[x >> (CABAC_BITS - 1)] */                                 \
-        "ld.bu        %[tmp2],       %[tmp0],        %[norm_off]   \n\t"                      \
-                                                                                              \
+        "ctz.d        %[tmp0],       %[c_low]                      \n\t"                      \
+        "addi.d       %[tmp2],       %[tmp0],        -16           \n\t"                      \
         "revb.2h      %[tmp0],       %[tmp1]                       \n\t"                      \
         "slli.d       %[tmp0],       %[tmp0],        0x01          \n\t"                      \
         "sub.d        %[tmp0],       %[tmp0],        %[cabac_mask] \n\t"                      \
-                                                                                              \
-        "li.d         %[tmp1],       0x07                          \n\t"                      \
-        "sub.d        %[tmp1],       %[tmp1],        %[tmp2]       \n\t"                      \
-        "sll.d        %[tmp0],       %[tmp0],        %[tmp1]       \n\t"                      \
+        "sll.d        %[tmp0],       %[tmp0],        %[tmp2]       \n\t"                      \
         "add.d        %[c_low],      %[c_low],       %[tmp0]       \n\t"                      \
-                                                                                              \
-        "addi.d       %[c_bytestream], %[c_bytestream],     0x02                 \n\t"        \
+        "addi.d       %[c_bytestream], %[c_bytestream],     0x02   \n\t"                      \
         "1:                                                        \n\t"                      \
 
 #define GET_CABAC_LOONGARCH_END                                                               \
@@ -111,20 +102,13 @@
         "and          %[tmp1],       %[c_low],       %[cabac_mask] \n\t"                      \
         "bnez         %[tmp1],       1f                            \n\t"                      \
         "ld.hu        %[tmp1],       %[c_bytestream], 0x0          \n\t"                      \
-        "addi.d       %[tmp0],       %[c_low],       -0X01         \n\t"                      \
-        "xor          %[tmp0],       %[c_low],       %[tmp0]       \n\t"                      \
-        "srai.d       %[tmp0],       %[tmp0],        0x0f          \n\t"                      \
-        "add.d        %[tmp0],       %[tmp0],        %[tables]     \n\t"                      \
-        /* tmp2: ff_h264_norm_shift[x >> (CABAC_BITS - 1)] */                                 \
-        "ld.bu        %[tmp2],       %[tmp0],        %[norm_off]   \n\t"                      \
-                                                                                              \
+        "ctz.d        %[tmp0],       %[c_low]                      \n\t"                      \
+        "addi.d       %[tmp2],       %[tmp0],        -16           \n\t"                      \
         "revb.2h      %[tmp0],       %[tmp1]                       \n\t"                      \
         "slli.d       %[tmp0],       %[tmp0],        0x01          \n\t"                      \
         "sub.d        %[tmp0],       %[tmp0],        %[cabac_mask] \n\t"                      \
+        "sll.d        %[tmp0],       %[tmp0],        %[tmp2]       \n\t"                      \
                                                                                               \
-        "li.d         %[tmp1],       0x07                          \n\t"                      \
-        "sub.d        %[tmp1],       %[tmp1],        %[tmp2]       \n\t"                      \
-        "sll.d        %[tmp0],       %[tmp0],        %[tmp1]       \n\t"                      \
         "add.d        %[c_low],      %[c_low],       %[tmp0]       \n\t"                      \
                                                                                               \
         "slt          %[tmp0],         %[c_bytestream],     %[c_bytestream_end]  \n\t"        \
