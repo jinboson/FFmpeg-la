@@ -96,4 +96,8 @@ void ff_h264_loop_filter_strength_lasx(int16_t bS[2][4][4], uint8_t nnz[40],
                                        int8_t ref[2][40], int16_t mv[2][40][2],
                                        int bidir, int edges, int step,
                                        int mask_mv0, int mask_mv1, int field);
+
+void ff_h264_add_pixels4_8_lasx(uint8_t *_dst, int16_t *_src, int stride);
+
+void ff_h264_add_pixels8_8_lasx(uint8_t *_dst, int16_t *_src, int stride);
 #endif  // #ifndef AVCODEC_LOONGARCH_H264DSP_LASX_H
