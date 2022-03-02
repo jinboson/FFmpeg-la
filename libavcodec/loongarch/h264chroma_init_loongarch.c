@@ -20,6 +20,7 @@
  */
 
 #include "h264chroma_lasx.h"
+#include "libavutil/attributes.h"
 #include "libavutil/loongarch/cpu.h"
 #include "libavcodec/h264chroma.h"
 

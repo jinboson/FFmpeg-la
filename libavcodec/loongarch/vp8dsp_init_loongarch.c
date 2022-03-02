@@ -26,6 +26,7 @@
 
 #include "libavutil/loongarch/cpu.h"
 #include "libavcodec/vp8dsp.h"
+#include "libavutil/attributes.h"
 #include "vp8dsp_loongarch.h"
 
 #define VP8_MC_LOONGARCH_FUNC(IDX, SIZE)                                          \

@@ -20,6 +20,7 @@
  */
 
 #include "h264qpel_lasx.h"
+#include "libavutil/attributes.h"
 #include "libavutil/loongarch/cpu.h"
 #include "libavcodec/h264qpel.h"
 
@@ -34,6 +35,7 @@ av_cold void ff_h264qpel_init_loongarch(H264QpelContext *c, int bit_depth)
             c->put_h264_qpel_pixels_tab[0][3]  = ff_put_h264_qpel16_mc30_lasx;
             c->put_h264_qpel_pixels_tab[0][4]  = ff_put_h264_qpel16_mc01_lasx;
             c->put_h264_qpel_pixels_tab[0][5]  = ff_put_h264_qpel16_mc11_lasx;
+
             c->put_h264_qpel_pixels_tab[0][6]  = ff_put_h264_qpel16_mc21_lasx;
             c->put_h264_qpel_pixels_tab[0][7]  = ff_put_h264_qpel16_mc31_lasx;
             c->put_h264_qpel_pixels_tab[0][8]  = ff_put_h264_qpel16_mc02_lasx;

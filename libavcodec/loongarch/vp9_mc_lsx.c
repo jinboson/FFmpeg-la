@@ -33,86 +33,89 @@ static const uint8_t mc_filt_mask_arr[16 * 3] = {
 };
 
 
-#define HORIZ_8TAP_4WID_4VECS_FILT(_src0, _src1, _src2, _src3,                         \
-                                   _mask0, _mask1, _mask2, _mask3,                     \
-                                   _filter0, _filter1, _filter2, _filter3,             \
-                                   _out0, _out1)                                       \
-{                                                                                      \
-    __m128i _tmp0, _tmp1, _tmp2, _tmp3, _tmp4, _tmp5, _tmp6, _tmp7;                    \
-    __m128i _reg0, _reg1, _reg2, _reg3;                                                \
-                                                                                       \
-    DUP2_ARG3(__lsx_vshuf_b, _src1, _src0, _mask0, _src3, _src2, _mask0,               \
-              _tmp0, _tmp1);                                                           \
-    DUP2_ARG2(__lsx_vdp2_h_b, _tmp0, _filter0, _tmp1, _filter0, _reg0, _reg1);         \
-    DUP2_ARG3(__lsx_vshuf_b, _src1, _src0, _mask1, _src3, _src2, _mask1, _tmp2, _tmp3);\
-    DUP2_ARG3(__lsx_vdp2add_h_b, _reg0, _tmp2, _filter1, _reg1, _tmp3, _filter1,       \
-              _reg0, _reg1);                                                           \
-    DUP2_ARG3(__lsx_vshuf_b, _src1, _src0, _mask2, _src3, _src2, _mask2, _tmp4, _tmp5);\
-    DUP2_ARG2(__lsx_vdp2_h_b, _tmp4, _filter2, _tmp5, _filter2, _reg2, _reg3);         \
-    DUP2_ARG3(__lsx_vshuf_b, _src1, _src0, _mask3, _src3, _src2, _mask3, _tmp6, _tmp7);\
-    DUP2_ARG3(__lsx_vdp2add_h_b, _reg2, _tmp6, _filter3, _reg3, _tmp7, _filter3,       \
-              _reg2, _reg3);                                                           \
-    DUP2_ARG2(__lsx_vsadd_h, _reg0, _reg2, _reg1, _reg3, _out0, _out1);                \
+#define HORIZ_8TAP_4WID_4VECS_FILT(_src0, _src1, _src2, _src3,                 \
+                                   _mask0, _mask1, _mask2, _mask3,             \
+                                   _filter0, _filter1, _filter2, _filter3,     \
+                                   _out0, _out1)                               \
+{                                                                              \
+    __m128i _tmp0, _tmp1, _tmp2, _tmp3, _tmp4, _tmp5, _tmp6, _tmp7;            \
+    __m128i _reg0, _reg1, _reg2, _reg3;                                        \
+                                                                               \
+    DUP2_ARG3(__lsx_vshuf_b, _src1, _src0, _mask0, _src3, _src2, _mask0,       \
+              _tmp0, _tmp1);                                                   \
+    DUP2_ARG2(__lsx_vdp2_h_b, _tmp0, _filter0, _tmp1, _filter0, _reg0, _reg1); \
+    DUP2_ARG3(__lsx_vshuf_b, _src1, _src0, _mask1, _src3, _src2, _mask1,       \
+               _tmp2, _tmp3);                                                  \
+    DUP2_ARG3(__lsx_vdp2add_h_b, _reg0, _tmp2, _filter1, _reg1, _tmp3,         \
+              _filter1, _reg0, _reg1);                                         \
+    DUP2_ARG3(__lsx_vshuf_b, _src1, _src0, _mask2, _src3, _src2, _mask2,       \
+               _tmp4, _tmp5);                                                  \
+    DUP2_ARG2(__lsx_vdp2_h_b, _tmp4, _filter2, _tmp5, _filter2, _reg2, _reg3); \
+    DUP2_ARG3(__lsx_vshuf_b, _src1, _src0, _mask3, _src3, _src2, _mask3,       \
+               _tmp6, _tmp7);                                                  \
+    DUP2_ARG3(__lsx_vdp2add_h_b, _reg2, _tmp6, _filter3, _reg3, _tmp7,         \
+              _filter3, _reg2, _reg3);                                         \
+    DUP2_ARG2(__lsx_vsadd_h, _reg0, _reg2, _reg1, _reg3, _out0, _out1);        \
 }
 
-#define HORIZ_8TAP_8WID_4VECS_FILT(_src0, _src1, _src2, _src3,                        \
-                                   _mask0, _mask1, _mask2, _mask3,                    \
-                                   _filter0, _filter1, _filter2, _filter3,            \
-                                   _out0, _out1, _out2, _out3)                        \
-{                                                                                     \
-    __m128i _tmp0, _tmp1, _tmp2, _tmp3, _tmp4, _tmp5, _tmp6, _tmp7;                   \
-    __m128i _reg0, _reg1, _reg2, _reg3, _reg4, _reg5, _reg6, _reg7;                   \
-                                                                                      \
-    DUP4_ARG3(__lsx_vshuf_b, _src0, _src0, _mask0, _src1, _src1, _mask0, _src2,       \
-              _src2, _mask0, _src3, _src3, _mask0, _tmp0, _tmp1, _tmp2, _tmp3);       \
-    DUP4_ARG2(__lsx_vdp2_h_b, _tmp0, _filter0, _tmp1, _filter0, _tmp2, _filter0,      \
-              _tmp3, _filter0, _reg0, _reg1, _reg2, _reg3);                           \
-    DUP4_ARG3(__lsx_vshuf_b, _src0, _src0, _mask2, _src1, _src1, _mask2, _src2,       \
-              _src2, _mask2, _src3, _src3, _mask2, _tmp0, _tmp1, _tmp2, _tmp3);       \
-    DUP4_ARG2(__lsx_vdp2_h_b, _tmp0, _filter2, _tmp1, _filter2, _tmp2, _filter2,      \
-              _tmp3, _filter2, _reg4, _reg5, _reg6, _reg7);                           \
-    DUP4_ARG3(__lsx_vshuf_b, _src0, _src0, _mask1, _src1, _src1, _mask1, _src2,       \
-              _src2, _mask1, _src3, _src3, _mask1, _tmp4, _tmp5, _tmp6, _tmp7);       \
-    DUP4_ARG3(__lsx_vdp2add_h_b, _reg0, _tmp4, _filter1, _reg1, _tmp5, _filter1,      \
-              _reg2, _tmp6, _filter1, _reg3, _tmp7, _filter1, _reg0, _reg1, _reg2,    \
-              _reg3);                                                                 \
-    DUP4_ARG3(__lsx_vshuf_b, _src0, _src0, _mask3, _src1, _src1, _mask3, _src2,       \
-              _src2, _mask3, _src3, _src3, _mask3, _tmp4, _tmp5, _tmp6, _tmp7);       \
-    DUP4_ARG3(__lsx_vdp2add_h_b, _reg4, _tmp4, _filter3, _reg5, _tmp5, _filter3,      \
-              _reg6, _tmp6, _filter3, _reg7, _tmp7, _filter3, _reg4, _reg5, _reg6,    \
-              _reg7);                                                                 \
-    DUP4_ARG2(__lsx_vsadd_h, _reg0, _reg4, _reg1, _reg5, _reg2, _reg6, _reg3, _reg7,  \
-              _out0, _out1, _out2, _out3);                                            \
+#define HORIZ_8TAP_8WID_4VECS_FILT(_src0, _src1, _src2, _src3,                 \
+                                   _mask0, _mask1, _mask2, _mask3,             \
+                                   _filter0, _filter1, _filter2, _filter3,     \
+                                   _out0, _out1, _out2, _out3)                 \
+{                                                                              \
+    __m128i _tmp0, _tmp1, _tmp2, _tmp3, _tmp4, _tmp5, _tmp6, _tmp7;            \
+    __m128i _reg0, _reg1, _reg2, _reg3, _reg4, _reg5, _reg6, _reg7;            \
+                                                                               \
+    DUP4_ARG3(__lsx_vshuf_b, _src0, _src0, _mask0, _src1, _src1, _mask0, _src2,\
+              _src2, _mask0, _src3, _src3, _mask0, _tmp0, _tmp1, _tmp2, _tmp3);\
+    DUP4_ARG2(__lsx_vdp2_h_b, _tmp0, _filter0, _tmp1, _filter0, _tmp2,         \
+              _filter0, _tmp3, _filter0, _reg0, _reg1, _reg2, _reg3);          \
+    DUP4_ARG3(__lsx_vshuf_b, _src0, _src0, _mask2, _src1, _src1, _mask2, _src2,\
+              _src2, _mask2, _src3, _src3, _mask2, _tmp0, _tmp1, _tmp2, _tmp3);\
+    DUP4_ARG2(__lsx_vdp2_h_b, _tmp0, _filter2, _tmp1, _filter2, _tmp2,         \
+              _filter2, _tmp3, _filter2, _reg4, _reg5, _reg6, _reg7);          \
+    DUP4_ARG3(__lsx_vshuf_b, _src0, _src0, _mask1, _src1, _src1, _mask1, _src2,\
+              _src2, _mask1, _src3, _src3, _mask1, _tmp4, _tmp5, _tmp6, _tmp7);\
+    DUP4_ARG3(__lsx_vdp2add_h_b, _reg0, _tmp4, _filter1, _reg1, _tmp5,         \
+              _filter1, _reg2, _tmp6, _filter1, _reg3, _tmp7, _filter1, _reg0, \
+              _reg1, _reg2, _reg3);                                            \
+    DUP4_ARG3(__lsx_vshuf_b, _src0, _src0, _mask3, _src1, _src1, _mask3, _src2,\
+              _src2, _mask3, _src3, _src3, _mask3, _tmp4, _tmp5, _tmp6, _tmp7);\
+    DUP4_ARG3(__lsx_vdp2add_h_b, _reg4, _tmp4, _filter3, _reg5, _tmp5,         \
+              _filter3, _reg6, _tmp6, _filter3, _reg7, _tmp7, _filter3, _reg4, \
+              _reg5, _reg6, _reg7);                                            \
+    DUP4_ARG2(__lsx_vsadd_h, _reg0, _reg4, _reg1, _reg5, _reg2, _reg6, _reg3,  \
+              _reg7, _out0, _out1, _out2, _out3);                              \
 }
 
-#define FILT_8TAP_DPADD_S_H(_reg0, _reg1, _reg2, _reg3,                            \
-                             _filter0, _filter1, _filter2, _filter3)               \
-( {                                                                                \
-    __m128i _vec0, _vec1;                                                          \
-                                                                                   \
-    _vec0 = __lsx_vdp2_h_b(_reg0, _filter0);                                       \
-    _vec0 = __lsx_vdp2add_h_b(_vec0, _reg1, _filter1);                             \
-    _vec1 = __lsx_vdp2_h_b(_reg2, _filter2);                                       \
-    _vec1 = __lsx_vdp2add_h_b(_vec1, _reg3, _filter3);                             \
-    _vec0 = __lsx_vsadd_h(_vec0, _vec1);                                           \
-                                                                                   \
-    _vec0;                                                                         \
+#define FILT_8TAP_DPADD_S_H(_reg0, _reg1, _reg2, _reg3,                        \
+                             _filter0, _filter1, _filter2, _filter3)           \
+( {                                                                            \
+    __m128i _vec0, _vec1;                                                      \
+                                                                               \
+    _vec0 = __lsx_vdp2_h_b(_reg0, _filter0);                                   \
+    _vec0 = __lsx_vdp2add_h_b(_vec0, _reg1, _filter1);                         \
+    _vec1 = __lsx_vdp2_h_b(_reg2, _filter2);                                   \
+    _vec1 = __lsx_vdp2add_h_b(_vec1, _reg3, _filter3);                         \
+    _vec0 = __lsx_vsadd_h(_vec0, _vec1);                                       \
+                                                                               \
+    _vec0;                                                                     \
 } )
 
-#define HORIZ_8TAP_FILT(_src0, _src1, _mask0, _mask1, _mask2, _mask3,              \
-                        _filt_h0, _filt_h1, _filt_h2, _filt_h3)                    \
-( {                                                                                \
-    __m128i _tmp0, _tmp1, _tmp2, _tmp3;                                            \
-    __m128i _out;                                                                  \
-                                                                                   \
-    DUP4_ARG3(__lsx_vshuf_b, _src1, _src0, _mask0, _src1, _src0, _mask1, _src1,    \
-              _src0, _mask2, _src1, _src0, _mask3, _tmp0, _tmp1, _tmp2, _tmp3);    \
-    _out = FILT_8TAP_DPADD_S_H(_tmp0, _tmp1, _tmp2, _tmp3, _filt_h0, _filt_h1,     \
-                               _filt_h2, _filt_h3);                                \
-    _out = __lsx_vsrari_h(_out, 7);                                                \
-    _out = __lsx_vsat_h(_out, 7);                                                  \
-                                                                                   \
-    _out;                                                                          \
+#define HORIZ_8TAP_FILT(_src0, _src1, _mask0, _mask1, _mask2, _mask3,          \
+                        _filt_h0, _filt_h1, _filt_h2, _filt_h3)                \
+( {                                                                            \
+    __m128i _tmp0, _tmp1, _tmp2, _tmp3;                                        \
+    __m128i _out;                                                              \
+                                                                               \
+    DUP4_ARG3(__lsx_vshuf_b, _src1, _src0, _mask0, _src1, _src0, _mask1, _src1,\
+              _src0, _mask2, _src1, _src0, _mask3, _tmp0, _tmp1, _tmp2, _tmp3);\
+    _out = FILT_8TAP_DPADD_S_H(_tmp0, _tmp1, _tmp2, _tmp3, _filt_h0, _filt_h1, \
+                               _filt_h2, _filt_h3);                            \
+    _out = __lsx_vsrari_h(_out, 7);                                            \
+    _out = __lsx_vsat_h(_out, 7);                                              \
+                                                                               \
+    _out;                                                                      \
 } )
 
 #define LSX_LD_4(_src, _stride, _src0, _src1, _src2, _src3)               \
@@ -124,39 +127,6 @@ static const uint8_t mc_filt_mask_arr[16 * 3] = {
     _src2 = __lsx_vld(_src, 0);                                           \
     _src += _stride;                                                      \
     _src3 = __lsx_vld(_src, 0);                                           \
-}
-
-#define LSX_ST_4(_dst0, _dst1, _dst2, _dst3, _dst, _stride)               \
-{                                                                         \
-    __lsx_vst(_dst0, _dst, 0);                                            \
-    _dst += _stride;                                                      \
-    __lsx_vst(_dst1, _dst, 0);                                            \
-    _dst += _stride;                                                      \
-    __lsx_vst(_dst2, _dst, 0);                                            \
-    _dst += _stride;                                                      \
-    __lsx_vst(_dst3, _dst, 0);                                            \
-}
-
-#define LSX_LD_4_16(_src, _stride, _src0, _src1, _src2, _src3)            \
-{                                                                         \
-    _src0 = __lsx_vld(_src, 16);                                          \
-    _src += _stride;                                                      \
-    _src1 = __lsx_vld(_src, 16);                                          \
-    _src += _stride;                                                      \
-    _src2 = __lsx_vld(_src, 16);                                          \
-    _src += _stride;                                                      \
-    _src3 = __lsx_vld(_src, 16);                                          \
-}
-
-#define LSX_ST_4_16(_dst0, _dst1, _dst2, _dst3, _dst, _stride)            \
-{                                                                         \
-    __lsx_vst(_dst0, _dst, 16);                                           \
-    _dst += _stride;                                                      \
-    __lsx_vst(_dst1, _dst, 16);                                           \
-    _dst += _stride;                                                      \
-    __lsx_vst(_dst2, _dst, 16);                                           \
-    _dst += _stride;                                                      \
-    __lsx_vst(_dst3, _dst, 16);                                           \
 }
 
 static void common_hz_8t_4x4_lsx(const uint8_t *src, int32_t src_stride,
@@ -178,8 +148,8 @@ static void common_hz_8t_4x4_lsx(const uint8_t *src, int32_t src_stride,
     LSX_LD_4(src, src_stride, src0, src1, src2, src3);
     DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128,
               src0, src1, src2, src3);
-    HORIZ_8TAP_4WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2, mask3,
-                               filter0, filter1, filter2, filter3, out0, out1);
+    HORIZ_8TAP_4WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2,
+                     mask3, filter0, filter1, filter2, filter3, out0, out1);
     out = __lsx_vssrarni_b_h(out1, out0, 7);
     out = __lsx_vxori_b(out, 128);
     __lsx_vstelm_w(out, dst, 0, 0);
@@ -195,34 +165,36 @@ static void common_hz_8t_4x8_lsx(const uint8_t *src, int32_t src_stride,
                                  uint8_t *dst, int32_t dst_stride,
                                  const int8_t *filter)
 {
-    int32_t stride = src_stride << 1;
+    int32_t src_stride2 = src_stride << 1;
+    int32_t src_stride3 = src_stride + src_stride2;
+    int32_t src_stride4 = src_stride2 << 1;
     __m128i src0, src1, src2, src3;
     __m128i filter0, filter1, filter2, filter3;
     __m128i mask0, mask1, mask2, mask3;
     __m128i out0, out1, out2, out3;
+    uint8_t *_src = (uint8_t*)src - 3;
 
     mask0 = __lsx_vld(mc_filt_mask_arr, 16);
-    src -= 3;
     DUP2_ARG2(__lsx_vaddi_bu, mask0, 2, mask0, 4, mask1, mask2);
     mask3 = __lsx_vaddi_bu(mask0, 6);
     DUP4_ARG2(__lsx_vldrepl_h, filter, 0, filter, 2, filter, 4, filter, 6,
               filter0, filter1, filter2, filter3);
 
-    DUP2_ARG2(__lsx_vld, src, 0, src + src_stride, 0, src0, src1);
-    src += stride;
-    DUP2_ARG2(__lsx_vld, src, 0, src + src_stride, 0, src2, src3);
+    src0 = __lsx_vld(_src, 0);
+    DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src1, src2);
+    src3 = __lsx_vldx(_src, src_stride3);
+    _src += src_stride4;
     DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128,
               src0, src1, src2, src3);
-    HORIZ_8TAP_4WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2, mask3,
-                               filter0, filter1, filter2, filter3, out0, out1);
-    src += stride;
-    DUP2_ARG2(__lsx_vld, src, 0, src + src_stride, 0, src0, src1);
-    src += stride;
-    DUP2_ARG2(__lsx_vld, src, 0, src + src_stride, 0, src2, src3);
+    HORIZ_8TAP_4WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2,
+                     mask3, filter0, filter1, filter2, filter3, out0, out1);
+    src0 = __lsx_vld(_src, 0);
+    DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src1, src2);
+    src3 = __lsx_vldx(_src, src_stride3);
     DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128,
               src0, src1, src2, src3);
-    HORIZ_8TAP_4WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2, mask3,
-                               filter0, filter1, filter2, filter3, out2, out3);
+    HORIZ_8TAP_4WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2,
+                     mask3, filter0, filter1, filter2, filter3, out2, out3);
     DUP2_ARG3(__lsx_vssrarni_b_h, out1, out0, 7, out3, out2, 7, out0, out1);
     DUP2_ARG2(__lsx_vxori_b, out0, 128, out1, 128, out0, out1);
     __lsx_vstelm_w(out0, dst, 0, 0);
@@ -272,8 +244,8 @@ static void common_hz_8t_8x4_lsx(const uint8_t *src, int32_t src_stride,
     LSX_LD_4(src, src_stride, src0, src1, src2, src3);
     DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128,
               src0, src1, src2, src3);
-    HORIZ_8TAP_8WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2, mask3,
-                               filter0, filter1, filter2, filter3, out0, out1, out2, out3);
+    HORIZ_8TAP_8WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2,
+         mask3, filter0, filter1, filter2, filter3, out0, out1, out2, out3);
     DUP2_ARG3(__lsx_vssrarni_b_h, out1, out0, 7, out3, out2, 7, out0, out1);
     DUP2_ARG2(__lsx_vxori_b, out0, 128, out1, 128, out0, out1);
     __lsx_vstelm_d(out0, dst, 0, 0);
@@ -290,27 +262,30 @@ static void common_hz_8t_8x8mult_lsx(const uint8_t *src, int32_t src_stride,
                                      const int8_t *filter, int32_t height)
 {
     uint32_t loop_cnt = height >> 2;
-    int32_t stride = src_stride << 1;
+    int32_t src_stride2 = src_stride << 1;
+    int32_t src_stride3 = src_stride + src_stride2;
+    int32_t src_stride4 = src_stride2 << 1;
     __m128i src0, src1, src2, src3;
     __m128i filter0, filter1, filter2, filter3;
     __m128i mask0, mask1, mask2, mask3;
     __m128i out0, out1, out2, out3;
+    uint8_t* _src = (uint8_t*)src - 3;
 
     mask0 = __lsx_vld(mc_filt_mask_arr, 0);
-    src -= 3;
     DUP2_ARG2(__lsx_vaddi_bu, mask0, 2, mask0, 4, mask1, mask2);
     mask3 = __lsx_vaddi_bu(mask0, 6);
     DUP4_ARG2(__lsx_vldrepl_h, filter, 0, filter, 2, filter, 4, filter, 6,
               filter0, filter1, filter2, filter3);
 
     for (; loop_cnt--;) {
-        DUP2_ARG2(__lsx_vld, src, 0, src + src_stride, 0, src0, src1);
-        src += stride;
-        DUP2_ARG2(__lsx_vld, src, 0, src + src_stride, 0, src2, src3);
+        src0 = __lsx_vld(_src, 0);
+        DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src1, src2);
+        src3 = __lsx_vldx(_src, src_stride3);
+        _src += src_stride4;
         DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128,
                   src0, src1, src2, src3);
-        HORIZ_8TAP_8WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2, mask3,
-                                   filter0, filter1, filter2, filter3, out0, out1, out2, out3);
+        HORIZ_8TAP_8WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2,
+             mask3, filter0, filter1, filter2, filter3, out0, out1, out2, out3);
         DUP2_ARG3(__lsx_vssrarni_b_h, out1, out0, 7, out3, out2, 7, out0, out1);
         DUP2_ARG2(__lsx_vxori_b, out0, 128, out1, 128, out0, out1);
         __lsx_vstelm_d(out0, dst, 0, 0);
@@ -321,7 +296,6 @@ static void common_hz_8t_8x8mult_lsx(const uint8_t *src, int32_t src_stride,
         dst += dst_stride;
         __lsx_vstelm_d(out1, dst, 0, 1);
         dst += dst_stride;
-        src += stride;
     }
 }
 
@@ -332,7 +306,8 @@ static void common_hz_8t_8w_lsx(const uint8_t *src, int32_t src_stride,
     if (height == 4) {
         common_hz_8t_8x4_lsx(src, src_stride, dst, dst_stride, filter);
     } else {
-        common_hz_8t_8x8mult_lsx(src, src_stride, dst, dst_stride, filter, height);
+        common_hz_8t_8x8mult_lsx(src, src_stride, dst, dst_stride,
+                                 filter, height);
     }
 }
 
@@ -355,12 +330,13 @@ static void common_hz_8t_16w_lsx(const uint8_t *src, int32_t src_stride,
               filter0, filter1, filter2, filter3);
 
     for (; loop_cnt--;) {
-        DUP2_ARG2(__lsx_vld, src, 0, src + src_stride, 0, src0, src2);
-        DUP2_ARG2(__lsx_vld, src, 8, src + src_stride, 8, src1, src3);
+        const uint8_t* _src = src + src_stride;
+        DUP2_ARG2(__lsx_vld, src, 0, _src, 0, src0, src2);
+        DUP2_ARG2(__lsx_vld, src, 8, _src, 8, src1, src3);
         DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128,
                   src0, src1, src2, src3);
-        HORIZ_8TAP_8WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2, mask3,
-                                   filter0, filter1, filter2, filter3, out0, out1, out2, out3);
+        HORIZ_8TAP_8WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2,
+             mask3, filter0, filter1, filter2, filter3, out0, out1, out2, out3);
         DUP2_ARG3(__lsx_vssrarni_b_h, out1, out0, 7, out3, out2, 7, out0, out1);
         DUP2_ARG2(__lsx_vxori_b, out0, 128, out1, 128, out0, out1);
         __lsx_vst(out0, dst, 0);
@@ -396,8 +372,8 @@ static void common_hz_8t_32w_lsx(const uint8_t *src, int32_t src_stride,
         src += src_stride;
         DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128,
                   src0, src1, src2, src3);
-        HORIZ_8TAP_8WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2, mask3,
-                                   filter0, filter1, filter2, filter3, out0, out1, out2, out3);
+        HORIZ_8TAP_8WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2,
+             mask3, filter0, filter1, filter2, filter3, out0, out1, out2, out3);
         DUP2_ARG3(__lsx_vssrarni_b_h, out1, out0, 7, out3, out2, 7, out0, out1);
         DUP2_ARG2(__lsx_vxori_b, out0, 128, out1, 128, out0, out1);
         __lsx_vst(out0, dst, 0);
@@ -411,8 +387,8 @@ static void common_hz_8t_32w_lsx(const uint8_t *src, int32_t src_stride,
         dst += dst_stride;
         DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128,
                   src0, src1, src2, src3);
-        HORIZ_8TAP_8WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2, mask3,
-                                   filter0, filter1, filter2, filter3, out0, out1, out2, out3);
+        HORIZ_8TAP_8WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2,
+             mask3, filter0, filter1, filter2, filter3, out0, out1, out2, out3);
         DUP2_ARG3(__lsx_vssrarni_b_h, out1, out0, 7, out3, out2, 7, out0, out1);
         DUP2_ARG2(__lsx_vxori_b, out0, 128, out1, 128, out0, out1);
         __lsx_vst(out0, dst, 0);
@@ -445,8 +421,8 @@ static void common_hz_8t_64w_lsx(const uint8_t *src, int32_t src_stride,
         src1 = __lsx_vshuf_b(src2, src0, shuff);
         DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128,
                   src0, src1, src2, src3);
-        HORIZ_8TAP_8WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2, mask3,
-                                   filter0, filter1, filter2, filter3, out0, out1, out2, out3);
+        HORIZ_8TAP_8WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2,
+             mask3, filter0, filter1, filter2, filter3, out0, out1, out2, out3);
         DUP2_ARG3(__lsx_vssrarni_b_h, out1, out0, 7, out3, out2, 7, out0, out1);
         DUP2_ARG2(__lsx_vxori_b, out0, 128, out1, 128, out0, out1);
         __lsx_vst(out0, dst, 0);
@@ -457,8 +433,8 @@ static void common_hz_8t_64w_lsx(const uint8_t *src, int32_t src_stride,
         src1 = __lsx_vshuf_b(src2, src0, shuff);
         DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128,
                   src0, src1, src2, src3);
-        HORIZ_8TAP_8WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2, mask3,
-                                   filter0, filter1, filter2, filter3, out0, out1, out2, out3);
+        HORIZ_8TAP_8WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2,
+             mask3, filter0, filter1, filter2, filter3, out0, out1, out2, out3);
         DUP2_ARG3(__lsx_vssrarni_b_h, out1, out0, 7, out3, out2, 7, out0, out1);
         DUP2_ARG2(__lsx_vxori_b, out0, 128, out1, 128, out0, out1);
         __lsx_vst(out0, dst, 32);
@@ -473,23 +449,25 @@ static void common_vt_8t_4w_lsx(const uint8_t *src, int32_t src_stride,
                                 const int8_t *filter, int32_t height)
 {
     uint32_t loop_cnt = height >> 2;
+    int32_t src_stride2 = src_stride << 1;
+    int32_t src_stride3 = src_stride + src_stride2;
+    int32_t src_stride4 = src_stride2 << 1;
     __m128i src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10;
     __m128i tmp0, tmp1, tmp2, tmp3, tmp4, tmp5;
     __m128i reg0, reg1, reg2, reg3, reg4;
     __m128i filter0, filter1, filter2, filter3;
     __m128i out0, out1;
+    uint8_t* _src = (uint8_t*)src - src_stride3;
 
-    src -= (3 * src_stride);
     DUP4_ARG2(__lsx_vldrepl_h, filter, 0, filter, 2, filter, 4, filter, 6,
               filter0, filter1, filter2, filter3);
-    LSX_LD_4(src, src_stride, src0, src1, src2, src3);
-    src += src_stride;
-    src4 = __lsx_vld(src, 0);
-    src += src_stride;
-    src5 = __lsx_vld(src, 0);
-    src += src_stride;
-    src6 = __lsx_vld(src, 0);
-    src += src_stride;
+    src0 = __lsx_vld(_src, 0);
+    DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src1, src2);
+    src3 = __lsx_vldx(_src, src_stride3);
+    _src += src_stride4;
+    src4 = __lsx_vld(_src, 0);
+    DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src5, src6);
+    _src += src_stride3;
     DUP4_ARG2(__lsx_vilvl_b, src1, src0, src3, src2, src5, src4, src2, src1, tmp0,
               tmp1, tmp2, tmp3);
     DUP2_ARG2(__lsx_vilvl_b, src4, src3, src6, src5, tmp4, tmp5);
@@ -499,14 +477,18 @@ static void common_vt_8t_4w_lsx(const uint8_t *src, int32_t src_stride,
     reg2 = __lsx_vxori_b(reg2, 128);
 
     for (;loop_cnt--;) {
-        LSX_LD_4(src, src_stride, src7, src8, src9, src10);
-        src += src_stride;
-        DUP4_ARG2(__lsx_vilvl_b, src7, src6, src8, src7, src9, src8, src10, src9, tmp0,
-                  tmp1, tmp2, tmp3);
+        src7 = __lsx_vld(_src, 0);
+        DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src8, src9);
+        src10 = __lsx_vldx(_src, src_stride3);
+        _src += src_stride4;
+        DUP4_ARG2(__lsx_vilvl_b, src7, src6, src8, src7, src9, src8, src10,
+                  src9, tmp0, tmp1, tmp2, tmp3);
         DUP2_ARG2(__lsx_vilvl_d, tmp1, tmp0, tmp3, tmp2, reg3, reg4);
         DUP2_ARG2(__lsx_vxori_b, reg3, 128, reg4, 128, reg3, reg4);
-        out0 = FILT_8TAP_DPADD_S_H(reg0, reg1, reg2, reg3, filter0, filter1, filter2, filter3);
-        out1 = FILT_8TAP_DPADD_S_H(reg1, reg2, reg3, reg4, filter0, filter1, filter2, filter3);
+        out0 = FILT_8TAP_DPADD_S_H(reg0, reg1, reg2, reg3, filter0, filter1,
+                                   filter2, filter3);
+        out1 = FILT_8TAP_DPADD_S_H(reg1, reg2, reg3, reg4, filter0, filter1,
+                                   filter2, filter3);
         out0 = __lsx_vssrarni_b_h(out1, out0, 7);
         out0 = __lsx_vxori_b(out0, 128);
         __lsx_vstelm_w(out0, dst, 0, 0);
@@ -535,36 +517,47 @@ static void common_vt_8t_8w_lsx(const uint8_t *src, int32_t src_stride,
     __m128i reg0, reg1, reg2, reg3, reg4, reg5;
     __m128i filter0, filter1, filter2, filter3;
     __m128i out0, out1, out2, out3;
+    int32_t src_stride2 = src_stride << 1;
+    int32_t src_stride3 = src_stride + src_stride2;
+    int32_t src_stride4 = src_stride2 << 1;
+    uint8_t* _src = (uint8_t*)src - src_stride3;
 
-    src -= (3 * src_stride);
     DUP4_ARG2(__lsx_vldrepl_h, filter, 0, filter, 2, filter, 4, filter, 6,
               filter0, filter1, filter2, filter3);
 
-    LSX_LD_4(src, src_stride, src0, src1, src2, src3);
-    src += src_stride;
-    src4 = __lsx_vld(src, 0);
-    src += src_stride;
-    src5 = __lsx_vld(src, 0);
-    src += src_stride;
-    src6 = __lsx_vld(src, 0);
-    src += src_stride;
-    DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128, src0, src1, src2, src3);
+    src0 = __lsx_vld(_src, 0);
+    DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src1, src2);
+    src3 = __lsx_vldx(_src, src_stride3);
+    _src += src_stride4;
+    src4 = __lsx_vld(_src, 0);
+    DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src5, src6);
+    _src += src_stride3;
+
+    DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128,
+              src0, src1, src2, src3);
     DUP2_ARG2(__lsx_vxori_b, src4, 128, src5, 128, src4, src5);
     src6 = __lsx_vxori_b(src6, 128);
-    DUP4_ARG2(__lsx_vilvl_b, src1, src0, src3, src2, src5, src4, src2, src1, reg0, reg1, reg2, reg3);
+    DUP4_ARG2(__lsx_vilvl_b, src1, src0, src3, src2, src5, src4, src2, src1,
+              reg0, reg1, reg2, reg3);
     DUP2_ARG2(__lsx_vilvl_b, src4, src3, src6, src5, reg4, reg5);
 
     for (;loop_cnt--;) {
-        LSX_LD_4(src, src_stride, src7, src8, src9, src10);
-        src += src_stride;
+        src7 = __lsx_vld(_src, 0);
+        DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src8, src9);
+        src10 = __lsx_vldx(_src, src_stride3);
+        _src += src_stride4;
         DUP4_ARG2(__lsx_vxori_b, src7, 128, src8, 128, src9, 128, src10, 128,
                   src7, src8, src9, src10);
-        DUP4_ARG2(__lsx_vilvl_b, src7, src6, src8, src7, src9, src8, src10, src9,
-                  tmp0, tmp1, tmp2, tmp3);
-        out0 = FILT_8TAP_DPADD_S_H(reg0, reg1, reg2, tmp0, filter0, filter1, filter2, filter3);
-        out1 = FILT_8TAP_DPADD_S_H(reg3, reg4, reg5, tmp1, filter0, filter1, filter2, filter3);
-        out2 = FILT_8TAP_DPADD_S_H(reg1, reg2, tmp0, tmp2, filter0, filter1, filter2, filter3);
-        out3 = FILT_8TAP_DPADD_S_H(reg4, reg5, tmp1, tmp3, filter0, filter1, filter2, filter3);
+        DUP4_ARG2(__lsx_vilvl_b, src7, src6, src8, src7, src9, src8, src10,
+                  src9, tmp0, tmp1, tmp2, tmp3);
+        out0 = FILT_8TAP_DPADD_S_H(reg0, reg1, reg2, tmp0, filter0, filter1,
+                                   filter2, filter3);
+        out1 = FILT_8TAP_DPADD_S_H(reg3, reg4, reg5, tmp1, filter0, filter1,
+                                   filter2, filter3);
+        out2 = FILT_8TAP_DPADD_S_H(reg1, reg2, tmp0, tmp2, filter0, filter1,
+                                   filter2, filter3);
+        out3 = FILT_8TAP_DPADD_S_H(reg4, reg5, tmp1, tmp3, filter0, filter1,
+                                   filter2, filter3);
         DUP2_ARG3(__lsx_vssrarni_b_h, out1, out0, 7, out3, out2, 7, out0, out1);
         DUP2_ARG2(__lsx_vxori_b, out0, 128, out1, 128, out0, out1);
         __lsx_vstelm_d(out0, dst, 0, 0);
@@ -596,52 +589,64 @@ static void common_vt_8t_16w_lsx(const uint8_t *src, int32_t src_stride,
     __m128i reg0, reg1, reg2, reg3, reg4, reg5;
     __m128i reg6, reg7, reg8, reg9, reg10, reg11;
     __m128i tmp0, tmp1, tmp2, tmp3;
+    int32_t src_stride2 = src_stride << 1;
+    int32_t src_stride3 = src_stride + src_stride2;
+    int32_t src_stride4 = src_stride2 << 1;
+    uint8_t* _src = (uint8_t*)src - src_stride3;
 
-    src -= (3 * src_stride);
     DUP4_ARG2(__lsx_vldrepl_h, filter, 0, filter, 2, filter, 4, filter, 6,
               filter0, filter1, filter2, filter3);
-    LSX_LD_4(src, src_stride, src0, src1, src2, src3);
-    src += src_stride;
-    src4 = __lsx_vld(src, 0);
-    src += src_stride;
-    src5 = __lsx_vld(src, 0);
-    src += src_stride;
-    src6 = __lsx_vld(src, 0);
-    src += src_stride;
-    DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128, src0, src1,
-              src2, src3);
+    src0 = __lsx_vld(_src, 0);
+    DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src1, src2);
+    src3 = __lsx_vldx(_src, src_stride3);
+    _src += src_stride4;
+    src4 = __lsx_vld(_src, 0);
+    DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src5, src6);
+    _src += src_stride3;
+    DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128,
+              src0, src1, src2, src3);
     DUP2_ARG2(__lsx_vxori_b, src4, 128, src5, 128, src4, src5);
     src6 = __lsx_vxori_b(src6, 128);
-    DUP4_ARG2(__lsx_vilvl_b, src1, src0, src3, src2, src5, src4, src2, src1, reg0, reg1,
-              reg2, reg3);
+    DUP4_ARG2(__lsx_vilvl_b, src1, src0, src3, src2, src5, src4, src2, src1,
+              reg0, reg1, reg2, reg3);
     DUP2_ARG2(__lsx_vilvl_b, src4, src3, src6, src5, reg4, reg5);
-    DUP4_ARG2(__lsx_vilvh_b, src1, src0, src3, src2, src5, src4, src2, src1, reg6, reg7,
-              reg8, reg9);
+    DUP4_ARG2(__lsx_vilvh_b, src1, src0, src3, src2, src5, src4, src2, src1,
+              reg6, reg7, reg8, reg9);
     DUP2_ARG2(__lsx_vilvh_b, src4, src3, src6, src5, reg10, reg11);
 
     for (;loop_cnt--;) {
-        LSX_LD_4(src, src_stride, src7, src8, src9, src10);
-        src += src_stride;
+        src7 = __lsx_vld(_src, 0);
+        DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src8, src9);
+        src10 = __lsx_vldx(_src, src_stride3);
+        _src += src_stride4;
         DUP4_ARG2(__lsx_vxori_b, src7, 128, src8, 128, src9, 128, src10, 128,
                   src7, src8, src9, src10);
         DUP4_ARG2(__lsx_vilvl_b, src7, src6, src8, src7, src9, src8, src10, src9,
                   src0, src1, src2, src3);
         DUP4_ARG2(__lsx_vilvh_b, src7, src6, src8, src7, src9, src8, src10, src9,
                   src4, src5, src7, src8);
-        tmp0 = FILT_8TAP_DPADD_S_H(reg0, reg1, reg2, src0, filter0, filter1, filter2, filter3);
-        tmp1 = FILT_8TAP_DPADD_S_H(reg3, reg4, reg5, src1, filter0, filter1, filter2, filter3);
-        tmp2 = FILT_8TAP_DPADD_S_H(reg6, reg7, reg8, src4, filter0, filter1, filter2, filter3);
-        tmp3 = FILT_8TAP_DPADD_S_H(reg9, reg10, reg11, src5, filter0, filter1, filter2, filter3);
+        tmp0 = FILT_8TAP_DPADD_S_H(reg0, reg1, reg2, src0, filter0, filter1,
+                                   filter2, filter3);
+        tmp1 = FILT_8TAP_DPADD_S_H(reg3, reg4, reg5, src1, filter0, filter1,
+                                   filter2, filter3);
+        tmp2 = FILT_8TAP_DPADD_S_H(reg6, reg7, reg8, src4, filter0, filter1,
+                                   filter2, filter3);
+        tmp3 = FILT_8TAP_DPADD_S_H(reg9, reg10, reg11, src5, filter0, filter1,
+                                   filter2, filter3);
         DUP2_ARG3(__lsx_vssrarni_b_h, tmp2, tmp0, 7, tmp3, tmp1, 7, tmp0, tmp1);
         DUP2_ARG2(__lsx_vxori_b, tmp0, 128, tmp1, 128, tmp0, tmp1);
         __lsx_vst(tmp0, dst, 0);
         dst += dst_stride;
         __lsx_vst(tmp1, dst, 0);
         dst += dst_stride;
-        tmp0 = FILT_8TAP_DPADD_S_H(reg1, reg2, src0, src2, filter0, filter1, filter2, filter3);
-        tmp1 = FILT_8TAP_DPADD_S_H(reg4, reg5, src1, src3, filter0, filter1, filter2, filter3);
-        tmp2 = FILT_8TAP_DPADD_S_H(reg7, reg8, src4, src7, filter0, filter1, filter2, filter3);
-        tmp3 = FILT_8TAP_DPADD_S_H(reg10, reg11, src5, src8, filter0, filter1, filter2, filter3);
+        tmp0 = FILT_8TAP_DPADD_S_H(reg1, reg2, src0, src2, filter0, filter1,
+                                   filter2, filter3);
+        tmp1 = FILT_8TAP_DPADD_S_H(reg4, reg5, src1, src3, filter0, filter1,
+                                   filter2, filter3);
+        tmp2 = FILT_8TAP_DPADD_S_H(reg7, reg8, src4, src7, filter0, filter1,
+                                   filter2, filter3);
+        tmp3 = FILT_8TAP_DPADD_S_H(reg10, reg11, src5, src8, filter0, filter1,
+                                   filter2, filter3);
         DUP2_ARG3(__lsx_vssrarni_b_h, tmp2, tmp0, 7, tmp3, tmp1, 7, tmp0, tmp1);
         DUP2_ARG2(__lsx_vxori_b, tmp0, 128, tmp1, 128, tmp0, tmp1);
         __lsx_vst(tmp0, dst, 0);
@@ -670,7 +675,7 @@ static void common_vt_8t_16w_mult_lsx(const uint8_t *src, int32_t src_stride,
                                       const int8_t *filter, int32_t height,
                                       int32_t width)
 {
-    const uint8_t *src_tmp;
+    uint8_t *src_tmp;
     uint8_t *dst_tmp;
     uint32_t cnt = width >> 4;
     __m128i src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10;
@@ -678,26 +683,34 @@ static void common_vt_8t_16w_mult_lsx(const uint8_t *src, int32_t src_stride,
     __m128i reg0, reg1, reg2, reg3, reg4, reg5;
     __m128i reg6, reg7, reg8, reg9, reg10, reg11;
     __m128i tmp0, tmp1, tmp2, tmp3;
+    int32_t src_stride2 = src_stride << 1;
+    int32_t src_stride3 = src_stride + src_stride2;
+    int32_t src_stride4 = src_stride2 << 1;
+    int32_t dst_stride2 = dst_stride << 1;
+    int32_t dst_stride3 = dst_stride2 + dst_stride;
+    int32_t dst_stride4 = dst_stride2 << 1;
+    uint8_t* _src = (uint8_t*)src - src_stride3;
 
-    src -= (3 * src_stride);
     DUP4_ARG2(__lsx_vldrepl_h, filter, 0, filter, 2, filter, 4, filter, 6,
               filter0, filter1, filter2, filter3);
     for (;cnt--;) {
         uint32_t loop_cnt = height >> 2;
 
-        src_tmp = src;
+        src_tmp = _src;
         dst_tmp = dst;
 
-        LSX_LD_4(src_tmp, src_stride, src0, src1, src2, src3);
-        src_tmp += src_stride;
+        src0 = __lsx_vld(src_tmp, 0);
+        DUP2_ARG2(__lsx_vldx, src_tmp, src_stride, src_tmp, src_stride2,
+                  src1, src2);
+        src3 = __lsx_vldx(src_tmp, src_stride3);
+        src_tmp += src_stride4;
         src4 = __lsx_vld(src_tmp, 0);
-        src_tmp += src_stride;
-        src5 = __lsx_vld(src_tmp, 0);
-        src_tmp += src_stride;
-        src6 = __lsx_vld(src_tmp, 0);
-        src_tmp += src_stride;
-        DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128, src0,
-                  src1, src2, src3);
+        DUP2_ARG2(__lsx_vldx, src_tmp, src_stride, src_tmp, src_stride2,
+                  src5, src6);
+        src_tmp += src_stride3;
+
+        DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128,
+                  src0, src1, src2, src3);
         DUP2_ARG2(__lsx_vxori_b, src4, 128, src5, 128, src4, src5);
         src6 = __lsx_vxori_b(src6, 128);
         DUP4_ARG2(__lsx_vilvl_b, src1, src0, src3, src2, src5, src4, src2, src1,
@@ -708,34 +721,44 @@ static void common_vt_8t_16w_mult_lsx(const uint8_t *src, int32_t src_stride,
         DUP2_ARG2(__lsx_vilvh_b, src4, src3, src6, src5, reg10, reg11);
 
         for (;loop_cnt--;) {
-            LSX_LD_4(src_tmp, src_stride, src7, src8, src9, src10);
-            src_tmp += src_stride;
-            DUP4_ARG2(__lsx_vxori_b, src7, 128, src8, 128, src9, 128, src10, 128,
-                      src7, src8, src9, src10);
-            DUP4_ARG2(__lsx_vilvl_b, src7, src6, src8, src7, src9, src8, src10, src9,
-                      src0, src1, src2, src3);
-            DUP4_ARG2(__lsx_vilvh_b, src7, src6, src8, src7, src9, src8, src10, src9,
-                      src4, src5, src7, src8);
-            tmp0 = FILT_8TAP_DPADD_S_H(reg0, reg1, reg2, src0, filter0, filter1, filter2, filter3);
-            tmp1 = FILT_8TAP_DPADD_S_H(reg3, reg4, reg5, src1, filter0, filter1, filter2, filter3);
-            tmp2 = FILT_8TAP_DPADD_S_H(reg6, reg7, reg8, src4, filter0, filter1, filter2, filter3);
-            tmp3 = FILT_8TAP_DPADD_S_H(reg9, reg10, reg11, src5, filter0, filter1, filter2, filter3);
-            DUP2_ARG3(__lsx_vssrarni_b_h, tmp2, tmp0, 7, tmp3, tmp1, 7, tmp0, tmp1);
+            src7 = __lsx_vld(src_tmp, 0);
+            DUP2_ARG2(__lsx_vldx, src_tmp, src_stride, src_tmp, src_stride2,
+                      src8, src9);
+            src10 = __lsx_vldx(src_tmp, src_stride3);
+            src_tmp += src_stride4;
+            DUP4_ARG2(__lsx_vxori_b, src7, 128, src8, 128, src9, 128, src10,
+                      128, src7, src8, src9, src10);
+            DUP4_ARG2(__lsx_vilvl_b, src7, src6, src8, src7, src9, src8,
+                      src10, src9, src0, src1, src2, src3);
+            DUP4_ARG2(__lsx_vilvh_b, src7, src6, src8, src7, src9, src8,
+                      src10, src9, src4, src5, src7, src8);
+            tmp0 = FILT_8TAP_DPADD_S_H(reg0, reg1, reg2, src0, filter0,
+                                       filter1, filter2, filter3);
+            tmp1 = FILT_8TAP_DPADD_S_H(reg3, reg4, reg5, src1, filter0,
+                                       filter1, filter2, filter3);
+            tmp2 = FILT_8TAP_DPADD_S_H(reg6, reg7, reg8, src4, filter0,
+                                       filter1, filter2, filter3);
+            tmp3 = FILT_8TAP_DPADD_S_H(reg9, reg10, reg11, src5, filter0,
+                                       filter1, filter2, filter3);
+            DUP2_ARG3(__lsx_vssrarni_b_h, tmp2, tmp0, 7, tmp3, tmp1, 7,
+                      tmp0, tmp1);
             DUP2_ARG2(__lsx_vxori_b, tmp0, 128, tmp1, 128, tmp0, tmp1);
             __lsx_vst(tmp0, dst_tmp, 0);
-            dst_tmp += dst_stride;
-            __lsx_vst(tmp1, dst_tmp, 0);
-            dst_tmp += dst_stride;
-            tmp0 = FILT_8TAP_DPADD_S_H(reg1, reg2, src0, src2, filter0, filter1, filter2, filter3);
-            tmp1 = FILT_8TAP_DPADD_S_H(reg4, reg5, src1, src3, filter0, filter1, filter2, filter3);
-            tmp2 = FILT_8TAP_DPADD_S_H(reg7, reg8, src4, src7, filter0, filter1, filter2, filter3);
-            tmp3 = FILT_8TAP_DPADD_S_H(reg10, reg11, src5, src8, filter0, filter1, filter2, filter3);
-            DUP2_ARG3(__lsx_vssrarni_b_h, tmp2, tmp0, 7, tmp3, tmp1, 7, tmp0, tmp1);
+            __lsx_vstx(tmp1, dst_tmp, dst_stride);
+            tmp0 = FILT_8TAP_DPADD_S_H(reg1, reg2, src0, src2, filter0,
+                                       filter1, filter2, filter3);
+            tmp1 = FILT_8TAP_DPADD_S_H(reg4, reg5, src1, src3, filter0,
+                                       filter1, filter2, filter3);
+            tmp2 = FILT_8TAP_DPADD_S_H(reg7, reg8, src4, src7, filter0,
+                                       filter1, filter2, filter3);
+            tmp3 = FILT_8TAP_DPADD_S_H(reg10, reg11, src5, src8, filter0,
+                                       filter1, filter2, filter3);
+            DUP2_ARG3(__lsx_vssrarni_b_h, tmp2, tmp0, 7, tmp3, tmp1, 7,
+                      tmp0, tmp1);
             DUP2_ARG2(__lsx_vxori_b, tmp0, 128, tmp1, 128, tmp0, tmp1);
-            __lsx_vst(tmp0, dst_tmp, 0);
-            dst_tmp += dst_stride;
-            __lsx_vst(tmp1, dst_tmp, 0);
-            dst_tmp += dst_stride;
+            __lsx_vstx(tmp0, dst_tmp, dst_stride2);
+            __lsx_vstx(tmp1, dst_tmp, dst_stride3);
+            dst_tmp += dst_stride4;
 
             reg0 = reg2;
             reg1 = src0;
@@ -751,8 +774,8 @@ static void common_vt_8t_16w_mult_lsx(const uint8_t *src, int32_t src_stride,
             reg11 = src8;
             src6 = src10;
         }
-        src += 16;
-        dst += 16;
+        _src += 16;
+        dst  += 16;
     }
 }
 
@@ -767,7 +790,8 @@ static void common_vt_8t_64w_lsx(const uint8_t *src, int32_t src_stride,
                                  uint8_t *dst, int32_t dst_stride,
                                  const int8_t *filter, int32_t height)
 {
-    common_vt_8t_16w_mult_lsx(src, src_stride, dst, dst_stride, filter, height, 64);
+    common_vt_8t_16w_mult_lsx(src, src_stride, dst, dst_stride,
+                              filter, height, 64);
 }
 
 static void common_hv_8ht_8vt_4w_lsx(const uint8_t *src, int32_t src_stride,
@@ -784,23 +808,26 @@ static void common_hv_8ht_8vt_4w_lsx(const uint8_t *src, int32_t src_stride,
     __m128i tmp0, tmp1, tmp2, tmp3, tmp4, tmp5;
     __m128i out0, out1;
     __m128i shuff = {0x0F0E0D0C0B0A0908, 0x1716151413121110};
+    int32_t src_stride2 = src_stride << 1;
+    int32_t src_stride3 = src_stride + src_stride2;
+    int32_t src_stride4 = src_stride2 << 1;
+    uint8_t* _src = (uint8_t*)src - src_stride3 - 3;
 
     mask0 = __lsx_vld(mc_filt_mask_arr, 16);
-    src -= (3 + 3 * src_stride);
     DUP4_ARG2(__lsx_vldrepl_h, filter_horiz, 0, filter_horiz, 2, filter_horiz, 4,
               filter_horiz, 6, filt_hz0, filt_hz1, filt_hz2, filt_hz3);
     DUP2_ARG2(__lsx_vaddi_bu, mask0, 2, mask0, 4, mask1, mask2);
     mask3 = __lsx_vaddi_bu(mask0, 6);
 
-    LSX_LD_4(src, src_stride, src0, src1, src2, src3);
-    src += src_stride;
-    src4 = __lsx_vld(src, 0);
-    src += src_stride;
-    src5 = __lsx_vld(src, 0);
-    src += src_stride;
-    src6 = __lsx_vld(src, 0);
-    src += src_stride;
-    DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128, src0, src1, src2, src3);
+    src0 = __lsx_vld(_src, 0);
+    DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src1, src2);
+    src3 = __lsx_vldx(_src, src_stride3);
+    _src += src_stride4;
+    src4 = __lsx_vld(_src, 0);
+    DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src5, src6);
+    _src += src_stride3;
+    DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128,
+              src0, src1, src2, src3);
     DUP2_ARG2(__lsx_vxori_b, src4, 128, src5, 128, src4, src5);
     src6 = __lsx_vxori_b(src6, 128);
 
@@ -819,8 +846,10 @@ static void common_hv_8ht_8vt_4w_lsx(const uint8_t *src, int32_t src_stride,
     tmp2 = __lsx_vpackev_b(tmp5, tmp4);
 
     for (;loop_cnt--;) {
-        LSX_LD_4(src, src_stride, src7, src8, src9, src10);
-        src += src_stride;
+        src7 = __lsx_vld(_src, 0);
+        DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src8, src9);
+        src10 = __lsx_vldx(_src, src_stride3);
+        _src += src_stride4;
         DUP4_ARG2(__lsx_vxori_b, src7, 128, src8, 128, src9, 128, src10, 128,
                   src7, src8, src9, src10);
         tmp3 = HORIZ_8TAP_FILT(src7, src8, mask0, mask1, mask2, mask3, filt_hz0,
@@ -829,8 +858,8 @@ static void common_hv_8ht_8vt_4w_lsx(const uint8_t *src, int32_t src_stride,
         tmp4 = __lsx_vpackev_b(tmp3, tmp4);
         out0 = FILT_8TAP_DPADD_S_H(tmp0, tmp1, tmp2, tmp4, filt_vt0, filt_vt1,
                                    filt_vt2, filt_vt3);
-        src1 = HORIZ_8TAP_FILT(src9, src10, mask0, mask1, mask2, mask3, filt_hz0,
-                               filt_hz1, filt_hz2, filt_hz3);
+        src1 = HORIZ_8TAP_FILT(src9, src10, mask0, mask1, mask2, mask3,
+                               filt_hz0, filt_hz1, filt_hz2, filt_hz3);
         src0 = __lsx_vshuf_b(src1, tmp3, shuff);
         src0 = __lsx_vpackev_b(src1, src0);
         out1 = FILT_8TAP_DPADD_S_H(tmp1, tmp2, tmp4, src0, filt_vt0, filt_vt1,
@@ -866,24 +895,26 @@ static void common_hv_8ht_8vt_8w_lsx(const uint8_t *src, int32_t src_stride,
     __m128i mask0, mask1, mask2, mask3;
     __m128i tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6;
     __m128i out0, out1;
+    int32_t src_stride2 = src_stride << 1;
+    int32_t src_stride3 = src_stride + src_stride2;
+    int32_t src_stride4 = src_stride2 << 1;
+    uint8_t* _src = (uint8_t*)src - src_stride3 - 3;
 
     mask0 = __lsx_vld(mc_filt_mask_arr, 0);
-    src -= (3 + 3 * src_stride);
-    DUP4_ARG2(__lsx_vldrepl_h, filter_horiz, 0, filter_horiz, 2, filter_horiz, 4,
-              filter_horiz, 6, filt_hz0, filt_hz1, filt_hz2, filt_hz3);
+    DUP4_ARG2(__lsx_vldrepl_h, filter_horiz, 0, filter_horiz, 2, filter_horiz,
+              4, filter_horiz, 6, filt_hz0, filt_hz1, filt_hz2, filt_hz3);
     DUP2_ARG2(__lsx_vaddi_bu, mask0, 2, mask0, 4, mask1, mask2);
     mask3 = __lsx_vaddi_bu(mask0, 6);
 
-    LSX_LD_4(src, src_stride, src0, src1, src2, src3);
-    src += src_stride;
-    src4 = __lsx_vld(src, 0);
-    src += src_stride;
-    src5 = __lsx_vld(src, 0);
-    src += src_stride;
-    src6 = __lsx_vld(src, 0);
-    src += src_stride;
-    DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128, src0, src1,
-              src2, src3);
+    src0 = __lsx_vld(_src, 0);
+    DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src1, src2);
+    src3 = __lsx_vldx(_src, src_stride3);
+    _src += src_stride4;
+    src4 = __lsx_vld(_src, 0);
+    DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src5, src6);
+    _src += src_stride3;
+    DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128,
+              src0, src1, src2, src3);
     DUP2_ARG2(__lsx_vxori_b, src4, 128, src5, 128, src4, src5);
     src6 = __lsx_vxori_b(src6, 128);
 
@@ -909,8 +940,11 @@ static void common_hv_8ht_8vt_8w_lsx(const uint8_t *src, int32_t src_stride,
     DUP2_ARG2(__lsx_vpackev_b, src4, src3, src6, src5, tmp5, tmp6);
 
     for (;loop_cnt--;) {
-        LSX_LD_4(src, src_stride, src7, src8, src9, src10);
-        src += src_stride;
+        src7 = __lsx_vld(_src, 0);
+        DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src8, src9);
+        src10 = __lsx_vldx(_src, src_stride3);
+        _src += src_stride4;
+
         DUP4_ARG2(__lsx_vxori_b, src7, 128, src8, 128, src9, 128, src10, 128,
                   src7, src8, src9, src10);
         src7 = HORIZ_8TAP_FILT(src7, src7, mask0, mask1, mask2, mask3, filt_hz0,
@@ -928,8 +962,8 @@ static void common_hv_8ht_8vt_8w_lsx(const uint8_t *src, int32_t src_stride,
         src1 = __lsx_vpackev_b(src9, src8);
         src3 = FILT_8TAP_DPADD_S_H(tmp1, tmp2, tmp3, src1, filt_vt0, filt_vt1,
                                    filt_vt2, filt_vt3);
-        src10 = HORIZ_8TAP_FILT(src10, src10, mask0, mask1, mask2, mask3, filt_hz0,
-                               filt_hz1, filt_hz2, filt_hz3);
+        src10 = HORIZ_8TAP_FILT(src10, src10, mask0, mask1, mask2, mask3,
+                                filt_hz0, filt_hz1, filt_hz2, filt_hz3);
         src2 = __lsx_vpackev_b(src10, src9);
         src4 = FILT_8TAP_DPADD_S_H(tmp5, tmp6, src0, src2, filt_vt0, filt_vt1,
                                    filt_vt2, filt_vt3);
@@ -1035,12 +1069,24 @@ static void copy_width16_lsx(const uint8_t *src, int32_t src_stride,
 {
     int32_t cnt = height >> 2;
     __m128i src0, src1, src2, src3;
+    int32_t src_stride2 = src_stride << 1;
+    int32_t src_stride3 = src_stride + src_stride2;
+    int32_t src_stride4 = src_stride2 << 1;
+    int32_t dst_stride2 = dst_stride << 1;
+    int32_t dst_stride3 = dst_stride2 + dst_stride;
+    int32_t dst_stride4 = dst_stride2 << 1;
+    uint8_t *_src = (uint8_t*)src;
 
     for (;cnt--;) {
-        LSX_LD_4(src, src_stride, src0, src1, src2, src3);
-        src += src_stride;
-        LSX_ST_4(src0, src1, src2, src3, dst, dst_stride);
-        dst += dst_stride;
+        src0 = __lsx_vld(_src, 0);
+        DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src1, src2);
+        src3 = __lsx_vldx(_src, src_stride3);
+        _src += src_stride4;
+        __lsx_vst(src0, dst, 0);
+        __lsx_vstx(src1, dst, dst_stride);
+        __lsx_vstx(src2, dst, dst_stride2);
+        __lsx_vstx(src3, dst, dst_stride3);
+        dst += dst_stride4;
     }
 }
 
@@ -1049,20 +1095,41 @@ static void copy_width32_lsx(const uint8_t *src, int32_t src_stride,
                              int32_t height)
 {
     int32_t cnt = height >> 2;
-    const uint8_t *src_tmp = src;
-    uint8_t *dst_tmp = dst;
+    uint8_t *src_tmp1 = (uint8_t*)src;
+    uint8_t *dst_tmp1 = dst;
+    uint8_t *src_tmp2 = src_tmp1 + 16;
+    uint8_t *dst_tmp2 = dst_tmp1 + 16;
+    int32_t src_stride2 = src_stride << 1;
+    int32_t src_stride3 = src_stride + src_stride2;
+    int32_t src_stride4 = src_stride2 << 1;
+    int32_t dst_stride2 = dst_stride << 1;
+    int32_t dst_stride3 = dst_stride2 + dst_stride;
+    int32_t dst_stride4 = dst_stride2 << 1;
     __m128i src0, src1, src2, src3, src4, src5, src6, src7;
 
     for (;cnt--;) {
-        LSX_LD_4(src_tmp, src_stride, src0, src1, src2, src3);
-        src_tmp += src_stride;
+        src0 = __lsx_vld(src_tmp1, 0);
+        DUP2_ARG2(__lsx_vldx, src_tmp1, src_stride, src_tmp1, src_stride2,
+                  src1, src2);
+        src3 = __lsx_vldx(src_tmp1, src_stride3);
+        src_tmp1 += src_stride4;
 
-        LSX_LD_4_16(src, src_stride, src4, src5, src6, src7);
-        src += src_stride;
-        LSX_ST_4(src0, src1, src2, src3, dst_tmp, dst_stride);
-        dst_tmp += dst_stride;
-        LSX_ST_4_16(src4, src5, src6, src7, dst, dst_stride);
-        dst += dst_stride;
+        src4 = __lsx_vld(src_tmp2, 0);
+        DUP2_ARG2(__lsx_vldx, src_tmp2, src_stride, src_tmp2, src_stride2,
+                  src5, src6);
+        src7 = __lsx_vldx(src_tmp2, src_stride3);
+        src_tmp2 += src_stride4;
+
+        __lsx_vst(src0, dst_tmp1, 0);
+        __lsx_vstx(src1, dst_tmp1, dst_stride);
+        __lsx_vstx(src2, dst_tmp1, dst_stride2);
+        __lsx_vstx(src3, dst_tmp1, dst_stride3);
+        dst_tmp1 += dst_stride4;
+        __lsx_vst(src4, dst_tmp2, 0);
+        __lsx_vstx(src5, dst_tmp2, dst_stride);
+        __lsx_vstx(src6, dst_tmp2, dst_stride2);
+        __lsx_vstx(src7, dst_tmp2, dst_stride3);
+        dst_tmp2 += dst_stride4;
     }
 }
 
@@ -1075,13 +1142,17 @@ static void copy_width64_lsx(const uint8_t *src, int32_t src_stride,
     __m128i src8, src9, src10, src11, src12, src13, src14, src15;
 
     for (;cnt--;) {
-        DUP4_ARG2(__lsx_vld, src, 0, src, 16, src, 32, src, 48, src0, src1, src2, src3);
+        DUP4_ARG2(__lsx_vld, src, 0, src, 16, src, 32, src, 48,
+                  src0, src1, src2, src3);
         src += src_stride;
-        DUP4_ARG2(__lsx_vld, src, 0, src, 16, src, 32, src, 48, src4, src5, src6, src7);
+        DUP4_ARG2(__lsx_vld, src, 0, src, 16, src, 32, src, 48,
+                  src4, src5, src6, src7);
         src += src_stride;
-        DUP4_ARG2(__lsx_vld, src, 0, src, 16, src, 32, src, 48, src8, src9, src10, src11);
+        DUP4_ARG2(__lsx_vld, src, 0, src, 16, src, 32, src, 48,
+                  src8, src9, src10, src11);
         src += src_stride;
-        DUP4_ARG2(__lsx_vld, src, 0, src, 16, src, 32, src, 48, src12, src13, src14, src15);
+        DUP4_ARG2(__lsx_vld, src, 0, src, 16, src, 32, src, 48,
+                  src12, src13, src14, src15);
         src += src_stride;
         __lsx_vst(src0, dst, 0);
         __lsx_vst(src1, dst, 16);
@@ -1248,21 +1319,26 @@ static void common_hz_8t_and_aver_dst_8w_lsx(const uint8_t *src,
     __m128i mask0, mask1, mask2, mask3;
     __m128i tmp0, tmp1, tmp2, tmp3;
     __m128i dst0, dst1, dst2, dst3;
+    int32_t src_stride2 = src_stride << 1;
+    int32_t src_stride3 = src_stride2 + src_stride;
+    int32_t src_stride4 = src_stride2 << 1;
+    uint8_t *_src = (uint8_t*)src - 3;
 
     mask0 = __lsx_vld(mc_filt_mask_arr, 0);
-    src -= 3;
     DUP2_ARG2(__lsx_vaddi_bu, mask0, 2, mask0, 4, mask1, mask2);
     mask3 = __lsx_vaddi_bu(mask0, 6);
     DUP4_ARG2(__lsx_vldrepl_h, filter, 0, filter, 2, filter, 4, filter, 6,
               filter0, filter1, filter2, filter3);
 
     for (;loop_cnt--;) {
-        LSX_LD_4(src, src_stride, src0, src1, src2, src3);
-        src += src_stride;
+        src0 = __lsx_vld(_src, 0);
+        DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src1, src2);
+        src3 = __lsx_vldx(_src, src_stride3);
+        _src += src_stride4;
         DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128,
                   src0, src1, src2, src3);
-        HORIZ_8TAP_8WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2, mask3,
-                                   filter0, filter1, filter2, filter3, tmp0, tmp1, tmp2, tmp3);
+        HORIZ_8TAP_8WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2,
+              mask3,filter0, filter1, filter2, filter3, tmp0, tmp1, tmp2, tmp3);
         dst0 = __lsx_vldrepl_d(dst_tmp, 0);
         dst_tmp += dst_stride;
         dst1 = __lsx_vldrepl_d(dst_tmp, 0);
@@ -1293,6 +1369,7 @@ static void common_hz_8t_and_aver_dst_16w_lsx(const uint8_t *src,
                                               int32_t height)
 {
     int32_t loop_cnt = height >> 1;
+    int32_t dst_stride2 = dst_stride << 1;
     uint8_t *dst_tmp = dst;
     __m128i src0, src1, src2, src3, filter0, filter1, filter2, filter3;
     __m128i mask0, mask1, mask2, mask3, dst0, dst1, dst2, dst3;
@@ -1312,9 +1389,8 @@ static void common_hz_8t_and_aver_dst_16w_lsx(const uint8_t *src,
         DUP2_ARG2(__lsx_vld, src, 0, src, 8, src2, src3);
         src += src_stride;
         dst0 = __lsx_vld(dst_tmp, 0);
-        dst_tmp += dst_stride;
-        dst1 = __lsx_vld(dst_tmp, 0);
-        dst_tmp += dst_stride;
+        dst1 = __lsx_vldx(dst_tmp, dst_stride);
+        dst_tmp += dst_stride2;
         DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128,
                   src0, src1, src2, src3);
         DUP4_ARG3(__lsx_vshuf_b, src0, src0, mask0, src1, src1, mask0, src2, src2,
@@ -1339,9 +1415,8 @@ static void common_hz_8t_and_aver_dst_16w_lsx(const uint8_t *src,
         DUP2_ARG2(__lsx_vxori_b, dst2, 128, dst3, 128, dst2, dst3);
         DUP2_ARG2(__lsx_vavgr_bu, dst0, dst2, dst1, dst3, dst0, dst1);
         __lsx_vst(dst0, dst, 0);
-        dst += dst_stride;
-        __lsx_vst(dst1, dst, 0);
-        dst += dst_stride;
+        __lsx_vstx(dst1, dst, dst_stride);
+        dst += dst_stride2;
     }
 }
 
@@ -1375,22 +1450,22 @@ static void common_hz_8t_and_aver_dst_32w_lsx(const uint8_t *src,
         dst_tmp += dst_stride;
         DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128,
                   src0, src1, src2, src3);
-        DUP4_ARG3(__lsx_vshuf_b, src0, src0, mask0, src1, src1, mask0, src2, src2,
-                  mask0, src3, src3, mask0, tmp0, tmp1, tmp2, tmp3);
-        DUP4_ARG3(__lsx_vshuf_b, src0, src0, mask1, src1, src1, mask1, src2, src2,
-                  mask1, src3, src3, mask1, tmp4, tmp5, tmp6, tmp7);
-        DUP4_ARG3(__lsx_vshuf_b, src0, src0, mask2, src1, src1, mask2, src2, src2,
-                  mask2, src3, src3, mask2, tmp8, tmp9, tmp10, tmp11);
-        DUP4_ARG3(__lsx_vshuf_b, src0, src0, mask3, src1, src1, mask3, src2, src2,
-                  mask3, src3, src3, mask3, tmp12, tmp13, tmp14, tmp15);
-        DUP4_ARG2(__lsx_vdp2_h_b, tmp0, filter0, tmp1, filter0, tmp2, filter0, tmp3,
-                  filter0, tmp0, tmp1, tmp2, tmp3);
-        DUP4_ARG2(__lsx_vdp2_h_b, tmp8, filter2, tmp9, filter2, tmp10, filter2, tmp11,
-                  filter2, tmp8, tmp9, tmp10, tmp11);
-        DUP4_ARG3(__lsx_vdp2add_h_b, tmp0, tmp4, filter1, tmp1, tmp5, filter1, tmp2,
-                  tmp6, filter1, tmp3, tmp7, filter1, tmp0, tmp1, tmp2, tmp3);
-        DUP4_ARG3(__lsx_vdp2add_h_b, tmp8, tmp12, filter3, tmp9, tmp13, filter3, tmp10,
-                  tmp14, filter3, tmp11, tmp15, filter3, tmp4, tmp5, tmp6, tmp7);
+        DUP4_ARG3(__lsx_vshuf_b, src0, src0, mask0, src1, src1, mask0, src2,
+                  src2, mask0, src3, src3, mask0, tmp0, tmp1, tmp2, tmp3);
+        DUP4_ARG3(__lsx_vshuf_b, src0, src0, mask1, src1, src1, mask1, src2,
+                  src2, mask1, src3, src3, mask1, tmp4, tmp5, tmp6, tmp7);
+        DUP4_ARG3(__lsx_vshuf_b, src0, src0, mask2, src1, src1, mask2, src2,
+                  src2, mask2, src3, src3, mask2, tmp8, tmp9, tmp10, tmp11);
+        DUP4_ARG3(__lsx_vshuf_b, src0, src0, mask3, src1, src1, mask3, src2,
+                  src2, mask3, src3, src3, mask3, tmp12, tmp13, tmp14, tmp15);
+        DUP4_ARG2(__lsx_vdp2_h_b, tmp0, filter0, tmp1, filter0, tmp2, filter0,
+                  tmp3, filter0, tmp0, tmp1, tmp2, tmp3);
+        DUP4_ARG2(__lsx_vdp2_h_b, tmp8, filter2, tmp9, filter2, tmp10, filter2,
+                  tmp11, filter2, tmp8, tmp9, tmp10, tmp11);
+        DUP4_ARG3(__lsx_vdp2add_h_b, tmp0, tmp4, filter1, tmp1, tmp5, filter1,
+             tmp2, tmp6, filter1, tmp3, tmp7, filter1, tmp0, tmp1, tmp2, tmp3);
+        DUP4_ARG3(__lsx_vdp2add_h_b, tmp8, tmp12, filter3, tmp9, tmp13, filter3,
+        tmp10, tmp14, filter3, tmp11, tmp15, filter3, tmp4, tmp5, tmp6, tmp7);
         DUP4_ARG2(__lsx_vsadd_h, tmp0, tmp4, tmp1, tmp5, tmp2, tmp6, tmp3, tmp7,
                   tmp0, tmp1, tmp2, tmp3);
         DUP2_ARG3(__lsx_vssrarni_b_h, tmp1, tmp0, 7, tmp3, tmp2, 7, tmp0, tmp1);
@@ -1429,8 +1504,8 @@ static void common_hz_8t_and_aver_dst_64w_lsx(const uint8_t *src,
         DUP2_ARG2(__lsx_vld, dst, 0, dst, 16, dst0, dst1);
         DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128,
                   src0, src1, src2, src3);
-        HORIZ_8TAP_8WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2, mask3,
-                                   filter0, filter1, filter2, filter3, out0, out1, out2, out3);
+        HORIZ_8TAP_8WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2,
+             mask3, filter0, filter1, filter2, filter3, out0, out1, out2, out3);
         DUP2_ARG3(__lsx_vssrarni_b_h, out1, out0, 7, out3, out2, 7, out0, out1);
         DUP2_ARG2(__lsx_vxori_b, out0, 128, out1, 128, out0, out1);
         DUP2_ARG2(__lsx_vavgr_bu, out0, dst0, out1, dst1, out0, out1);
@@ -1443,8 +1518,8 @@ static void common_hz_8t_and_aver_dst_64w_lsx(const uint8_t *src,
         DUP2_ARG2(__lsx_vld, dst, 32, dst, 48, dst0, dst1);
         DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128,
                   src0, src1, src2, src3);
-        HORIZ_8TAP_8WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2, mask3,
-                                   filter0, filter1, filter2, filter3, out0, out1, out2, out3);
+        HORIZ_8TAP_8WID_4VECS_FILT(src0, src1, src2, src3, mask0, mask1, mask2,
+             mask3, filter0, filter1, filter2, filter3, out0, out1, out2, out3);
         DUP2_ARG3(__lsx_vssrarni_b_h, out1, out0, 7, out3, out2, 7, out0, out1);
         DUP2_ARG2(__lsx_vxori_b, out0, 128, out1, 128, out0, out1);
         DUP2_ARG2(__lsx_vavgr_bu, out0, dst0, out1, dst1, out0, out1);
@@ -1468,20 +1543,22 @@ static void common_vt_8t_and_aver_dst_4w_lsx(const uint8_t *src,
     __m128i reg0, reg1, reg2, reg3, reg4;
     __m128i filter0, filter1, filter2, filter3;
     __m128i out0, out1;
+    int32_t src_stride2 = src_stride << 1;
+    int32_t src_stride3 = src_stride + src_stride2;
+    int32_t src_stride4 = src_stride2 << 1;
+    uint8_t* _src = (uint8_t*)src - src_stride3;
 
-    src -= (3 * src_stride);
     DUP4_ARG2(__lsx_vldrepl_h, filter, 0, filter, 2, filter, 4, filter, 6,
               filter0, filter1, filter2, filter3);
-    LSX_LD_4(src, src_stride, src0, src1, src2, src3);
-    src += src_stride;
-    src4 = __lsx_vld(src, 0);
-    src += src_stride;
-    src5 = __lsx_vld(src, 0);
-    src += src_stride;
-    src6 = __lsx_vld(src, 0);
-    src += src_stride;
-    DUP4_ARG2(__lsx_vilvl_b, src1, src0, src3, src2, src5, src4, src2, src1, tmp0, tmp1,
-              tmp2, tmp3);
+    src0 = __lsx_vld(_src, 0);
+    DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src1, src2);
+    src3 = __lsx_vldx(_src, src_stride3);
+    _src += src_stride4;
+    src4 = __lsx_vld(_src, 0);
+    DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src5, src6);
+    _src += src_stride3;
+    DUP4_ARG2(__lsx_vilvl_b, src1, src0, src3, src2, src5, src4, src2, src1,
+              tmp0, tmp1, tmp2, tmp3);
     DUP2_ARG2(__lsx_vilvl_b, src4, src3, src6, src5, tmp4, tmp5);
     DUP2_ARG2(__lsx_vilvl_d, tmp3, tmp0, tmp4, tmp1, reg0, reg1);
     reg2 = __lsx_vilvl_d(tmp5, tmp2);
@@ -1489,8 +1566,10 @@ static void common_vt_8t_and_aver_dst_4w_lsx(const uint8_t *src,
     reg2 = __lsx_vxori_b(reg2, 128);
 
     for (;loop_cnt--;) {
-        LSX_LD_4(src, src_stride, src7, src8, src9, src10);
-        src += src_stride;
+        src7 = __lsx_vld(_src, 0);
+        DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src8, src9);
+        src10 = __lsx_vldx(_src, src_stride3);
+        _src += src_stride4;
         src0 = __lsx_vldrepl_w(dst_tmp, 0);
         dst_tmp += dst_stride;
         src1 = __lsx_vldrepl_w(dst_tmp, 0);
@@ -1501,12 +1580,14 @@ static void common_vt_8t_and_aver_dst_4w_lsx(const uint8_t *src,
         dst_tmp += dst_stride;
         DUP2_ARG2(__lsx_vilvl_w, src1, src0, src3, src2, src0, src1);
         src0 = __lsx_vilvl_d(src1, src0);
-        DUP4_ARG2(__lsx_vilvl_b, src7, src6, src8, src7, src9, src8, src10, src9, tmp0,
-                  tmp1, tmp2, tmp3);
+        DUP4_ARG2(__lsx_vilvl_b, src7, src6, src8, src7, src9, src8, src10,
+                  src9, tmp0, tmp1, tmp2, tmp3);
         DUP2_ARG2(__lsx_vilvl_d, tmp1, tmp0, tmp3, tmp2, reg3, reg4);
         DUP2_ARG2(__lsx_vxori_b, reg3, 128, reg4, 128, reg3, reg4);
-        out0 = FILT_8TAP_DPADD_S_H(reg0, reg1, reg2, reg3, filter0, filter1, filter2, filter3);
-        out1 = FILT_8TAP_DPADD_S_H(reg1, reg2, reg3, reg4, filter0, filter1, filter2, filter3);
+        out0 = FILT_8TAP_DPADD_S_H(reg0, reg1, reg2, reg3, filter0,
+                                   filter1, filter2, filter3);
+        out1 = FILT_8TAP_DPADD_S_H(reg1, reg2, reg3, reg4, filter0,
+                                   filter1, filter2, filter3);
         out0 = __lsx_vssrarni_b_h(out1, out0, 7);
         out0 = __lsx_vxori_b(out0, 128);
         out0 = __lsx_vavgr_bu(out0, src0);
@@ -1538,28 +1619,34 @@ static void common_vt_8t_and_aver_dst_8w_lsx(const uint8_t *src,
     __m128i reg0, reg1, reg2, reg3, reg4, reg5;
     __m128i filter0, filter1, filter2, filter3;
     __m128i out0, out1, out2, out3;
+    int32_t src_stride2 = src_stride << 1;
+    int32_t src_stride3 = src_stride + src_stride2;
+    int32_t src_stride4 = src_stride2 << 1;
+    uint8_t* _src = (uint8_t*)src - src_stride3;
 
-    src -= (3 * src_stride);
     DUP4_ARG2(__lsx_vldrepl_h, filter, 0, filter, 2, filter, 4, filter, 6,
               filter0, filter1, filter2, filter3);
 
-    LSX_LD_4(src, src_stride, src0, src1, src2, src3);
-    src += src_stride;
-    src4 = __lsx_vld(src, 0);
-    src += src_stride;
-    src5 = __lsx_vld(src, 0);
-    src += src_stride;
-    src6 = __lsx_vld(src, 0);
-    src += src_stride;
-    DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128, src0, src1, src2, src3);
+    src0 = __lsx_vld(_src, 0);
+    DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src1, src2);
+    src3 = __lsx_vldx(_src, src_stride3);
+    _src += src_stride4;
+    src4 = __lsx_vld(_src, 0);
+    DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src5, src6);
+    _src += src_stride3;
+    DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128,
+              src0, src1, src2, src3);
     DUP2_ARG2(__lsx_vxori_b, src4, 128, src5, 128, src4, src5);
     src6 = __lsx_vxori_b(src6, 128);
-    DUP4_ARG2(__lsx_vilvl_b, src1, src0, src3, src2, src5, src4, src2, src1, reg0, reg1, reg2, reg3);
+    DUP4_ARG2(__lsx_vilvl_b, src1, src0, src3, src2, src5, src4, src2,
+              src1, reg0, reg1, reg2, reg3);
     DUP2_ARG2(__lsx_vilvl_b, src4, src3, src6, src5, reg4, reg5);
 
     for (;loop_cnt--;) {
-        LSX_LD_4(src, src_stride, src7, src8, src9, src10);
-        src += src_stride;
+        src7 = __lsx_vld(_src, 0);
+        DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src8, src9);
+        src10 = __lsx_vldx(_src, src_stride3);
+        _src += src_stride4;
         src0 = __lsx_vldrepl_d(dst_tmp, 0);
         dst_tmp += dst_stride;
         src1 = __lsx_vldrepl_d(dst_tmp, 0);
@@ -1571,12 +1658,16 @@ static void common_vt_8t_and_aver_dst_8w_lsx(const uint8_t *src,
         DUP2_ARG2(__lsx_vilvl_d, src1, src0, src3, src2, src0, src1);
         DUP4_ARG2(__lsx_vxori_b, src7, 128, src8, 128, src9, 128, src10, 128,
                   src7, src8, src9, src10);
-        DUP4_ARG2(__lsx_vilvl_b, src7, src6, src8, src7, src9, src8, src10, src9,
-                  tmp0, tmp1, tmp2, tmp3);
-        out0 = FILT_8TAP_DPADD_S_H(reg0, reg1, reg2, tmp0, filter0, filter1, filter2, filter3);
-        out1 = FILT_8TAP_DPADD_S_H(reg3, reg4, reg5, tmp1, filter0, filter1, filter2, filter3);
-        out2 = FILT_8TAP_DPADD_S_H(reg1, reg2, tmp0, tmp2, filter0, filter1, filter2, filter3);
-        out3 = FILT_8TAP_DPADD_S_H(reg4, reg5, tmp1, tmp3, filter0, filter1, filter2, filter3);
+        DUP4_ARG2(__lsx_vilvl_b, src7, src6, src8, src7, src9, src8, src10,
+                  src9, tmp0, tmp1, tmp2, tmp3);
+        out0 = FILT_8TAP_DPADD_S_H(reg0, reg1, reg2, tmp0, filter0,
+                                   filter1, filter2, filter3);
+        out1 = FILT_8TAP_DPADD_S_H(reg3, reg4, reg5, tmp1, filter0,
+                                   filter1, filter2, filter3);
+        out2 = FILT_8TAP_DPADD_S_H(reg1, reg2, tmp0, tmp2, filter0,
+                                   filter1, filter2, filter3);
+        out3 = FILT_8TAP_DPADD_S_H(reg4, reg5, tmp1, tmp3, filter0,
+                                   filter1, filter2, filter3);
         DUP2_ARG3(__lsx_vssrarni_b_h, out1, out0, 7, out3, out2, 7, out0, out1);
         DUP2_ARG2(__lsx_vxori_b, out0, 128, out1, 128, out0, out1);
         DUP2_ARG2(__lsx_vavgr_bu, out0, src0, out1, src1, out0, out1);
@@ -1607,34 +1698,39 @@ static void common_vt_8t_and_aver_dst_16w_mult_lsx(const uint8_t *src,
                                                    int32_t height,
                                                    int32_t width)
 {
-    const uint8_t *src_tmp;
-    uint8_t *dst_tmp;
+    uint8_t *src_tmp;
     uint32_t cnt = width >> 4;
     __m128i src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10;
     __m128i filter0, filter1, filter2, filter3;
     __m128i reg0, reg1, reg2, reg3, reg4, reg5;
     __m128i reg6, reg7, reg8, reg9, reg10, reg11;
     __m128i tmp0, tmp1, tmp2, tmp3;
+    int32_t src_stride2 = src_stride << 1;
+    int32_t src_stride3 = src_stride + src_stride2;
+    int32_t src_stride4 = src_stride2 << 1;
+    int32_t dst_stride2 = dst_stride << 1;
+    int32_t dst_stride3 = dst_stride2 + dst_stride;
+    int32_t dst_stride4 = dst_stride2 << 1;
+    uint8_t *_src = (uint8_t*)src - src_stride3;
 
-    src -= (3 * src_stride);
     DUP4_ARG2(__lsx_vldrepl_h, filter, 0, filter, 2, filter, 4, filter, 6,
               filter0, filter1, filter2, filter3);
     for (;cnt--;) {
         uint32_t loop_cnt = height >> 2;
         uint8_t *dst_reg = dst;
 
-        src_tmp = src;
-        dst_tmp = dst;
-
-        LSX_LD_4(src_tmp, src_stride, src0, src1, src2, src3);
-        src_tmp += src_stride;
+        src_tmp = _src;
+        src0 = __lsx_vld(src_tmp, 0);
+        DUP2_ARG2(__lsx_vldx, src_tmp, src_stride, src_tmp, src_stride2,
+                  src1, src2);
+        src3 = __lsx_vldx(src_tmp, src_stride3);
+        src_tmp += src_stride4;
         src4 = __lsx_vld(src_tmp, 0);
-        src_tmp += src_stride;
-        src5 = __lsx_vld(src_tmp, 0);
-        src_tmp += src_stride;
-        src6 = __lsx_vld(src_tmp, 0);
-        src_tmp += src_stride;
-        DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128, src0, src1, src2, src3);
+        DUP2_ARG2(__lsx_vldx, src_tmp, src_stride, src_tmp, src_stride2,
+                  src5, src6);
+        src_tmp += src_stride3;
+        DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128,
+                  src0, src1, src2, src3);
         DUP2_ARG2(__lsx_vxori_b, src4, 128, src5, 128, src4, src5);
         src6 = __lsx_vxori_b(src6, 128);
         DUP4_ARG2(__lsx_vilvl_b, src1, src0, src3, src2, src5, src4, src2, src1,
@@ -1645,44 +1741,50 @@ static void common_vt_8t_and_aver_dst_16w_mult_lsx(const uint8_t *src,
         DUP2_ARG2(__lsx_vilvh_b, src4, src3, src6, src5, reg10, reg11);
 
         for (;loop_cnt--;) {
-            LSX_LD_4(src_tmp, src_stride, src7, src8, src9, src10);
-            src_tmp += src_stride;
-            DUP4_ARG2(__lsx_vxori_b, src7, 128, src8, 128, src9, 128, src10, 128,
-                      src7, src8, src9, src10);
-            DUP4_ARG2(__lsx_vilvl_b, src7, src6, src8, src7, src9, src8, src10, src9,
-                      src0, src1, src2, src3);
-            DUP4_ARG2(__lsx_vilvh_b, src7, src6, src8, src7, src9, src8, src10, src9,
-                      src4, src5, src7, src8);
-            tmp0 = FILT_8TAP_DPADD_S_H(reg0, reg1, reg2, src0, filter0, filter1, filter2, filter3);
-            tmp1 = FILT_8TAP_DPADD_S_H(reg3, reg4, reg5, src1, filter0, filter1, filter2, filter3);
-            tmp2 = FILT_8TAP_DPADD_S_H(reg6, reg7, reg8, src4, filter0, filter1, filter2, filter3);
-            tmp3 = FILT_8TAP_DPADD_S_H(reg9, reg10, reg11, src5, filter0, filter1, filter2, filter3);
-            DUP2_ARG3(__lsx_vssrarni_b_h, tmp2, tmp0, 7, tmp3, tmp1, 7, tmp0, tmp1);
+            src7 = __lsx_vld(src_tmp, 0);
+            DUP2_ARG2(__lsx_vldx, src_tmp, src_stride, src_tmp, src_stride2,
+                      src8, src9);
+            src10 = __lsx_vldx(src_tmp, src_stride3);
+            src_tmp += src_stride4;
+            DUP4_ARG2(__lsx_vxori_b, src7, 128, src8, 128, src9, 128, src10,
+                      128, src7, src8, src9, src10);
+            DUP4_ARG2(__lsx_vilvl_b, src7, src6, src8, src7, src9, src8,
+                      src10, src9, src0, src1, src2, src3);
+            DUP4_ARG2(__lsx_vilvh_b, src7, src6, src8, src7, src9, src8,
+                      src10, src9, src4, src5, src7, src8);
+            tmp0 = FILT_8TAP_DPADD_S_H(reg0, reg1, reg2, src0, filter0,
+                                       filter1, filter2, filter3);
+            tmp1 = FILT_8TAP_DPADD_S_H(reg3, reg4, reg5, src1, filter0,
+                                       filter1, filter2, filter3);
+            tmp2 = FILT_8TAP_DPADD_S_H(reg6, reg7, reg8, src4, filter0,
+                                       filter1, filter2, filter3);
+            tmp3 = FILT_8TAP_DPADD_S_H(reg9, reg10, reg11, src5, filter0,
+                                       filter1, filter2, filter3);
+            DUP2_ARG3(__lsx_vssrarni_b_h, tmp2, tmp0, 7, tmp3, tmp1, 7,
+                      tmp0, tmp1);
             DUP2_ARG2(__lsx_vxori_b, tmp0, 128, tmp1, 128, tmp0, tmp1);
             tmp2 = __lsx_vld(dst_reg, 0);
-            dst_reg += dst_stride;
-            tmp3 = __lsx_vld(dst_reg, 0);
-            dst_reg += dst_stride;
+            tmp3 = __lsx_vldx(dst_reg, dst_stride);
             DUP2_ARG2(__lsx_vavgr_bu, tmp0, tmp2, tmp1, tmp3, tmp0, tmp1);
-            __lsx_vst(tmp0, dst_tmp, 0);
-            dst_tmp += dst_stride;
-            __lsx_vst(tmp1, dst_tmp, 0);
-            dst_tmp += dst_stride;
-            tmp0 = FILT_8TAP_DPADD_S_H(reg1, reg2, src0, src2, filter0, filter1, filter2, filter3);
-            tmp1 = FILT_8TAP_DPADD_S_H(reg4, reg5, src1, src3, filter0, filter1, filter2, filter3);
-            tmp2 = FILT_8TAP_DPADD_S_H(reg7, reg8, src4, src7, filter0, filter1, filter2, filter3);
-            tmp3 = FILT_8TAP_DPADD_S_H(reg10, reg11, src5, src8, filter0, filter1, filter2, filter3);
-            DUP2_ARG3(__lsx_vssrarni_b_h, tmp2, tmp0, 7, tmp3, tmp1, 7, tmp0, tmp1);
+            __lsx_vst(tmp0, dst_reg, 0);
+            __lsx_vstx(tmp1, dst_reg, dst_stride);
+            tmp0 = FILT_8TAP_DPADD_S_H(reg1, reg2, src0, src2, filter0,
+                                       filter1, filter2, filter3);
+            tmp1 = FILT_8TAP_DPADD_S_H(reg4, reg5, src1, src3, filter0,
+                                       filter1, filter2, filter3);
+            tmp2 = FILT_8TAP_DPADD_S_H(reg7, reg8, src4, src7, filter0,
+                                       filter1, filter2, filter3);
+            tmp3 = FILT_8TAP_DPADD_S_H(reg10, reg11, src5, src8, filter0,
+                                       filter1, filter2, filter3);
+            DUP2_ARG3(__lsx_vssrarni_b_h, tmp2, tmp0, 7, tmp3, tmp1, 7,
+                      tmp0, tmp1);
             DUP2_ARG2(__lsx_vxori_b, tmp0, 128, tmp1, 128, tmp0, tmp1);
-            tmp2 = __lsx_vld(dst_reg, 0);
-            dst_reg += dst_stride;
-            tmp3 = __lsx_vld(dst_reg, 0);
-            dst_reg += dst_stride;
+            tmp2 = __lsx_vldx(dst_reg, dst_stride2);
+            tmp3 = __lsx_vldx(dst_reg, dst_stride3);
             DUP2_ARG2(__lsx_vavgr_bu, tmp0, tmp2, tmp1, tmp3, tmp0, tmp1);
-            __lsx_vst(tmp0, dst_tmp, 0);
-            dst_tmp += dst_stride;
-            __lsx_vst(tmp1, dst_tmp, 0);
-            dst_tmp += dst_stride;
+            __lsx_vstx(tmp0, dst_reg, dst_stride2);
+            __lsx_vstx(tmp1, dst_reg, dst_stride3);
+            dst_reg += dst_stride4;
 
             reg0 = reg2;
             reg1 = src0;
@@ -1698,8 +1800,8 @@ static void common_vt_8t_and_aver_dst_16w_mult_lsx(const uint8_t *src,
             reg11 = src8;
             src6 = src10;
         }
-        src += 16;
-        dst += 16;
+        _src += 16;
+        dst  += 16;
     }
 }
 
@@ -1750,23 +1852,27 @@ static void common_hv_8ht_8vt_and_aver_dst_4w_lsx(const uint8_t *src,
     __m128i tmp0, tmp1, tmp2, tmp3, tmp4, tmp5;
     __m128i out0, out1;
     __m128i shuff = {0x0F0E0D0C0B0A0908, 0x1716151413121110};
+    int32_t src_stride2 = src_stride << 1;
+    int32_t src_stride3 = src_stride + src_stride2;
+    int32_t src_stride4 = src_stride2 << 1;
+    uint8_t* _src = (uint8_t*)src - 3 - src_stride3;
 
     mask0 = __lsx_vld(mc_filt_mask_arr, 16);
-    src -= (3 + 3 * src_stride);
-    DUP4_ARG2(__lsx_vldrepl_h, filter_horiz, 0, filter_horiz, 2, filter_horiz, 4,
-              filter_horiz, 6, filt_hz0, filt_hz1, filt_hz2, filt_hz3);
+    DUP4_ARG2(__lsx_vldrepl_h, filter_horiz, 0, filter_horiz, 2, filter_horiz,
+              4, filter_horiz, 6, filt_hz0, filt_hz1, filt_hz2, filt_hz3);
     DUP2_ARG2(__lsx_vaddi_bu, mask0, 2, mask0, 4, mask1, mask2);
     mask3 = __lsx_vaddi_bu(mask0, 6);
 
-    LSX_LD_4(src, src_stride, src0, src1, src2, src3);
-    src += src_stride;
-    src4 = __lsx_vld(src, 0);
-    src += src_stride;
-    src5 = __lsx_vld(src, 0);
-    src += src_stride;
-    src6 = __lsx_vld(src, 0);
-    src += src_stride;
-    DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128, src0, src1, src2, src3);
+    src0 = __lsx_vld(_src, 0);
+    DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src1, src2);
+    src3 = __lsx_vldx(_src, src_stride3);
+    _src += src_stride4;
+    src4 = __lsx_vld(_src, 0);
+    DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src5, src6);
+    _src += src_stride3;
+
+    DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128,
+              src0, src1, src2, src3);
     DUP2_ARG2(__lsx_vxori_b, src4, 128, src5, 128, src4, src5);
     src6 = __lsx_vxori_b(src6, 128);
 
@@ -1785,8 +1891,10 @@ static void common_hv_8ht_8vt_and_aver_dst_4w_lsx(const uint8_t *src,
     tmp2 = __lsx_vpackev_b(tmp5, tmp4);
 
     for (;loop_cnt--;) {
-        LSX_LD_4(src, src_stride, src7, src8, src9, src10);
-        src += src_stride;
+        src7 = __lsx_vld(_src, 0);
+        DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src8, src9);
+        src10 = __lsx_vldx(_src, src_stride3);
+        _src += src_stride4;
         src2 = __lsx_vldrepl_w(dst_tmp, 0);
         dst_tmp += dst_stride;
         src3 = __lsx_vldrepl_w(dst_tmp, 0);
@@ -1805,8 +1913,8 @@ static void common_hv_8ht_8vt_and_aver_dst_4w_lsx(const uint8_t *src,
         tmp4 = __lsx_vpackev_b(tmp3, tmp4);
         out0 = FILT_8TAP_DPADD_S_H(tmp0, tmp1, tmp2, tmp4, filt_vt0, filt_vt1,
                                    filt_vt2, filt_vt3);
-        src1 = HORIZ_8TAP_FILT(src9, src10, mask0, mask1, mask2, mask3, filt_hz0,
-                               filt_hz1, filt_hz2, filt_hz3);
+        src1 = HORIZ_8TAP_FILT(src9, src10, mask0, mask1, mask2, mask3,
+                               filt_hz0, filt_hz1, filt_hz2, filt_hz3);
         src0 = __lsx_vshuf_b(src1, tmp3, shuff);
         src0 = __lsx_vpackev_b(src1, src0);
         out1 = FILT_8TAP_DPADD_S_H(tmp1, tmp2, tmp4, src0, filt_vt0, filt_vt1,
@@ -1846,23 +1954,26 @@ static void common_hv_8ht_8vt_and_aver_dst_8w_lsx(const uint8_t *src,
     __m128i mask0, mask1, mask2, mask3;
     __m128i tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6;
     __m128i out0, out1;
+    int32_t src_stride2 = src_stride << 1;
+    int32_t src_stride3 = src_stride + src_stride2;
+    int32_t src_stride4 = src_stride2 << 1;
+    uint8_t* _src = (uint8_t*)src - 3 - src_stride3;
 
     mask0 = __lsx_vld(mc_filt_mask_arr, 0);
-    src -= (3 + 3 * src_stride);
-    DUP4_ARG2(__lsx_vldrepl_h, filter_horiz, 0, filter_horiz, 2, filter_horiz, 4,
-              filter_horiz, 6, filt_hz0, filt_hz1, filt_hz2, filt_hz3);
+    DUP4_ARG2(__lsx_vldrepl_h, filter_horiz, 0, filter_horiz, 2, filter_horiz,
+              4, filter_horiz, 6, filt_hz0, filt_hz1, filt_hz2, filt_hz3);
     DUP2_ARG2(__lsx_vaddi_bu, mask0, 2, mask0, 4, mask1, mask2);
     mask3 = __lsx_vaddi_bu(mask0, 6);
 
-    LSX_LD_4(src, src_stride, src0, src1, src2, src3);
-    src += src_stride;
-    src4 = __lsx_vld(src, 0);
-    src += src_stride;
-    src5 = __lsx_vld(src, 0);
-    src += src_stride;
-    src6 = __lsx_vld(src, 0);
-    src += src_stride;
-    DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128, src0, src1, src2, src3);
+    src0 = __lsx_vld(_src, 0);
+    DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src1, src2);
+    src3 = __lsx_vldx(_src, src_stride3);
+    _src += src_stride4;
+    src4 = __lsx_vld(_src, 0);
+    DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src5, src6);
+    _src += src_stride3;
+    DUP4_ARG2(__lsx_vxori_b, src0, 128, src1, 128, src2, 128, src3, 128,
+              src0, src1, src2, src3);
     DUP2_ARG2(__lsx_vxori_b, src4, 128, src5, 128, src4, src5);
     src6 = __lsx_vxori_b(src6, 128);
 
@@ -1888,8 +1999,10 @@ static void common_hv_8ht_8vt_and_aver_dst_8w_lsx(const uint8_t *src,
     DUP2_ARG2(__lsx_vpackev_b, src4, src3, src6, src5, tmp5, tmp6);
 
     for (;loop_cnt--;) {
-        LSX_LD_4(src, src_stride, src7, src8, src9, src10);
-        src += src_stride;
+        src7 = __lsx_vld(_src, 0);
+        DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src8, src9);
+        src10 = __lsx_vldx(_src, src_stride3);
+        _src += src_stride4;
 
         DUP4_ARG2(__lsx_vxori_b, src7, 128, src8, 128, src9, 128, src10, 128,
                   src7, src8, src9, src10);
@@ -2049,19 +2162,33 @@ static void avg_width16_lsx(const uint8_t *src, int32_t src_stride,
                             int32_t height)
 {
     int32_t cnt = height >> 2;
-    uint8_t *dst_tmp = dst;
     __m128i src0, src1, src2, src3;
     __m128i dst0, dst1, dst2, dst3;
+    int32_t src_stride2 = src_stride << 1;
+    int32_t src_stride3 = src_stride + src_stride2;
+    int32_t src_stride4 = src_stride2 << 1;
+    int32_t dst_stride2 = dst_stride << 1;
+    int32_t dst_stride3 = dst_stride2 + dst_stride;
+    int32_t dst_stride4 = dst_stride2 << 1;
+    uint8_t* _src = (uint8_t*)src;
 
     for (;cnt--;) {
-        LSX_LD_4(src, src_stride, src0, src1, src2, src3);
-        src += src_stride;
-        LSX_LD_4(dst_tmp, dst_stride, dst0, dst1, dst2, dst3);
-        dst_tmp += dst_stride;
+        src0 = __lsx_vld(_src, 0);
+        DUP2_ARG2(__lsx_vldx, _src, src_stride, _src, src_stride2, src1, src2);
+        src3 = __lsx_vldx(_src, src_stride3);
+        _src += src_stride4;
+
+        dst0 = __lsx_vld(dst, 0);
+        DUP2_ARG2(__lsx_vldx, dst, dst_stride, dst, dst_stride2,
+                  dst1, dst2);
+        dst3 = __lsx_vldx(dst, dst_stride3);
         DUP4_ARG2(__lsx_vavgr_bu, src0, dst0, src1, dst1,
                   src2, dst2, src3, dst3, dst0, dst1, dst2, dst3);
-        LSX_ST_4(dst0, dst1, dst2, dst3, dst, dst_stride);
-        dst += dst_stride;
+        __lsx_vst(dst0, dst, 0);
+        __lsx_vstx(dst1, dst, dst_stride);
+        __lsx_vstx(dst2, dst, dst_stride2);
+        __lsx_vstx(dst3, dst, dst_stride3);
+        dst += dst_stride4;
     }
 }
 
@@ -2070,29 +2197,56 @@ static void avg_width32_lsx(const uint8_t *src, int32_t src_stride,
                             int32_t height)
 {
     int32_t cnt = height >> 2;
-    const uint8_t *src_tmp = src;
-    uint8_t *dst_tmp, *dst_tmp1, *dst_tmp2;
+    uint8_t *src_tmp1 = (uint8_t*)src;
+    uint8_t *src_tmp2 = src_tmp1 + 16;
+    uint8_t *dst_tmp1, *dst_tmp2;
     __m128i src0, src1, src2, src3, src4, src5, src6, src7;
     __m128i dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
+    int32_t src_stride2 = src_stride << 1;
+    int32_t src_stride3 = src_stride + src_stride2;
+    int32_t src_stride4 = src_stride2 << 1;
+    int32_t dst_stride2 = dst_stride << 1;
+    int32_t dst_stride3 = dst_stride2 + dst_stride;
+    int32_t dst_stride4 = dst_stride2 << 1;
 
-    dst_tmp = dst_tmp1 = dst_tmp2 = dst;
+    dst_tmp1 = dst;
+    dst_tmp2 = dst + 16;
     for (;cnt--;) {
-        LSX_LD_4(src, src_stride, src0, src2, src4, src6);
-        src += src_stride;
-        LSX_LD_4_16(src_tmp, src_stride, src1, src3, src5, src7);
-        src_tmp += src_stride;
-        LSX_LD_4(dst_tmp1, dst_stride, dst0, dst2, dst4, dst6);
-        dst_tmp1 += dst_stride;
-        LSX_LD_4_16(dst_tmp2, dst_stride, dst1, dst3, dst5, dst7);
-        dst_tmp2 += dst_stride;
+        src0 = __lsx_vld(src_tmp1, 0);
+        DUP2_ARG2(__lsx_vldx, src_tmp1, src_stride, src_tmp1, src_stride2,
+                  src2, src4);
+        src6 = __lsx_vldx(src_tmp1, src_stride3);
+        src_tmp1 += src_stride4;
+
+        src1 = __lsx_vld(src_tmp2, 0);
+        DUP2_ARG2(__lsx_vldx, src_tmp2, src_stride, src_tmp2, src_stride2,
+                  src3, src5);
+        src7 = __lsx_vldx(src_tmp2, src_stride3);
+        src_tmp2 += src_stride4;
+
+        dst0 = __lsx_vld(dst_tmp1, 0);
+        DUP2_ARG2(__lsx_vldx, dst_tmp1, dst_stride, dst_tmp1, dst_stride2,
+                  dst2, dst4);
+        dst6 = __lsx_vldx(dst_tmp1, dst_stride3);
+        dst1 = __lsx_vld(dst_tmp2, 0);
+        DUP2_ARG2(__lsx_vldx, dst_tmp2, dst_stride, dst_tmp2, dst_stride2,
+                  dst3, dst5);
+        dst7 = __lsx_vldx(dst_tmp2, dst_stride3);
+
         DUP4_ARG2(__lsx_vavgr_bu, src0, dst0, src1, dst1,
                   src2, dst2, src3, dst3, dst0, dst1, dst2, dst3);
         DUP4_ARG2(__lsx_vavgr_bu, src4, dst4, src5, dst5,
                   src6, dst6, src7, dst7, dst4, dst5, dst6, dst7);
-        LSX_ST_4(dst0, dst2, dst4, dst6, dst_tmp, dst_stride);
-        dst_tmp += dst_stride;
-        LSX_ST_4_16(dst1, dst3, dst5, dst7, dst, dst_stride);
-        dst += dst_stride;
+        __lsx_vst(dst0, dst_tmp1, 0);
+        __lsx_vstx(dst2, dst_tmp1, dst_stride);
+        __lsx_vstx(dst4, dst_tmp1, dst_stride2);
+        __lsx_vstx(dst6, dst_tmp1, dst_stride3);
+        dst_tmp1 += dst_stride4;
+        __lsx_vst(dst1, dst_tmp2, 0);
+        __lsx_vstx(dst3, dst_tmp2, dst_stride);
+        __lsx_vstx(dst5, dst_tmp2, dst_stride2);
+        __lsx_vstx(dst7, dst_tmp2, dst_stride3);
+        dst_tmp2 += dst_stride4;
     }
 }
 

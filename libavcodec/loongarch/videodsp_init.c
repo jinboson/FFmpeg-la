@@ -19,9 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config.h"
-#include "libavutil/attributes.h"
 #include "libavcodec/videodsp.h"
+#include "libavutil/attributes.h"
 
 static void prefetch_loongarch(uint8_t *mem, ptrdiff_t stride, int h)
 {

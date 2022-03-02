@@ -28,42 +28,42 @@
 #define ALLOC_ALIGNED(align) __attribute__ ((aligned(align)))
 #define ROUND_POWER_OF_TWO(value, n) (((value) + (1 << ((n) - 1))) >> (n))
 
-static const int32_t cospi_1_64 = 16364;
-static const int32_t cospi_2_64 = 16305;
-static const int32_t cospi_3_64 = 16207;
-static const int32_t cospi_4_64 = 16069;
-static const int32_t cospi_5_64 = 15893;
-static const int32_t cospi_6_64 = 15679;
-static const int32_t cospi_7_64 = 15426;
-static const int32_t cospi_8_64 = 15137;
-static const int32_t cospi_9_64 = 14811;
-static const int32_t cospi_10_64 = 14449;
-static const int32_t cospi_11_64 = 14053;
-static const int32_t cospi_12_64 = 13623;
-static const int32_t cospi_13_64 = 13160;
-static const int32_t cospi_14_64 = 12665;
-static const int32_t cospi_15_64 = 12140;
-static const int32_t cospi_16_64 = 11585;
-static const int32_t cospi_17_64 = 11003;
-static const int32_t cospi_18_64 = 10394;
-static const int32_t cospi_19_64 = 9760;
-static const int32_t cospi_20_64 = 9102;
-static const int32_t cospi_21_64 = 8423;
-static const int32_t cospi_22_64 = 7723;
-static const int32_t cospi_23_64 = 7005;
-static const int32_t cospi_24_64 = 6270;
-static const int32_t cospi_25_64 = 5520;
-static const int32_t cospi_26_64 = 4756;
-static const int32_t cospi_27_64 = 3981;
-static const int32_t cospi_28_64 = 3196;
-static const int32_t cospi_29_64 = 2404;
-static const int32_t cospi_30_64 = 1606;
-static const int32_t cospi_31_64 = 804;
+const int32_t cospi_1_64 = 16364;
+const int32_t cospi_2_64 = 16305;
+const int32_t cospi_3_64 = 16207;
+const int32_t cospi_4_64 = 16069;
+const int32_t cospi_5_64 = 15893;
+const int32_t cospi_6_64 = 15679;
+const int32_t cospi_7_64 = 15426;
+const int32_t cospi_8_64 = 15137;
+const int32_t cospi_9_64 = 14811;
+const int32_t cospi_10_64 = 14449;
+const int32_t cospi_11_64 = 14053;
+const int32_t cospi_12_64 = 13623;
+const int32_t cospi_13_64 = 13160;
+const int32_t cospi_14_64 = 12665;
+const int32_t cospi_15_64 = 12140;
+const int32_t cospi_16_64 = 11585;
+const int32_t cospi_17_64 = 11003;
+const int32_t cospi_18_64 = 10394;
+const int32_t cospi_19_64 = 9760;
+const int32_t cospi_20_64 = 9102;
+const int32_t cospi_21_64 = 8423;
+const int32_t cospi_22_64 = 7723;
+const int32_t cospi_23_64 = 7005;
+const int32_t cospi_24_64 = 6270;
+const int32_t cospi_25_64 = 5520;
+const int32_t cospi_26_64 = 4756;
+const int32_t cospi_27_64 = 3981;
+const int32_t cospi_28_64 = 3196;
+const int32_t cospi_29_64 = 2404;
+const int32_t cospi_30_64 = 1606;
+const int32_t cospi_31_64 = 804;
 
-static const int32_t sinpi_1_9 = 5283;
-static const int32_t sinpi_2_9 = 9929;
-static const int32_t sinpi_3_9 = 13377;
-static const int32_t sinpi_4_9 = 15212;
+const int32_t sinpi_1_9 = 5283;
+const int32_t sinpi_2_9 = 9929;
+const int32_t sinpi_3_9 = 13377;
+const int32_t sinpi_4_9 = 15212;
 
 #define VP9_DOTP_CONST_PAIR(reg0, reg1, cnst0, cnst1, out0, out1)  \
 {                                                                  \
@@ -155,28 +155,29 @@ static const int32_t sinpi_4_9 = 15212;
 }
 
 /* multiply and add macro */
-#define VP9_MADD(inp0, inp1, inp2, inp3, cst0, cst1, cst2, cst3,         \
-                 out0, out1, out2, out3)                                 \
-{                                                                        \
-    __m128i madd_s0_m, madd_s1_m, madd_s2_m, madd_s3_m;                  \
-    __m128i tmp0_m, tmp1_m, tmp2_m, tmp3_m;                              \
-                                                                         \
-    madd_s1_m = __lsx_vilvl_h(inp1, inp0);                               \
-    madd_s0_m = __lsx_vilvh_h(inp1, inp0);                               \
-    madd_s3_m = __lsx_vilvl_h(inp3, inp2);                               \
-    madd_s2_m = __lsx_vilvh_h(inp3, inp2);                               \
-    DUP4_ARG2(__lsx_vdp2_w_h, madd_s1_m, cst0, madd_s0_m, cst0,          \
-              madd_s1_m, cst1, madd_s0_m, cst1, tmp0_m, tmp1_m, tmp2_m, tmp3_m);\
-    DUP4_ARG2(__lsx_vsrari_w, tmp0_m, VP9_DCT_CONST_BITS,                       \
-              tmp1_m, VP9_DCT_CONST_BITS, tmp2_m, VP9_DCT_CONST_BITS,           \
-              tmp3_m, VP9_DCT_CONST_BITS, tmp0_m, tmp1_m, tmp2_m, tmp3_m);      \
-    DUP2_ARG2(__lsx_vpickev_h, tmp1_m, tmp0_m, tmp3_m, tmp2_m, out0, out1);     \
-    DUP4_ARG2(__lsx_vdp2_w_h, madd_s3_m, cst2, madd_s2_m, cst2,                 \
-              madd_s3_m, cst3, madd_s2_m, cst3, tmp0_m, tmp1_m, tmp2_m, tmp3_m);\
-    DUP4_ARG2(__lsx_vsrari_w, tmp0_m, VP9_DCT_CONST_BITS,                       \
-              tmp1_m, VP9_DCT_CONST_BITS, tmp2_m, VP9_DCT_CONST_BITS,           \
-              tmp3_m, VP9_DCT_CONST_BITS, tmp0_m, tmp1_m, tmp2_m, tmp3_m);      \
-    DUP2_ARG2(__lsx_vpickev_h, tmp1_m, tmp0_m, tmp3_m, tmp2_m, out2, out3);     \
+#define VP9_MADD(inp0, inp1, inp2, inp3, cst0, cst1, cst2, cst3,            \
+                 out0, out1, out2, out3)                                    \
+{                                                                           \
+    __m128i madd_s0_m, madd_s1_m, madd_s2_m, madd_s3_m;                     \
+    __m128i tmp0_m, tmp1_m, tmp2_m, tmp3_m;                                 \
+                                                                            \
+    madd_s1_m = __lsx_vilvl_h(inp1, inp0);                                  \
+    madd_s0_m = __lsx_vilvh_h(inp1, inp0);                                  \
+    madd_s3_m = __lsx_vilvl_h(inp3, inp2);                                  \
+    madd_s2_m = __lsx_vilvh_h(inp3, inp2);                                  \
+    DUP4_ARG2(__lsx_vdp2_w_h, madd_s1_m, cst0, madd_s0_m, cst0,             \
+              madd_s1_m, cst1, madd_s0_m, cst1, tmp0_m, tmp1_m,             \
+              tmp2_m, tmp3_m);                                              \
+    DUP4_ARG2(__lsx_vsrari_w, tmp0_m, VP9_DCT_CONST_BITS, tmp1_m,           \
+              VP9_DCT_CONST_BITS, tmp2_m, VP9_DCT_CONST_BITS, tmp3_m,       \
+              VP9_DCT_CONST_BITS, tmp0_m, tmp1_m, tmp2_m, tmp3_m);          \
+    DUP2_ARG2(__lsx_vpickev_h, tmp1_m, tmp0_m, tmp3_m, tmp2_m, out0, out1); \
+    DUP4_ARG2(__lsx_vdp2_w_h, madd_s3_m, cst2, madd_s2_m, cst2, madd_s3_m,  \
+              cst3, madd_s2_m, cst3, tmp0_m, tmp1_m, tmp2_m, tmp3_m);       \
+    DUP4_ARG2(__lsx_vsrari_w, tmp0_m, VP9_DCT_CONST_BITS,                   \
+              tmp1_m, VP9_DCT_CONST_BITS, tmp2_m, VP9_DCT_CONST_BITS,       \
+              tmp3_m, VP9_DCT_CONST_BITS, tmp0_m, tmp1_m, tmp2_m, tmp3_m);  \
+    DUP2_ARG2(__lsx_vpickev_h, tmp1_m, tmp0_m, tmp3_m, tmp2_m, out2, out3); \
 }
 
 #define VP9_SET_CONST_PAIR(mask_h, idx1_h, idx2_h)                           \
@@ -255,8 +256,10 @@ static void vp9_idct8x8_12_colcol_addblk_lsx(int16_t *input, uint8_t *dst,
     __m128i zero = __lsx_vldi(0);
 
     /* load vector elements of 8x8 block */
-    DUP4_ARG2(__lsx_vld, input, 0, input, 16, input, 32, input, 48, in0, in1, in2, in3);
-    DUP4_ARG2(__lsx_vld, input, 64, input, 80, input, 96, input, 112, in4, in5, in6, in7);
+    DUP4_ARG2(__lsx_vld, input, 0, input, 16, input, 32, input, 48,
+              in0, in1, in2, in3);
+    DUP4_ARG2(__lsx_vld, input, 64, input, 80, input, 96, input, 112,
+              in4, in5, in6, in7);
     __lsx_vst(zero, input, 0);
     __lsx_vst(zero, input, 16);
     __lsx_vst(zero, input, 32);
@@ -265,7 +268,8 @@ static void vp9_idct8x8_12_colcol_addblk_lsx(int16_t *input, uint8_t *dst,
     __lsx_vst(zero, input, 80);
     __lsx_vst(zero, input, 96);
     __lsx_vst(zero, input, 112);
-    DUP4_ARG2(__lsx_vilvl_d,in1, in0, in3, in2, in5, in4, in7, in6, in0, in1, in2, in3);
+    DUP4_ARG2(__lsx_vilvl_d,in1, in0, in3, in2, in5, in4, in7,
+              in6, in0, in1, in2, in3);
 
     /* stage1 */
     DUP2_ARG2(__lsx_vilvh_h, in3, in0, in2, in1, s0, s1);
@@ -273,9 +277,11 @@ static void vp9_idct8x8_12_colcol_addblk_lsx(int16_t *input, uint8_t *dst,
     k1 = VP9_SET_COSPI_PAIR(cospi_4_64, cospi_28_64);
     k2 = VP9_SET_COSPI_PAIR(-cospi_20_64, cospi_12_64);
     k3 = VP9_SET_COSPI_PAIR(cospi_12_64, cospi_20_64);
-    DUP4_ARG2(__lsx_vdp2_w_h, s0, k0, s0, k1, s1, k2, s1, k3, tmp0, tmp1, tmp2, tmp3);
-    DUP4_ARG2(__lsx_vsrari_w, tmp0, VP9_DCT_CONST_BITS, tmp1, VP9_DCT_CONST_BITS,
-              tmp2, VP9_DCT_CONST_BITS, tmp3, VP9_DCT_CONST_BITS, tmp0, tmp1, tmp2, tmp3);
+    DUP4_ARG2(__lsx_vdp2_w_h, s0, k0, s0, k1, s1, k2, s1, k3,
+              tmp0, tmp1, tmp2, tmp3);
+    DUP4_ARG2(__lsx_vsrari_w, tmp0, VP9_DCT_CONST_BITS, tmp1,
+              VP9_DCT_CONST_BITS, tmp2, VP9_DCT_CONST_BITS, tmp3,
+              VP9_DCT_CONST_BITS, tmp0, tmp1, tmp2, tmp3);
     DUP4_ARG2(__lsx_vpickev_h, zero, tmp0, zero, tmp1, zero, tmp2, zero, tmp3,
               s0, s1, s2, s3);
     LSX_BUTTERFLY_4_H(s0, s1, s3, s2, s4, s7, s6, s5);
@@ -288,8 +294,9 @@ static void vp9_idct8x8_12_colcol_addblk_lsx(int16_t *input, uint8_t *dst,
     k3 = VP9_SET_COSPI_PAIR(cospi_8_64, cospi_24_64);
     DUP4_ARG2(__lsx_vdp2_w_h, s0, k0, s0, k1, s1, k2, s1, k3,
                   tmp0, tmp1, tmp2, tmp3);
-    DUP4_ARG2(__lsx_vsrari_w, tmp0, VP9_DCT_CONST_BITS, tmp1, VP9_DCT_CONST_BITS,
-              tmp2, VP9_DCT_CONST_BITS, tmp3, VP9_DCT_CONST_BITS, tmp0, tmp1, tmp2, tmp3);
+    DUP4_ARG2(__lsx_vsrari_w, tmp0, VP9_DCT_CONST_BITS, tmp1,
+              VP9_DCT_CONST_BITS, tmp2, VP9_DCT_CONST_BITS, tmp3,
+              VP9_DCT_CONST_BITS, tmp0, tmp1, tmp2, tmp3);
     DUP4_ARG2(__lsx_vpickev_h, zero, tmp0, zero, tmp1, zero, tmp2, zero, tmp3,
               s0, s1, s2, s3);
     LSX_BUTTERFLY_4_H(s0, s1, s2, s3, m0, m1, m2, m3);
@@ -312,8 +319,10 @@ static void vp9_idct8x8_12_colcol_addblk_lsx(int16_t *input, uint8_t *dst,
                    in0, in1, in2, in3, in4, in5, in6, in7);
 
     /* final rounding (add 2^4, divide by 2^5) and shift */
-    DUP4_ARG2(__lsx_vsrari_h, in0 , 5, in1, 5, in2, 5, in3, 5, in0, in1, in2, in3);
-    DUP4_ARG2(__lsx_vsrari_h, in4 , 5, in5, 5, in6, 5, in7, 5, in4, in5, in6, in7);
+    DUP4_ARG2(__lsx_vsrari_h, in0 , 5, in1, 5, in2, 5, in3, 5,
+              in0, in1, in2, in3);
+    DUP4_ARG2(__lsx_vsrari_h, in4 , 5, in5, 5, in6, 5, in7, 5,
+              in4, in5, in6, in7);
 
     /* add block and store 8x8 */
     VP9_ADDBLK_ST8x4_UB(dst, dst_stride, in0, in1, in2, in3);
@@ -350,8 +359,10 @@ static void vp9_idct8x8_colcol_addblk_lsx(int16_t *input, uint8_t *dst,
     VP9_IDCT8x8_1D(in0, in1, in2, in3, in4, in5, in6, in7,
                    in0, in1, in2, in3, in4, in5, in6, in7);
     /* final rounding (add 2^4, divide by 2^5) and shift */
-    DUP4_ARG2(__lsx_vsrari_h, in0, 5, in1, 5, in2, 5, in3, 5, in0, in1, in2, in3);
-    DUP4_ARG2(__lsx_vsrari_h, in4, 5, in5, 5, in6, 5, in7, 5, in4, in5, in6, in7);
+    DUP4_ARG2(__lsx_vsrari_h, in0, 5, in1, 5, in2, 5, in3, 5,
+              in0, in1, in2, in3);
+    DUP4_ARG2(__lsx_vsrari_h, in4, 5, in5, 5, in6, 5, in7, 5,
+              in4, in5, in6, in7);
     /* add block and store 8x8 */
     VP9_ADDBLK_ST8x4_UB(dst, dst_stride, in0, in1, in2, in3);
     dst += (4 * dst_stride);
@@ -374,8 +385,8 @@ static void vp9_idct16_1d_columns_addblk_lsx(int16_t *input, uint8_t *dst,
               reg4, reg5, reg6, reg7);
     DUP4_ARG2(__lsx_vld, input, 32*8, input, 32*9, input, 32*10, input, 32*11,
               reg8, reg9, reg10, reg11);
-    DUP4_ARG2(__lsx_vld, input, 32*12, input, 32*13, input, 32*14, input, 32*15,
-              reg12, reg13, reg14, reg15);
+    DUP4_ARG2(__lsx_vld, input, 32*12, input, 32*13, input, 32*14, input,
+              32*15, reg12, reg13, reg14, reg15);
 
     __lsx_vst(zero, input, 32*0);
     __lsx_vst(zero, input, 32*1);
@@ -499,8 +510,8 @@ static void vp9_idct16_1d_columns_lsx(int16_t *input, int16_t *output)
               reg4, reg5, reg6, reg7);
     DUP4_ARG2(__lsx_vld, input, 32*8, input, 32*9, input, 32*10, input, 32*11,
               reg8, reg9, reg10, reg11);
-    DUP4_ARG2(__lsx_vld, input, 32*12, input, 32*13, input, 32*14, input, 32*15,
-              reg12, reg13, reg14, reg15);
+    DUP4_ARG2(__lsx_vld, input, 32*12, input, 32*13, input, 32*14, input,
+              32*15, reg12, reg13, reg14, reg15);
 
     __lsx_vst(zero, input, 32*0);
     __lsx_vst(zero, input, 32*1);
@@ -630,6 +641,9 @@ static void vp9_idct16x16_1_add_lsx(int16_t *input, uint8_t *dst,
     int16_t out;
     __m128i vec, res0, res1, res2, res3, res4, res5, res6, res7;
     __m128i dst0, dst1, dst2, dst3, tmp0, tmp1, tmp2, tmp3;
+    int32_t stride2 = dst_stride << 1;
+    int32_t stride3 = stride2 + dst_stride;
+    int32_t stride4 = stride2 << 1;
 
     out = ROUND_POWER_OF_TWO((input[0] * cospi_16_64), VP9_DCT_CONST_BITS);
     out = ROUND_POWER_OF_TWO((out * cospi_16_64), VP9_DCT_CONST_BITS);
@@ -638,8 +652,9 @@ static void vp9_idct16x16_1_add_lsx(int16_t *input, uint8_t *dst,
     vec = __lsx_vreplgr2vr_h(out);
 
     for (i = 4; i--;) {
-        DUP4_ARG2(__lsx_vld, dst, 0, dst + dst_stride, 0, dst + dst_stride * 2, 0,
-                  dst + dst_stride * 3, 0, dst0, dst1, dst2, dst3);
+        dst0 = __lsx_vld(dst, 0);
+        DUP2_ARG2(__lsx_vldx, dst, dst_stride, dst, stride2, dst1, dst2);
+        dst3 = __lsx_vldx(dst, stride3);
         VP9_UNPCK_UB_SH(dst0, res4, res0);
         VP9_UNPCK_UB_SH(dst1, res5, res1);
         VP9_UNPCK_UB_SH(dst2, res6, res2);
@@ -648,15 +663,17 @@ static void vp9_idct16x16_1_add_lsx(int16_t *input, uint8_t *dst,
                   res0, res1, res2, res3);
         DUP4_ARG2(__lsx_vadd_h, res4, vec, res5, vec, res6, vec, res7, vec,
                   res4, res5, res6, res7);
-        DUP4_ARG1(__lsx_vclip255_h, res0, res1, res2, res3, res0, res1, res2, res3);
-        DUP4_ARG1(__lsx_vclip255_h, res4, res5, res6, res7, res4, res5, res6, res7);
-        DUP4_ARG2(__lsx_vpickev_b, res4, res0, res5, res1, res6, res2, res7, res3,
-                  tmp0, tmp1, tmp2, tmp3);
+        DUP4_ARG1(__lsx_vclip255_h, res0, res1, res2, res3,
+                  res0, res1, res2, res3);
+        DUP4_ARG1(__lsx_vclip255_h, res4, res5, res6, res7,
+                  res4, res5, res6, res7);
+        DUP4_ARG2(__lsx_vpickev_b, res4, res0, res5, res1, res6,
+                  res2, res7, res3, tmp0, tmp1, tmp2, tmp3);
         __lsx_vst(tmp0, dst, 0);
-        __lsx_vst(tmp1, dst + dst_stride, 0);
-        __lsx_vst(tmp2, dst + dst_stride * 2, 0);
-        __lsx_vst(tmp3, dst + dst_stride * 3, 0);
-        dst += dst_stride << 2;
+        __lsx_vstx(tmp1, dst, dst_stride);
+        __lsx_vstx(tmp2, dst, stride2);
+        __lsx_vstx(tmp3, dst, stride3);
+        dst += stride4;
     }
 }
 
@@ -1087,7 +1104,8 @@ static void vp9_idct8x32_column_odd_process_store(int16_t *tmp_buf,
     DUP4_ARG2(__lsx_vld, tmp_odd_buf, 0, tmp_odd_buf, 16,
               tmp_odd_buf, 32, tmp_odd_buf, 48, reg0, reg1, reg2, reg3);
     DUP4_ARG2(__lsx_vld, tmp_odd_buf, 8 * 16, tmp_odd_buf, 8 * 16 + 16,
-              tmp_odd_buf, 8 * 16 + 32, tmp_odd_buf, 8 * 16 + 48, reg4, reg5, reg6, reg7);
+              tmp_odd_buf, 8 * 16 + 32, tmp_odd_buf, 8 * 16 + 48,
+              reg4, reg5, reg6, reg7);
 
     DUP4_ARG2(__lsx_vadd_h, reg0, reg4, reg1, reg5, reg2, reg6, reg3, reg7,
                   loc0, loc1, loc2, loc3);
@@ -1107,9 +1125,11 @@ static void vp9_idct8x32_column_odd_process_store(int16_t *tmp_buf,
 
     /* Load 8 & Store 8 */
     DUP4_ARG2(__lsx_vld, tmp_odd_buf, 4 * 16, tmp_odd_buf, 4 * 16 + 16,
-              tmp_odd_buf, 4 * 16 + 32, tmp_odd_buf, 4 * 16 + 48, reg1, reg2, reg0, reg3);
+              tmp_odd_buf, 4 * 16 + 32, tmp_odd_buf, 4 * 16 + 48,
+              reg1, reg2, reg0, reg3);
     DUP4_ARG2(__lsx_vld, tmp_odd_buf, 12 * 16, tmp_odd_buf, 12 * 16 + 16,
-              tmp_odd_buf, 12 * 16 + 32, tmp_odd_buf, 12 * 16 + 48, reg4, reg5, reg6, reg7);
+              tmp_odd_buf, 12 * 16 + 32, tmp_odd_buf, 12 * 16 + 48,
+              reg4, reg5, reg6, reg7);
 
     DUP4_ARG2(__lsx_vadd_h, reg0, reg4, reg1, reg5, reg2, reg6, reg3, reg7,
               loc0, loc1, loc2, loc3);
@@ -1252,6 +1272,7 @@ static void vp9_idct32x32_1_add_lsx(int16_t *input, uint8_t *dst,
 {
     int32_t i;
     int16_t out;
+    uint8_t *dst_tmp = dst + dst_stride;
     __m128i zero = __lsx_vldi(0);
     __m128i dst0, dst1, dst2, dst3, tmp0, tmp1, tmp2, tmp3;
     __m128i res0, res1, res2, res3, res4, res5, res6, res7, vec;
@@ -1265,7 +1286,7 @@ static void vp9_idct32x32_1_add_lsx(int16_t *input, uint8_t *dst,
 
     for (i = 16; i--;) {
         DUP2_ARG2(__lsx_vld, dst, 0, dst, 16, dst0, dst1);
-        DUP2_ARG2(__lsx_vld, dst + dst_stride, 0, dst + dst_stride, 16, dst2, dst3);
+        DUP2_ARG2(__lsx_vld, dst_tmp, 0, dst_tmp, 16, dst2, dst3);
 
         DUP4_ARG2(__lsx_vilvl_b, zero, dst0, zero, dst1, zero, dst2, zero, dst3,
                   res0, res1, res2, res3);
@@ -1282,10 +1303,10 @@ static void vp9_idct32x32_1_add_lsx(int16_t *input, uint8_t *dst,
 
         __lsx_vst(tmp0, dst, 0);
         __lsx_vst(tmp1, dst, 16);
-        dst += dst_stride;
-        __lsx_vst(tmp2, dst, 0);
-        __lsx_vst(tmp3, dst, 16);
-        dst += dst_stride;
+        __lsx_vst(tmp2, dst_tmp, 0);
+        __lsx_vst(tmp3, dst_tmp, 16);
+        dst = dst_tmp + dst_stride;
+        dst_tmp = dst + dst_stride;
     }
 }
 
@@ -1388,4 +1409,3 @@ void ff_idct_idct_32x32_add_lsx(uint8_t *dst, ptrdiff_t stride,
         vp9_idct32x32_colcol_addblk_lsx(block, dst, stride);
     }
 }
-

@@ -37,10 +37,10 @@
     init_subpel1(1, idx, idxh, idxv, 32, dir, type);  \
     init_subpel1(2, idx, idxh, idxv, 16, dir, type);  \
     init_subpel1(3, idx, idxh, idxv,  8, dir, type);  \
-    init_subpel1(4, idx, idxh, idxv,  4, dir, type)
+    init_subpel1(4, idx, idxh, idxv,  4, dir, type);
 
 #define init_subpel3(idx, type)         \
-    init_subpel2(idx, 1, 0, h, type)    \
+    init_subpel2(idx, 1, 0, h, type);   \
     init_subpel2(idx, 0, 1, v, type);   \
     init_subpel2(idx, 1, 1, hv, type);
 
@@ -48,32 +48,11 @@
     dsp->mc[idx1][FILTER_8TAP_SMOOTH ][idx2][0][0] = ff_##type##sz##_lsx;  \
     dsp->mc[idx1][FILTER_8TAP_REGULAR][idx2][0][0] = ff_##type##sz##_lsx;  \
     dsp->mc[idx1][FILTER_8TAP_SHARP  ][idx2][0][0] = ff_##type##sz##_lsx;  \
-    dsp->mc[idx1][FILTER_BILINEAR    ][idx2][0][0] = ff_##type##sz##_lsx
+    dsp->mc[idx1][FILTER_BILINEAR    ][idx2][0][0] = ff_##type##sz##_lsx;
 
 #define init_copy(idx, sz)                    \
     init_fpel(idx, 0, sz, copy);              \
-    init_fpel(idx, 1, sz, avg)
-
-static av_cold void vp9dsp_mc_init_lsx(VP9DSPContext *dsp, int bpp)
-{
-    int cpu_flags = av_get_cpu_flags();
-    if (have_lsx(cpu_flags)) {
-        if (bpp == 8) {
-            init_subpel3(0, put);
-            init_subpel3(1, avg);
-            init_copy(0, 64);
-            init_copy(1, 32);
-            init_copy(2, 16);
-            init_copy(3, 8);
-        }
-    }
-}
-
-#undef init_subpel1
-#undef init_subpel2
-#undef init_subpel3
-#undef init_copy
-#undef init_fpel
+    init_fpel(idx, 1, sz, avg);
 
 #define init_intra_pred1_lsx(tx, sz)                            \
     dsp->intra_pred[tx][VERT_PRED]    = ff_vert_##sz##_lsx;     \
@@ -92,51 +71,33 @@ static av_cold void vp9dsp_mc_init_lsx(VP9DSPContext *dsp, int bpp)
     dsp->intra_pred[tx][TOP_DC_PRED]  = ff_dc_top_##sz##_lsx;   \
     dsp->intra_pred[tx][TM_VP8_PRED]  = ff_tm_##sz##_lsx;       \
 
-static av_cold void vp9dsp_intrapred_init_lsx(VP9DSPContext *dsp, int bpp)
-{
-    int cpu_flags = av_get_cpu_flags();
-    if (have_lsx(cpu_flags)) {
-        if (bpp == 8) {
-            init_intra_pred1_lsx(TX_16X16, 16x16);
-            init_intra_pred1_lsx(TX_32X32, 32x32);
-            init_intra_pred2_lsx(TX_4X4, 4x4);
-            init_intra_pred2_lsx(TX_8X8, 8x8);
-        }
-    }
-}
-
-#undef init_intra_pred_lsx
-#undef init_intra_pred_lsx
-
 #define init_idct(tx, nm)                        \
     dsp->itxfm_add[tx][DCT_DCT]   =              \
     dsp->itxfm_add[tx][ADST_DCT]  =              \
     dsp->itxfm_add[tx][DCT_ADST]  =              \
-    dsp->itxfm_add[tx][ADST_ADST] = nm##_add_lsx
+    dsp->itxfm_add[tx][ADST_ADST] = nm##_add_lsx;
 
 #define init_itxfm(tx, sz)                                     \
-    dsp->itxfm_add[tx][DCT_DCT] = ff_idct_idct_##sz##_add_lsx
+    dsp->itxfm_add[tx][DCT_DCT] = ff_idct_idct_##sz##_add_lsx;
 
-static av_cold void vp9dsp_itxfm_init_lsx(VP9DSPContext *dsp, int bpp)
+av_cold void ff_vp9dsp_init_loongarch(VP9DSPContext *dsp, int bpp)
 {
     int cpu_flags = av_get_cpu_flags();
-    if (have_lsx(cpu_flags)) {
+    if (have_lsx(cpu_flags))
         if (bpp == 8) {
+            init_subpel3(0, put);
+            init_subpel3(1, avg);
+            init_copy(0, 64);
+            init_copy(1, 32);
+            init_copy(2, 16);
+            init_copy(3, 8);
+            init_intra_pred1_lsx(TX_16X16, 16x16);
+            init_intra_pred1_lsx(TX_32X32, 32x32);
+            init_intra_pred2_lsx(TX_4X4, 4x4);
+            init_intra_pred2_lsx(TX_8X8, 8x8);
             init_itxfm(TX_8X8, 8x8);
             init_itxfm(TX_16X16, 16x16);
             init_idct(TX_32X32, ff_idct_idct_32x32);
-        }
-    }
-}
-
-#undef init_idct
-#undef init_itxfm
-
-static av_cold void vp9dsp_loopfilter_init_lsx(VP9DSPContext *dsp, int bpp)
-{
-    int cpu_flags = av_get_cpu_flags();
-    if (have_lsx(cpu_flags)) {
-        if (bpp == 8) {
             dsp->loop_filter_8[0][0] = ff_loop_filter_h_4_8_lsx;
             dsp->loop_filter_8[0][1] = ff_loop_filter_v_4_8_lsx;
             dsp->loop_filter_8[1][0] = ff_loop_filter_h_8_8_lsx;
@@ -156,23 +117,14 @@ static av_cold void vp9dsp_loopfilter_init_lsx(VP9DSPContext *dsp, int bpp)
             dsp->loop_filter_mix2[1][1][0] = ff_loop_filter_h_88_16_lsx;
             dsp->loop_filter_mix2[1][1][1] = ff_loop_filter_v_88_16_lsx;
         }
-    }
 }
 
-static av_cold void vp9dsp_init_lsx(VP9DSPContext *dsp, int bpp)
-{
-    int cpu_flags = av_get_cpu_flags();
-    if (have_lsx(cpu_flags)) {
-        vp9dsp_mc_init_lsx(dsp, bpp);
-        vp9dsp_intrapred_init_lsx(dsp, bpp);
-        vp9dsp_loopfilter_init_lsx(dsp, bpp);
-        vp9dsp_itxfm_init_lsx(dsp, bpp);
-    }
-}
-
-av_cold void ff_vp9dsp_init_loongarch(VP9DSPContext *dsp, int bpp)
-{
-    int cpu_flags = av_get_cpu_flags();
-    if (have_lsx(cpu_flags))
-        vp9dsp_init_lsx(dsp, bpp);
-}
+#undef init_subpel1
+#undef init_subpel2
+#undef init_subpel3
+#undef init_copy
+#undef init_fpel
+#undef init_intra_pred1_lsx
+#undef init_intra_pred2_lsx
+#undef init_idct
+#undef init_itxfm

@@ -58,7 +58,8 @@ do {                                                                        \
                 tmp3 = __lasx_xvld(mv_t, 48); \
                 tmp4 = __lasx_xvld(mv_t, 208); \
                 tmp5 = __lasx_xvld(mv_t + d_idx_x4, 208); \
-                DUP2_ARG3(__lasx_xvpermi_q, tmp2, tmp2, 0x20, tmp5, tmp5, 0x20, tmp2, tmp5); \
+                DUP2_ARG3(__lasx_xvpermi_q, tmp2, tmp2, 0x20, tmp5, tmp5, \
+                          0x20, tmp2, tmp5); \
                 tmp3 =  __lasx_xvpermi_q(tmp4, tmp3, 0x20); \
                 tmp2 = __lasx_xvsub_h(tmp2, tmp3); \
                 tmp5 = __lasx_xvsub_h(tmp5, tmp3); \
@@ -132,7 +133,8 @@ void ff_h264_loop_filter_strength_lasx(int16_t bS[2][4][4], uint8_t nnz[40],
     step  <<= 3;
     edges <<= 3;
 
-    H264_LOOP_FILTER_STRENGTH_ITERATION_LASX(edges, step, mask_mv1, 1, -8, zero);
+    H264_LOOP_FILTER_STRENGTH_ITERATION_LASX(edges, step, mask_mv1,
+                                             1, -8, zero);
     H264_LOOP_FILTER_STRENGTH_ITERATION_LASX(32, 8, mask_mv0, 0, -1, one);
 
     DUP2_ARG2(__lasx_xvld, (int8_t*)bS, 0, (int8_t*)bS, 16, tmp0, tmp1);

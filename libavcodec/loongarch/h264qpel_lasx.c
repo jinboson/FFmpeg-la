@@ -62,17 +62,17 @@ static const uint8_t luma_mask_arr[16 * 6] __attribute__((aligned(0x40))) = {
 } )
 
 static av_always_inline
-void avc_luma_hv_qrt_and_aver_dst_16x16_lasx(const uint8_t *src_x,
-                                             const uint8_t *src_y,
-                                             uint8_t *dst, int32_t stride)
+void avc_luma_hv_qrt_and_aver_dst_16x16_lasx(uint8_t *src_x,
+                                             uint8_t *src_y,
+                                             uint8_t *dst, ptrdiff_t stride)
 {
     const int16_t filt_const0 = 0xfb01;
     const int16_t filt_const1 = 0x1414;
     const int16_t filt_const2 = 0x1fb;
     uint32_t loop_cnt;
-    int32_t stride_2x = stride << 1;
-    int32_t stride_3x = stride_2x + stride;
-    int32_t stride_4x = stride << 2;
+    ptrdiff_t stride_2x = stride << 1;
+    ptrdiff_t stride_3x = stride_2x + stride;
+    ptrdiff_t stride_4x = stride << 2;
     __m256i tmp0, tmp1;
     __m256i src_hz0, src_hz1, src_hz2, src_hz3, mask0, mask1, mask2;
     __m256i src_vt0, src_vt1, src_vt2, src_vt3, src_vt4, src_vt5, src_vt6;
@@ -91,24 +91,26 @@ void avc_luma_hv_qrt_and_aver_dst_16x16_lasx(const uint8_t *src_x,
     mask0 = __lasx_xvld(luma_mask_arr, 0);
     DUP2_ARG2(__lasx_xvld, luma_mask_arr, 32, luma_mask_arr, 64, mask1, mask2);
     src_vt0 = __lasx_xvld(src_y, 0);
-    DUP4_ARG2(__lasx_xvld, src_y + stride, 0, src_y + stride_2x, 0, src_y + stride_3x, 0,
-              src_y + stride_4x, 0, src_vt1, src_vt2, src_vt3, src_vt4);
-    src_y += stride_4x + stride;
+    DUP4_ARG2(__lasx_xvldx, src_y, stride, src_y, stride_2x, src_y, stride_3x,
+              src_y, stride_4x, src_vt1, src_vt2, src_vt3, src_vt4);
+    src_y += stride_4x;
 
     src_vt0 = __lasx_xvxori_b(src_vt0, 128);
-    DUP4_ARG2(__lasx_xvxori_b, src_vt1, 128, src_vt2, 128, src_vt3, 128, src_vt4, 128,
-              src_vt1, src_vt2, src_vt3, src_vt4);
+    DUP4_ARG2(__lasx_xvxori_b, src_vt1, 128, src_vt2, 128, src_vt3, 128,
+              src_vt4, 128, src_vt1, src_vt2, src_vt3, src_vt4);
 
     for (loop_cnt = 4; loop_cnt--;) {
-        DUP4_ARG2(__lasx_xvld, src_x, 0, src_x + stride, 0, src_x + stride_2x, 0,
-                  src_x + stride_3x, 0, src_hz0, src_hz1, src_hz2, src_hz3);
+        src_hz0 = __lasx_xvld(src_x, 0);
+        DUP2_ARG2(__lasx_xvldx, src_x, stride, src_x, stride_2x,
+                  src_hz1, src_hz2);
+        src_hz3 = __lasx_xvldx(src_x, stride_3x);
         src_x  += stride_4x;
         src_hz0 = __lasx_xvpermi_d(src_hz0, 0x94);
         src_hz1 = __lasx_xvpermi_d(src_hz1, 0x94);
         src_hz2 = __lasx_xvpermi_d(src_hz2, 0x94);
         src_hz3 = __lasx_xvpermi_d(src_hz3, 0x94);
-        DUP4_ARG2(__lasx_xvxori_b, src_hz0, 128, src_hz1, 128, src_hz2, 128, src_hz3,
-                  128, src_hz0, src_hz1, src_hz2, src_hz3);
+        DUP4_ARG2(__lasx_xvxori_b, src_hz0, 128, src_hz1, 128, src_hz2, 128,
+                  src_hz3, 128, src_hz0, src_hz1, src_hz2, src_hz3);
 
         hz_out0 = AVC_HORZ_FILTER_SH(src_hz0, src_hz0, mask0, mask1, mask2);
         hz_out1 = AVC_HORZ_FILTER_SH(src_hz1, src_hz1, mask0, mask1, mask2);
@@ -117,27 +119,30 @@ void avc_luma_hv_qrt_and_aver_dst_16x16_lasx(const uint8_t *src_x,
         hz_out0 = __lasx_xvssrarni_b_h(hz_out1, hz_out0, 5);
         hz_out2 = __lasx_xvssrarni_b_h(hz_out3, hz_out2, 5);
 
-        DUP4_ARG2(__lasx_xvld, src_y, 0, src_y + stride, 0, src_y + stride_2x, 0,
-                  src_y + stride_3x, 0, src_vt5, src_vt6, src_vt7, src_vt8);
+        DUP4_ARG2(__lasx_xvldx, src_y, stride, src_y, stride_2x,
+                  src_y, stride_3x, src_y, stride_4x,
+                  src_vt5, src_vt6, src_vt7, src_vt8);
         src_y += stride_4x;
 
-        DUP4_ARG2(__lasx_xvxori_b, src_vt5, 128, src_vt6, 128, src_vt7, 128, src_vt8,
-                  128, src_vt5, src_vt6, src_vt7, src_vt8);
+        DUP4_ARG2(__lasx_xvxori_b, src_vt5, 128, src_vt6, 128, src_vt7, 128,
+                  src_vt8, 128, src_vt5, src_vt6, src_vt7, src_vt8);
 
-        DUP4_ARG3(__lasx_xvpermi_q, src_vt0, src_vt4, 0x02, src_vt1, src_vt5, 0x02,
-                  src_vt2, src_vt6, 0x02, src_vt3, src_vt7, 0x02, src_vt0, src_vt1,
-                  src_vt2, src_vt3);
+        DUP4_ARG3(__lasx_xvpermi_q, src_vt0, src_vt4, 0x02, src_vt1, src_vt5,
+                  0x02, src_vt2, src_vt6, 0x02, src_vt3, src_vt7, 0x02,
+                  src_vt0, src_vt1, src_vt2, src_vt3);
         src_vt87_h = __lasx_xvpermi_q(src_vt4, src_vt8, 0x02);
-        DUP4_ARG2(__lasx_xvilvh_b, src_vt1, src_vt0, src_vt2, src_vt1, src_vt3, src_vt2,
-                  src_vt87_h, src_vt3, src_hz0, src_hz1, src_hz2, src_hz3);
-        DUP4_ARG2(__lasx_xvilvl_b, src_vt1, src_vt0, src_vt2, src_vt1, src_vt3, src_vt2,
-                  src_vt87_h, src_vt3, src_vt0, src_vt1, src_vt2, src_vt3);
-        DUP4_ARG3(__lasx_xvpermi_q, src_vt0, src_hz0, 0x02, src_vt1, src_hz1, 0x02,
-                  src_vt2, src_hz2, 0x02, src_vt3, src_hz3, 0x02, src_vt10_h, src_vt21_h,
-                  src_vt32_h, src_vt43_h);
-        DUP4_ARG3(__lasx_xvpermi_q, src_vt0, src_hz0, 0x13, src_vt1, src_hz1, 0x13,
-                  src_vt2, src_hz2, 0x13, src_vt3, src_hz3, 0x13, src_vt54_h, src_vt65_h,
-                  src_vt76_h, src_vt87_h);
+        DUP4_ARG2(__lasx_xvilvh_b, src_vt1, src_vt0, src_vt2, src_vt1,
+                  src_vt3, src_vt2, src_vt87_h, src_vt3,
+                  src_hz0, src_hz1, src_hz2, src_hz3);
+        DUP4_ARG2(__lasx_xvilvl_b, src_vt1, src_vt0, src_vt2, src_vt1,
+                  src_vt3, src_vt2, src_vt87_h, src_vt3,
+                  src_vt0, src_vt1, src_vt2, src_vt3);
+        DUP4_ARG3(__lasx_xvpermi_q, src_vt0, src_hz0, 0x02, src_vt1, src_hz1,
+                  0x02, src_vt2, src_hz2, 0x02, src_vt3, src_hz3, 0x02,
+                  src_vt10_h, src_vt21_h, src_vt32_h, src_vt43_h);
+        DUP4_ARG3(__lasx_xvpermi_q, src_vt0, src_hz0, 0x13, src_vt1, src_hz1,
+                  0x13, src_vt2, src_hz2, 0x13, src_vt3, src_hz3, 0x13,
+                  src_vt54_h, src_vt65_h, src_vt76_h, src_vt87_h);
         vt_out0 = AVC_DOT_SH3_SH(src_vt10_h, src_vt32_h, src_vt54_h, filt0,
                                  filt1, filt2);
         vt_out1 = AVC_DOT_SH3_SH(src_vt21_h, src_vt43_h, src_vt65_h, filt0,
@@ -149,14 +154,17 @@ void avc_luma_hv_qrt_and_aver_dst_16x16_lasx(const uint8_t *src_x,
         vt_out0 = __lasx_xvssrarni_b_h(vt_out1, vt_out0, 5);
         vt_out2 = __lasx_xvssrarni_b_h(vt_out3, vt_out2, 5);
 
-        DUP2_ARG2(__lasx_xvaddwl_h_b, hz_out0, vt_out0, hz_out2, vt_out2, out0, out2);
-        DUP2_ARG2(__lasx_xvaddwh_h_b, hz_out0, vt_out0, hz_out2, vt_out2, out1, out3);
+        DUP2_ARG2(__lasx_xvaddwl_h_b, hz_out0, vt_out0, hz_out2, vt_out2,
+                  out0, out2);
+        DUP2_ARG2(__lasx_xvaddwh_h_b, hz_out0, vt_out0, hz_out2, vt_out2,
+                  out1, out3);
         tmp0 = __lasx_xvssrarni_b_h(out1, out0, 1);
         tmp1 = __lasx_xvssrarni_b_h(out3, out2, 1);
 
         DUP2_ARG2(__lasx_xvxori_b, tmp0, 128, tmp1, 128, tmp0, tmp1);
-        DUP4_ARG2(__lasx_xvldx, dst, 0, dst, stride, dst, stride_2x, dst, stride_3x,
-                  out0, out1, out2, out3);
+        out0 = __lasx_xvld(dst, 0);
+        DUP2_ARG2(__lasx_xvldx, dst, stride, dst, stride_2x, out1, out2);
+        out3 = __lasx_xvldx(dst, stride_3x);
         out0 = __lasx_xvpermi_q(out0, out2, 0x02);
         out1 = __lasx_xvpermi_q(out1, out3, 0x02);
         out2 = __lasx_xvilvl_d(out1, out0);
@@ -186,16 +194,16 @@ void avc_luma_hv_qrt_and_aver_dst_16x16_lasx(const uint8_t *src_x,
 }
 
 static av_always_inline void
-avc_luma_hv_qrt_16x16_lasx(const uint8_t *src_x, const uint8_t *src_y, uint8_t *dst,
-                           int32_t stride)
+avc_luma_hv_qrt_16x16_lasx(uint8_t *src_x, uint8_t *src_y,
+                           uint8_t *dst, ptrdiff_t stride)
 {
     const int16_t filt_const0 = 0xfb01;
     const int16_t filt_const1 = 0x1414;
     const int16_t filt_const2 = 0x1fb;
     uint32_t loop_cnt;
-    int32_t stride_2x = stride << 1;
-    int32_t stride_3x = stride_2x + stride;
-    int32_t stride_4x = stride << 2;
+    ptrdiff_t stride_2x = stride << 1;
+    ptrdiff_t stride_3x = stride_2x + stride;
+    ptrdiff_t stride_4x = stride << 2;
     __m256i tmp0, tmp1;
     __m256i src_hz0, src_hz1, src_hz2, src_hz3, mask0, mask1, mask2;
     __m256i src_vt0, src_vt1, src_vt2, src_vt3, src_vt4, src_vt5, src_vt6;
@@ -214,24 +222,26 @@ avc_luma_hv_qrt_16x16_lasx(const uint8_t *src_x, const uint8_t *src_y, uint8_t *
     mask0 = __lasx_xvld(luma_mask_arr, 0);
     DUP2_ARG2(__lasx_xvld, luma_mask_arr, 32, luma_mask_arr, 64, mask1, mask2);
     src_vt0 = __lasx_xvld(src_y, 0);
-    DUP4_ARG2(__lasx_xvld, src_y + stride, 0, src_y + stride_2x, 0, src_y + stride_3x,
-              0, src_y + stride_4x, 0, src_vt1, src_vt2, src_vt3, src_vt4);
-    src_y += stride_4x + stride;
+    DUP4_ARG2(__lasx_xvldx, src_y, stride, src_y, stride_2x, src_y, stride_3x,
+              src_y, stride_4x, src_vt1, src_vt2, src_vt3, src_vt4);
+    src_y += stride_4x;
 
     src_vt0 = __lasx_xvxori_b(src_vt0, 128);
-    DUP4_ARG2(__lasx_xvxori_b, src_vt1, 128, src_vt2, 128, src_vt3, 128, src_vt4, 128,
-              src_vt1, src_vt2, src_vt3, src_vt4);
+    DUP4_ARG2(__lasx_xvxori_b, src_vt1, 128, src_vt2, 128, src_vt3, 128,
+              src_vt4, 128, src_vt1, src_vt2, src_vt3, src_vt4);
 
     for (loop_cnt = 4; loop_cnt--;) {
-        DUP4_ARG2(__lasx_xvld, src_x, 0, src_x + stride, 0, src_x + stride_2x, 0,
-                  src_x + stride_3x, 0, src_hz0, src_hz1, src_hz2, src_hz3);
+        src_hz0 = __lasx_xvld(src_x, 0);
+        DUP2_ARG2(__lasx_xvldx, src_x, stride, src_x, stride_2x,
+                  src_hz1, src_hz2);
+        src_hz3 = __lasx_xvldx(src_x, stride_3x);
         src_x  += stride_4x;
         src_hz0 = __lasx_xvpermi_d(src_hz0, 0x94);
         src_hz1 = __lasx_xvpermi_d(src_hz1, 0x94);
         src_hz2 = __lasx_xvpermi_d(src_hz2, 0x94);
         src_hz3 = __lasx_xvpermi_d(src_hz3, 0x94);
-        DUP4_ARG2(__lasx_xvxori_b, src_hz0, 128, src_hz1, 128, src_hz2, 128, src_hz3,
-                  128, src_hz0, src_hz1, src_hz2, src_hz3);
+        DUP4_ARG2(__lasx_xvxori_b, src_hz0, 128, src_hz1, 128, src_hz2, 128,
+                  src_hz3, 128, src_hz0, src_hz1, src_hz2, src_hz3);
 
         hz_out0 = AVC_HORZ_FILTER_SH(src_hz0, src_hz0, mask0, mask1, mask2);
         hz_out1 = AVC_HORZ_FILTER_SH(src_hz1, src_hz1, mask0, mask1, mask2);
@@ -240,36 +250,45 @@ avc_luma_hv_qrt_16x16_lasx(const uint8_t *src_x, const uint8_t *src_y, uint8_t *
         hz_out0 = __lasx_xvssrarni_b_h(hz_out1, hz_out0, 5);
         hz_out2 = __lasx_xvssrarni_b_h(hz_out3, hz_out2, 5);
 
-        DUP4_ARG2(__lasx_xvld, src_y, 0, src_y + stride, 0, src_y + stride_2x, 0,
-                  src_y + stride_3x, 0, src_vt5, src_vt6, src_vt7, src_vt8);
+        DUP4_ARG2(__lasx_xvldx, src_y, stride, src_y, stride_2x,
+                  src_y, stride_3x, src_y, stride_4x,
+                  src_vt5, src_vt6, src_vt7, src_vt8);
         src_y += stride_4x;
 
-        DUP4_ARG2(__lasx_xvxori_b, src_vt5, 128, src_vt6, 128, src_vt7, 128, src_vt8,
-                  128, src_vt5, src_vt6, src_vt7, src_vt8);
-        DUP4_ARG3(__lasx_xvpermi_q, src_vt0, src_vt4, 0x02, src_vt1, src_vt5, 0x02,
-                  src_vt2, src_vt6, 0x02, src_vt3, src_vt7, 0x02, src_vt0, src_vt1,
-                  src_vt2, src_vt3);
+        DUP4_ARG2(__lasx_xvxori_b, src_vt5, 128, src_vt6, 128, src_vt7, 128,
+                  src_vt8, 128, src_vt5, src_vt6, src_vt7, src_vt8);
+        DUP4_ARG3(__lasx_xvpermi_q, src_vt0, src_vt4, 0x02, src_vt1, src_vt5,
+                  0x02, src_vt2, src_vt6, 0x02, src_vt3, src_vt7, 0x02,
+                  src_vt0, src_vt1, src_vt2, src_vt3);
         src_vt87_h = __lasx_xvpermi_q(src_vt4, src_vt8, 0x02);
-        DUP4_ARG2(__lasx_xvilvh_b, src_vt1, src_vt0, src_vt2, src_vt1, src_vt3, src_vt2,
-                  src_vt87_h, src_vt3, src_hz0, src_hz1, src_hz2, src_hz3);
-        DUP4_ARG2(__lasx_xvilvl_b, src_vt1, src_vt0, src_vt2, src_vt1, src_vt3, src_vt2,
-                  src_vt87_h, src_vt3, src_vt0, src_vt1, src_vt2, src_vt3);
-        DUP4_ARG3(__lasx_xvpermi_q, src_vt0, src_hz0, 0x02, src_vt1, src_hz1, 0x02,
-                  src_vt2, src_hz2, 0x02, src_vt3, src_hz3, 0x02, src_vt10_h, src_vt21_h,
-                  src_vt32_h, src_vt43_h);
-        DUP4_ARG3(__lasx_xvpermi_q, src_vt0, src_hz0, 0x13, src_vt1, src_hz1, 0x13,
-                  src_vt2, src_hz2, 0x13, src_vt3, src_hz3, 0x13, src_vt54_h, src_vt65_h,
-                  src_vt76_h, src_vt87_h);
+        DUP4_ARG2(__lasx_xvilvh_b, src_vt1, src_vt0, src_vt2, src_vt1,
+                  src_vt3, src_vt2, src_vt87_h, src_vt3,
+                  src_hz0, src_hz1, src_hz2, src_hz3);
+        DUP4_ARG2(__lasx_xvilvl_b, src_vt1, src_vt0, src_vt2, src_vt1,
+                  src_vt3, src_vt2, src_vt87_h, src_vt3,
+                  src_vt0, src_vt1, src_vt2, src_vt3);
+        DUP4_ARG3(__lasx_xvpermi_q, src_vt0, src_hz0, 0x02, src_vt1,
+                  src_hz1, 0x02, src_vt2, src_hz2, 0x02, src_vt3, src_hz3,
+                  0x02, src_vt10_h, src_vt21_h, src_vt32_h, src_vt43_h);
+        DUP4_ARG3(__lasx_xvpermi_q, src_vt0, src_hz0, 0x13, src_vt1,
+                  src_hz1, 0x13, src_vt2, src_hz2, 0x13, src_vt3, src_hz3,
+                  0x13, src_vt54_h, src_vt65_h, src_vt76_h, src_vt87_h);
 
-        vt_out0 = AVC_DOT_SH3_SH(src_vt10_h, src_vt32_h, src_vt54_h, filt0, filt1, filt2);
-        vt_out1 = AVC_DOT_SH3_SH(src_vt21_h, src_vt43_h, src_vt65_h, filt0, filt1, filt2);
-        vt_out2 = AVC_DOT_SH3_SH(src_vt32_h, src_vt54_h, src_vt76_h, filt0, filt1, filt2);
-        vt_out3 = AVC_DOT_SH3_SH(src_vt43_h, src_vt65_h, src_vt87_h, filt0, filt1, filt2);
+        vt_out0 = AVC_DOT_SH3_SH(src_vt10_h, src_vt32_h, src_vt54_h,
+                                 filt0, filt1, filt2);
+        vt_out1 = AVC_DOT_SH3_SH(src_vt21_h, src_vt43_h, src_vt65_h,
+                                 filt0, filt1, filt2);
+        vt_out2 = AVC_DOT_SH3_SH(src_vt32_h, src_vt54_h, src_vt76_h,
+                                 filt0, filt1, filt2);
+        vt_out3 = AVC_DOT_SH3_SH(src_vt43_h, src_vt65_h, src_vt87_h,
+                                 filt0, filt1, filt2);
         vt_out0 = __lasx_xvssrarni_b_h(vt_out1, vt_out0, 5);
         vt_out2 = __lasx_xvssrarni_b_h(vt_out3, vt_out2, 5);
 
-        DUP2_ARG2(__lasx_xvaddwl_h_b, hz_out0, vt_out0, hz_out2, vt_out2, out0, out2);
-        DUP2_ARG2(__lasx_xvaddwh_h_b, hz_out0, vt_out0, hz_out2, vt_out2, out1, out3);
+        DUP2_ARG2(__lasx_xvaddwl_h_b, hz_out0, vt_out0, hz_out2, vt_out2,
+                  out0, out2);
+        DUP2_ARG2(__lasx_xvaddwh_h_b, hz_out0, vt_out0, hz_out2, vt_out2,
+                  out1, out3);
         tmp0 = __lasx_xvssrarni_b_h(out1, out0, 1);
         tmp1 = __lasx_xvssrarni_b_h(out3, out2, 1);
 
@@ -298,45 +317,39 @@ static av_always_inline void
 put_pixels8_8_inline_asm(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)
 {
     uint64_t tmp[8];
+    ptrdiff_t stride_2, stride_3, stride_4;
     __asm__ volatile (
-        "ld.d       %[tmp0],    %[src],    0x0         \n\t"
-        "add.d      %[src],     %[src],    %[stride]   \n\t"
-        "ld.d       %[tmp1],    %[src],    0x0         \n\t"
-        "add.d      %[src],     %[src],    %[stride]   \n\t"
-        "ld.d       %[tmp2],    %[src],    0x0         \n\t"
-        "add.d      %[src],     %[src],    %[stride]   \n\t"
-        "ld.d       %[tmp3],    %[src],    0x0         \n\t"
-        "add.d      %[src],     %[src],    %[stride]   \n\t"
-        "ld.d       %[tmp4],    %[src],    0x0         \n\t"
-        "add.d      %[src],     %[src],    %[stride]   \n\t"
-        "ld.d       %[tmp5],    %[src],    0x0         \n\t"
-        "add.d      %[src],     %[src],    %[stride]   \n\t"
-        "ld.d       %[tmp6],    %[src],    0x0         \n\t"
-        "add.d      %[src],     %[src],    %[stride]   \n\t"
-        "ld.d       %[tmp7],    %[src],    0x0         \n\t"
+    "slli.d     %[stride_2],     %[stride],   1           \n\t"
+    "add.d      %[stride_3],     %[stride_2], %[stride]   \n\t"
+    "slli.d     %[stride_4],     %[stride_2], 1           \n\t"
+    "ld.d       %[tmp0],         %[src],      0x0         \n\t"
+    "ldx.d      %[tmp1],         %[src],      %[stride]   \n\t"
+    "ldx.d      %[tmp2],         %[src],      %[stride_2] \n\t"
+    "ldx.d      %[tmp3],         %[src],      %[stride_3] \n\t"
+    "add.d      %[src],          %[src],      %[stride_4] \n\t"
+    "ld.d       %[tmp4],         %[src],      0x0         \n\t"
+    "ldx.d      %[tmp5],         %[src],      %[stride]   \n\t"
+    "ldx.d      %[tmp6],         %[src],      %[stride_2] \n\t"
+    "ldx.d      %[tmp7],         %[src],      %[stride_3] \n\t"
 
-        "st.d       %[tmp0],    %[dst],    0x0         \n\t"
-        "add.d      %[dst],     %[dst],    %[stride]   \n\t"
-        "st.d       %[tmp1],    %[dst],    0x0         \n\t"
-        "add.d      %[dst],     %[dst],    %[stride]   \n\t"
-        "st.d       %[tmp2],    %[dst],    0x0         \n\t"
-        "add.d      %[dst],     %[dst],    %[stride]   \n\t"
-        "st.d       %[tmp3],    %[dst],    0x0         \n\t"
-        "add.d      %[dst],     %[dst],    %[stride]   \n\t"
-        "st.d       %[tmp4],    %[dst],    0x0         \n\t"
-        "add.d      %[dst],     %[dst],    %[stride]   \n\t"
-        "st.d       %[tmp5],    %[dst],    0x0         \n\t"
-        "add.d      %[dst],     %[dst],    %[stride]   \n\t"
-        "st.d       %[tmp6],    %[dst],    0x0         \n\t"
-        "add.d      %[dst],     %[dst],    %[stride]   \n\t"
-        "st.d       %[tmp7],    %[dst],    0x0         \n\t"
-        : [tmp0]"=&r"(tmp[0]),        [tmp1]"=&r"(tmp[1]),
-          [tmp2]"=&r"(tmp[2]),        [tmp3]"=&r"(tmp[3]),
-          [tmp4]"=&r"(tmp[4]),        [tmp5]"=&r"(tmp[5]),
-          [tmp6]"=&r"(tmp[6]),        [tmp7]"=&r"(tmp[7]),
-          [dst]"+&r"(dst),            [src]"+&r"(src)
-        : [stride]"r"(stride)
-        : "memory"
+    "st.d       %[tmp0],         %[dst],      0x0         \n\t"
+    "stx.d      %[tmp1],         %[dst],      %[stride]   \n\t"
+    "stx.d      %[tmp2],         %[dst],      %[stride_2] \n\t"
+    "stx.d      %[tmp3],         %[dst],      %[stride_3] \n\t"
+    "add.d      %[dst],          %[dst],      %[stride_4] \n\t"
+    "st.d       %[tmp4],         %[dst],      0x0         \n\t"
+    "stx.d      %[tmp5],         %[dst],      %[stride]   \n\t"
+    "stx.d      %[tmp6],         %[dst],      %[stride_2] \n\t"
+    "stx.d      %[tmp7],         %[dst],      %[stride_3] \n\t"
+    : [tmp0]"=&r"(tmp[0]),        [tmp1]"=&r"(tmp[1]),
+      [tmp2]"=&r"(tmp[2]),        [tmp3]"=&r"(tmp[3]),
+      [tmp4]"=&r"(tmp[4]),        [tmp5]"=&r"(tmp[5]),
+      [tmp6]"=&r"(tmp[6]),        [tmp7]"=&r"(tmp[7]),
+      [stride_2]"=&r"(stride_2),  [stride_3]"=&r"(stride_3),
+      [stride_4]"=&r"(stride_4),
+      [dst]"+&r"(dst),            [src]"+&r"(src)
+    : [stride]"r"(stride)
+    : "memory"
     );
 }
 
@@ -347,67 +360,61 @@ static av_always_inline void
 avg_pixels8_8_lsx(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)
 {
     uint8_t *tmp = dst;
+    ptrdiff_t stride_2, stride_3, stride_4;
     __asm__ volatile (
-        /* h0~h7 */
-        "vld     $vr0,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr1,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr2,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr3,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr4,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr5,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr6,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr7,    %[src],  0          \n\t"
+    /* h0~h7 */
+    "slli.d     %[stride_2],     %[stride],   1           \n\t"
+    "add.d      %[stride_3],     %[stride_2], %[stride]   \n\t"
+    "slli.d     %[stride_4],     %[stride_2], 1           \n\t"
+    "vld        $vr0,            %[src],      0           \n\t"
+    "vldx       $vr1,            %[src],      %[stride]   \n\t"
+    "vldx       $vr2,            %[src],      %[stride_2] \n\t"
+    "vldx       $vr3,            %[src],      %[stride_3] \n\t"
+    "add.d      %[src],          %[src],      %[stride_4] \n\t"
+    "vld        $vr4,            %[src],      0           \n\t"
+    "vldx       $vr5,            %[src],      %[stride]   \n\t"
+    "vldx       $vr6,            %[src],      %[stride_2] \n\t"
+    "vldx       $vr7,            %[src],      %[stride_3] \n\t"
 
-        "vld     $vr8,    %[tmp],  0          \n\t"
-        "add.d   %[tmp],  %[tmp],  %[stride]  \n\t"
-        "vld     $vr9,    %[tmp],  0          \n\t"
-        "add.d   %[tmp],  %[tmp],  %[stride]  \n\t"
-        "vld     $vr10,   %[tmp],  0          \n\t"
-        "add.d   %[tmp],  %[tmp],  %[stride]  \n\t"
-        "vld     $vr11,   %[tmp],  0          \n\t"
-        "add.d   %[tmp],  %[tmp],  %[stride]  \n\t"
-        "vld     $vr12,   %[tmp],  0          \n\t"
-        "add.d   %[tmp],  %[tmp],  %[stride]  \n\t"
-        "vld     $vr13,   %[tmp],  0          \n\t"
-        "add.d   %[tmp],  %[tmp],  %[stride]  \n\t"
-        "vld     $vr14,   %[tmp],  0          \n\t"
-        "add.d   %[tmp],  %[tmp],  %[stride]  \n\t"
-        "vld     $vr15,   %[tmp],  0          \n\t"
+    "vld        $vr8,            %[tmp],      0           \n\t"
+    "vldx       $vr9,            %[tmp],      %[stride]   \n\t"
+    "vldx       $vr10,           %[tmp],      %[stride_2] \n\t"
+    "vldx       $vr11,           %[tmp],      %[stride_3] \n\t"
+    "add.d      %[tmp],          %[tmp],      %[stride_4] \n\t"
+    "vld        $vr12,           %[tmp],      0           \n\t"
+    "vldx       $vr13,           %[tmp],      %[stride]   \n\t"
+    "vldx       $vr14,           %[tmp],      %[stride_2] \n\t"
+    "vldx       $vr15,           %[tmp],      %[stride_3] \n\t"
 
-        "vavgr.bu $vr0,   $vr8,    $vr0       \n\t"
-        "vavgr.bu $vr1,   $vr9,    $vr1       \n\t"
-        "vavgr.bu $vr2,   $vr10,   $vr2       \n\t"
-        "vavgr.bu $vr3,   $vr11,   $vr3       \n\t"
-        "vavgr.bu $vr4,   $vr12,   $vr4       \n\t"
-        "vavgr.bu $vr5,   $vr13,   $vr5       \n\t"
-        "vavgr.bu $vr6,   $vr14,   $vr6       \n\t"
-        "vavgr.bu $vr7,   $vr15,   $vr7       \n\t"
+    "vavgr.bu    $vr0,           $vr8,        $vr0        \n\t"
+    "vavgr.bu    $vr1,           $vr9,        $vr1        \n\t"
+    "vavgr.bu    $vr2,           $vr10,       $vr2        \n\t"
+    "vavgr.bu    $vr3,           $vr11,       $vr3        \n\t"
+    "vavgr.bu    $vr4,           $vr12,       $vr4        \n\t"
+    "vavgr.bu    $vr5,           $vr13,       $vr5        \n\t"
+    "vavgr.bu    $vr6,           $vr14,       $vr6        \n\t"
+    "vavgr.bu    $vr7,           $vr15,       $vr7        \n\t"
 
-        "vstelm.d  $vr0,  %[dst],  0,  0      \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vstelm.d  $vr1,  %[dst],  0,  0      \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vstelm.d  $vr2,  %[dst],  0,  0      \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vstelm.d  $vr3,  %[dst],  0,  0      \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vstelm.d  $vr4,  %[dst],  0,  0      \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vstelm.d  $vr5,  %[dst],  0,  0      \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vstelm.d  $vr6,  %[dst],  0,  0      \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vstelm.d  $vr7,  %[dst],  0,  0      \n\t"
-        : [dst]"+&r"(dst), [tmp]"+&r"(tmp), [src]"+&r"(src)
-        : [stride]"r"(stride)
-        : "memory"
+    "vstelm.d    $vr0,           %[dst],      0,  0       \n\t"
+    "add.d       %[dst],         %[dst],      %[stride]   \n\t"
+    "vstelm.d    $vr1,           %[dst],      0,  0       \n\t"
+    "add.d       %[dst],         %[dst],      %[stride]   \n\t"
+    "vstelm.d    $vr2,           %[dst],      0,  0       \n\t"
+    "add.d       %[dst],         %[dst],      %[stride]   \n\t"
+    "vstelm.d    $vr3,           %[dst],      0,  0       \n\t"
+    "add.d       %[dst],         %[dst],      %[stride]   \n\t"
+    "vstelm.d    $vr4,           %[dst],      0,  0       \n\t"
+    "add.d       %[dst],         %[dst],      %[stride]   \n\t"
+    "vstelm.d    $vr5,           %[dst],      0,  0       \n\t"
+    "add.d       %[dst],         %[dst],      %[stride]   \n\t"
+    "vstelm.d    $vr6,           %[dst],      0,  0       \n\t"
+    "add.d       %[dst],         %[dst],      %[stride]   \n\t"
+    "vstelm.d    $vr7,           %[dst],      0,  0       \n\t"
+    : [dst]"+&r"(dst), [tmp]"+&r"(tmp), [src]"+&r"(src),
+      [stride_2]"=&r"(stride_2),  [stride_3]"=&r"(stride_3),
+      [stride_4]"=&r"(stride_4)
+    : [stride]"r"(stride)
+    : "memory"
     );
 }
 
@@ -418,60 +425,60 @@ static av_always_inline void
 put_pixels8_l2_8_lsx(uint8_t *dst, const uint8_t *src, const uint8_t *half,
                      ptrdiff_t dstStride, ptrdiff_t srcStride)
 {
+    ptrdiff_t stride_2, stride_3, stride_4;
     __asm__ volatile (
-        /* h0~h7 */
-        "vld     $vr0,    %[src],   0             \n\t"
-        "add.d   %[src],  %[src],   %[srcStride]  \n\t"
-        "vld     $vr1,    %[src],   0             \n\t"
-        "add.d   %[src],  %[src],   %[srcStride]  \n\t"
-        "vld     $vr2,    %[src],   0             \n\t"
-        "add.d   %[src],  %[src],   %[srcStride]  \n\t"
-        "vld     $vr3,    %[src],   0             \n\t"
-        "add.d   %[src],  %[src],   %[srcStride]  \n\t"
-        "vld     $vr4,    %[src],   0             \n\t"
-        "add.d   %[src],  %[src],   %[srcStride]  \n\t"
-        "vld     $vr5,    %[src],   0             \n\t"
-        "add.d   %[src],  %[src],   %[srcStride]  \n\t"
-        "vld     $vr6,    %[src],   0             \n\t"
-        "add.d   %[src],  %[src],   %[srcStride]  \n\t"
-        "vld     $vr7,    %[src],   0             \n\t"
+    /* h0~h7 */
+    "slli.d     %[stride_2],     %[srcStride],   1            \n\t"
+    "add.d      %[stride_3],     %[stride_2],    %[srcStride] \n\t"
+    "slli.d     %[stride_4],     %[stride_2],    1            \n\t"
+    "vld        $vr0,            %[src],         0            \n\t"
+    "vldx       $vr1,            %[src],         %[srcStride] \n\t"
+    "vldx       $vr2,            %[src],         %[stride_2]  \n\t"
+    "vldx       $vr3,            %[src],         %[stride_3]  \n\t"
+    "add.d      %[src],          %[src],         %[stride_4]  \n\t"
+    "vld        $vr4,            %[src],         0            \n\t"
+    "vldx       $vr5,            %[src],         %[srcStride] \n\t"
+    "vldx       $vr6,            %[src],         %[stride_2]  \n\t"
+    "vldx       $vr7,            %[src],         %[stride_3]  \n\t"
 
-        "vld     $vr8,    %[half],  0x00          \n\t"
-        "vld     $vr9,    %[half],  0x08          \n\t"
-        "vld     $vr10,   %[half],  0x10          \n\t"
-        "vld     $vr11,   %[half],  0x18          \n\t"
-        "vld     $vr12,   %[half],  0x20          \n\t"
-        "vld     $vr13,   %[half],  0x28          \n\t"
-        "vld     $vr14,   %[half],  0x30          \n\t"
-        "vld     $vr15,   %[half],  0x38          \n\t"
+    "vld        $vr8,            %[half],        0x00         \n\t"
+    "vld        $vr9,            %[half],        0x08         \n\t"
+    "vld        $vr10,           %[half],        0x10         \n\t"
+    "vld        $vr11,           %[half],        0x18         \n\t"
+    "vld        $vr12,           %[half],        0x20         \n\t"
+    "vld        $vr13,           %[half],        0x28         \n\t"
+    "vld        $vr14,           %[half],        0x30         \n\t"
+    "vld        $vr15,           %[half],        0x38         \n\t"
 
-        "vavgr.bu $vr0,   $vr8,     $vr0          \n\t"
-        "vavgr.bu $vr1,   $vr9,     $vr1          \n\t"
-        "vavgr.bu $vr2,   $vr10,    $vr2          \n\t"
-        "vavgr.bu $vr3,   $vr11,    $vr3          \n\t"
-        "vavgr.bu $vr4,   $vr12,    $vr4          \n\t"
-        "vavgr.bu $vr5,   $vr13,    $vr5          \n\t"
-        "vavgr.bu $vr6,   $vr14,    $vr6          \n\t"
-        "vavgr.bu $vr7,   $vr15,    $vr7          \n\t"
+    "vavgr.bu   $vr0,            $vr8,           $vr0         \n\t"
+    "vavgr.bu   $vr1,            $vr9,           $vr1         \n\t"
+    "vavgr.bu   $vr2,            $vr10,          $vr2         \n\t"
+    "vavgr.bu   $vr3,            $vr11,          $vr3         \n\t"
+    "vavgr.bu   $vr4,            $vr12,          $vr4         \n\t"
+    "vavgr.bu   $vr5,            $vr13,          $vr5         \n\t"
+    "vavgr.bu   $vr6,            $vr14,          $vr6         \n\t"
+    "vavgr.bu   $vr7,            $vr15,          $vr7         \n\t"
 
-        "vstelm.d  $vr0,  %[dst],   0,  0         \n\t"
-        "add.d   %[dst],  %[dst],   %[dstStride]  \n\t"
-        "vstelm.d  $vr1,  %[dst],   0,  0         \n\t"
-        "add.d   %[dst],  %[dst],   %[dstStride]  \n\t"
-        "vstelm.d  $vr2,  %[dst],   0,  0         \n\t"
-        "add.d   %[dst],  %[dst],   %[dstStride]  \n\t"
-        "vstelm.d  $vr3,  %[dst],   0,  0         \n\t"
-        "add.d   %[dst],  %[dst],   %[dstStride]  \n\t"
-        "vstelm.d  $vr4,  %[dst],   0,  0         \n\t"
-        "add.d   %[dst],  %[dst],   %[dstStride]  \n\t"
-        "vstelm.d  $vr5,  %[dst],   0,  0         \n\t"
-        "add.d   %[dst],  %[dst],   %[dstStride]  \n\t"
-        "vstelm.d  $vr6,  %[dst],   0,  0         \n\t"
-        "add.d   %[dst],  %[dst],   %[dstStride]  \n\t"
-        "vstelm.d  $vr7,  %[dst],   0,  0         \n\t"
-        : [dst]"+&r"(dst), [half]"+&r"(half), [src]"+&r"(src)
-        : [srcStride]"r"(srcStride), [dstStride]"r"(dstStride)
-        : "memory"
+    "vstelm.d   $vr0,            %[dst],         0,  0        \n\t"
+    "add.d      %[dst],          %[dst],         %[dstStride] \n\t"
+    "vstelm.d   $vr1,            %[dst],         0,  0        \n\t"
+    "add.d      %[dst],          %[dst],         %[dstStride] \n\t"
+    "vstelm.d   $vr2,            %[dst],         0,  0        \n\t"
+    "add.d      %[dst],          %[dst],         %[dstStride] \n\t"
+    "vstelm.d   $vr3,            %[dst],         0,  0        \n\t"
+    "add.d      %[dst],          %[dst],         %[dstStride] \n\t"
+    "vstelm.d   $vr4,            %[dst],         0,  0        \n\t"
+    "add.d      %[dst],          %[dst],         %[dstStride] \n\t"
+    "vstelm.d   $vr5,            %[dst],         0,  0        \n\t"
+    "add.d      %[dst],          %[dst],         %[dstStride] \n\t"
+    "vstelm.d   $vr6,            %[dst],         0,  0        \n\t"
+    "add.d      %[dst],          %[dst],         %[dstStride] \n\t"
+    "vstelm.d   $vr7,            %[dst],         0,  0        \n\t"
+    : [dst]"+&r"(dst), [half]"+&r"(half), [src]"+&r"(src),
+      [stride_2]"=&r"(stride_2),  [stride_3]"=&r"(stride_3),
+      [stride_4]"=&r"(stride_4)
+    : [srcStride]"r"(srcStride), [dstStride]"r"(dstStride)
+    : "memory"
     );
 }
 
@@ -483,85 +490,82 @@ avg_pixels8_l2_8_lsx(uint8_t *dst, const uint8_t *src, const uint8_t *half,
                      ptrdiff_t dstStride, ptrdiff_t srcStride)
 {
     uint8_t *tmp = dst;
+    ptrdiff_t stride_2, stride_3, stride_4;
     __asm__ volatile (
-        /* h0~h7 */
-        "vld     $vr0,    %[src],   0             \n\t"
-        "add.d   %[src],  %[src],   %[srcStride]  \n\t"
-        "vld     $vr1,    %[src],   0             \n\t"
-        "add.d   %[src],  %[src],   %[srcStride]  \n\t"
-        "vld     $vr2,    %[src],   0             \n\t"
-        "add.d   %[src],  %[src],   %[srcStride]  \n\t"
-        "vld     $vr3,    %[src],   0             \n\t"
-        "add.d   %[src],  %[src],   %[srcStride]  \n\t"
-        "vld     $vr4,    %[src],   0             \n\t"
-        "add.d   %[src],  %[src],   %[srcStride]  \n\t"
-        "vld     $vr5,    %[src],   0             \n\t"
-        "add.d   %[src],  %[src],   %[srcStride]  \n\t"
-        "vld     $vr6,    %[src],   0             \n\t"
-        "add.d   %[src],  %[src],   %[srcStride]  \n\t"
-        "vld     $vr7,    %[src],   0             \n\t"
+    /* h0~h7 */
+    "slli.d     %[stride_2],     %[srcStride],   1            \n\t"
+    "add.d      %[stride_3],     %[stride_2],    %[srcStride] \n\t"
+    "slli.d     %[stride_4],     %[stride_2],    1            \n\t"
+    "vld        $vr0,            %[src],         0            \n\t"
+    "vldx       $vr1,            %[src],         %[srcStride] \n\t"
+    "vldx       $vr2,            %[src],         %[stride_2]  \n\t"
+    "vldx       $vr3,            %[src],         %[stride_3]  \n\t"
+    "add.d      %[src],          %[src],         %[stride_4]  \n\t"
+    "vld        $vr4,            %[src],         0            \n\t"
+    "vldx       $vr5,            %[src],         %[srcStride] \n\t"
+    "vldx       $vr6,            %[src],         %[stride_2]  \n\t"
+    "vldx       $vr7,            %[src],         %[stride_3]  \n\t"
 
-        "vld     $vr8,    %[half],  0x00          \n\t"
-        "vld     $vr9,    %[half],  0x08          \n\t"
-        "vld     $vr10,   %[half],  0x10          \n\t"
-        "vld     $vr11,   %[half],  0x18          \n\t"
-        "vld     $vr12,   %[half],  0x20          \n\t"
-        "vld     $vr13,   %[half],  0x28          \n\t"
-        "vld     $vr14,   %[half],  0x30          \n\t"
-        "vld     $vr15,   %[half],  0x38          \n\t"
+    "vld        $vr8,            %[half],        0x00         \n\t"
+    "vld        $vr9,            %[half],        0x08         \n\t"
+    "vld        $vr10,           %[half],        0x10         \n\t"
+    "vld        $vr11,           %[half],        0x18         \n\t"
+    "vld        $vr12,           %[half],        0x20         \n\t"
+    "vld        $vr13,           %[half],        0x28         \n\t"
+    "vld        $vr14,           %[half],        0x30         \n\t"
+    "vld        $vr15,           %[half],        0x38         \n\t"
 
-        "vavgr.bu $vr0,   $vr8,     $vr0          \n\t"
-        "vavgr.bu $vr1,   $vr9,     $vr1          \n\t"
-        "vavgr.bu $vr2,   $vr10,    $vr2          \n\t"
-        "vavgr.bu $vr3,   $vr11,    $vr3          \n\t"
-        "vavgr.bu $vr4,   $vr12,    $vr4          \n\t"
-        "vavgr.bu $vr5,   $vr13,    $vr5          \n\t"
-        "vavgr.bu $vr6,   $vr14,    $vr6          \n\t"
-        "vavgr.bu $vr7,   $vr15,    $vr7          \n\t"
+    "vavgr.bu    $vr0,           $vr8,           $vr0         \n\t"
+    "vavgr.bu    $vr1,           $vr9,           $vr1         \n\t"
+    "vavgr.bu    $vr2,           $vr10,          $vr2         \n\t"
+    "vavgr.bu    $vr3,           $vr11,          $vr3         \n\t"
+    "vavgr.bu    $vr4,           $vr12,          $vr4         \n\t"
+    "vavgr.bu    $vr5,           $vr13,          $vr5         \n\t"
+    "vavgr.bu    $vr6,           $vr14,          $vr6         \n\t"
+    "vavgr.bu    $vr7,           $vr15,          $vr7         \n\t"
 
-        "vld     $vr8,    %[tmp],   0             \n\t"
-        "add.d   %[tmp],  %[tmp],   %[dstStride]  \n\t"
-        "vld     $vr9,    %[tmp],   0             \n\t"
-        "add.d   %[tmp],  %[tmp],   %[dstStride]  \n\t"
-        "vld     $vr10,   %[tmp],   0             \n\t"
-        "add.d   %[tmp],  %[tmp],   %[dstStride]  \n\t"
-        "vld     $vr11,   %[tmp],   0             \n\t"
-        "add.d   %[tmp],  %[tmp],   %[dstStride]  \n\t"
-        "vld     $vr12,   %[tmp],   0             \n\t"
-        "add.d   %[tmp],  %[tmp],   %[dstStride]  \n\t"
-        "vld     $vr13,   %[tmp],   0             \n\t"
-        "add.d   %[tmp],  %[tmp],   %[dstStride]  \n\t"
-        "vld     $vr14,   %[tmp],   0             \n\t"
-        "add.d   %[tmp],  %[tmp],   %[dstStride]  \n\t"
-        "vld     $vr15,   %[tmp],   0             \n\t"
+    "slli.d     %[stride_2],     %[dstStride],   1            \n\t"
+    "add.d      %[stride_3],     %[stride_2],    %[dstStride] \n\t"
+    "slli.d     %[stride_4],     %[stride_2],    1            \n\t"
+    "vld        $vr8,            %[tmp],         0            \n\t"
+    "vldx       $vr9,            %[tmp],         %[dstStride] \n\t"
+    "vldx       $vr10,           %[tmp],         %[stride_2]  \n\t"
+    "vldx       $vr11,           %[tmp],         %[stride_3]  \n\t"
+    "add.d      %[tmp],          %[tmp],         %[stride_4]  \n\t"
+    "vld        $vr12,           %[tmp],         0            \n\t"
+    "vldx       $vr13,           %[tmp],         %[dstStride] \n\t"
+    "vldx       $vr14,           %[tmp],         %[stride_2]  \n\t"
+    "vldx       $vr15,           %[tmp],         %[stride_3]  \n\t"
 
-        "vavgr.bu $vr0,   $vr8,     $vr0          \n\t"
-        "vavgr.bu $vr1,   $vr9,     $vr1          \n\t"
-        "vavgr.bu $vr2,   $vr10,    $vr2          \n\t"
-        "vavgr.bu $vr3,   $vr11,    $vr3          \n\t"
-        "vavgr.bu $vr4,   $vr12,    $vr4          \n\t"
-        "vavgr.bu $vr5,   $vr13,    $vr5          \n\t"
-        "vavgr.bu $vr6,   $vr14,    $vr6          \n\t"
-        "vavgr.bu $vr7,   $vr15,    $vr7          \n\t"
+    "vavgr.bu    $vr0,           $vr8,           $vr0         \n\t"
+    "vavgr.bu    $vr1,           $vr9,           $vr1         \n\t"
+    "vavgr.bu    $vr2,           $vr10,          $vr2         \n\t"
+    "vavgr.bu    $vr3,           $vr11,          $vr3         \n\t"
+    "vavgr.bu    $vr4,           $vr12,          $vr4         \n\t"
+    "vavgr.bu    $vr5,           $vr13,          $vr5         \n\t"
+    "vavgr.bu    $vr6,           $vr14,          $vr6         \n\t"
+    "vavgr.bu    $vr7,           $vr15,          $vr7         \n\t"
 
-        "vstelm.d  $vr0,  %[dst],   0,  0         \n\t"
-        "add.d   %[dst],  %[dst],   %[dstStride]  \n\t"
-        "vstelm.d  $vr1,  %[dst],   0,  0         \n\t"
-        "add.d   %[dst],  %[dst],   %[dstStride]  \n\t"
-        "vstelm.d  $vr2,  %[dst],   0,  0         \n\t"
-        "add.d   %[dst],  %[dst],   %[dstStride]  \n\t"
-        "vstelm.d  $vr3,  %[dst],   0,  0         \n\t"
-        "add.d   %[dst],  %[dst],   %[dstStride]  \n\t"
-        "vstelm.d  $vr4,  %[dst],   0,  0         \n\t"
-        "add.d   %[dst],  %[dst],   %[dstStride]  \n\t"
-        "vstelm.d  $vr5,  %[dst],   0,  0         \n\t"
-        "add.d   %[dst],  %[dst],   %[dstStride]  \n\t"
-        "vstelm.d  $vr6,  %[dst],   0,  0         \n\t"
-        "add.d   %[dst],  %[dst],   %[dstStride]  \n\t"
-        "vstelm.d  $vr7,  %[dst],   0,  0         \n\t"
-        : [dst]"+&r"(dst), [tmp]"+&r"(tmp), [half]"+&r"(half), [src]"+&r"(src)
-        : [dstStride]"r"(dstStride), [srcStride]"r"(srcStride)
-        : "memory"
+    "vstelm.d    $vr0,           %[dst],         0,  0        \n\t"
+    "add.d       %[dst],         %[dst],         %[dstStride] \n\t"
+    "vstelm.d    $vr1,           %[dst],         0,  0        \n\t"
+    "add.d       %[dst],         %[dst],         %[dstStride] \n\t"
+    "vstelm.d    $vr2,           %[dst],         0,  0        \n\t"
+    "add.d       %[dst],         %[dst],         %[dstStride] \n\t"
+    "vstelm.d    $vr3,           %[dst],         0,  0        \n\t"
+    "add.d       %[dst],         %[dst],         %[dstStride] \n\t"
+    "vstelm.d    $vr4,           %[dst],         0,  0        \n\t"
+    "add.d       %[dst],         %[dst],         %[dstStride] \n\t"
+    "vstelm.d    $vr5,           %[dst],         0,  0        \n\t"
+    "add.d       %[dst],         %[dst],         %[dstStride] \n\t"
+    "vstelm.d    $vr6,           %[dst],         0,  0        \n\t"
+    "add.d       %[dst],         %[dst],         %[dstStride] \n\t"
+    "vstelm.d    $vr7,           %[dst],         0,  0        \n\t"
+    : [dst]"+&r"(dst), [tmp]"+&r"(tmp), [half]"+&r"(half),
+      [src]"+&r"(src), [stride_2]"=&r"(stride_2),
+      [stride_3]"=&r"(stride_3), [stride_4]"=&r"(stride_4)
+    : [dstStride]"r"(dstStride), [srcStride]"r"(srcStride)
+    : "memory"
     );
 }
 
@@ -569,75 +573,57 @@ avg_pixels8_l2_8_lsx(uint8_t *dst, const uint8_t *src, const uint8_t *half,
 static av_always_inline void
 put_pixels16_8_lsx(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)
 {
+    ptrdiff_t stride_2, stride_3, stride_4;
     __asm__ volatile (
-        "vld     $vr0,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr1,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr2,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr3,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr4,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr5,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr6,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr7,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
+    "slli.d     %[stride_2],     %[stride],      1            \n\t"
+    "add.d      %[stride_3],     %[stride_2],    %[stride]    \n\t"
+    "slli.d     %[stride_4],     %[stride_2],    1            \n\t"
+    "vld        $vr0,            %[src],         0            \n\t"
+    "vldx       $vr1,            %[src],         %[stride]    \n\t"
+    "vldx       $vr2,            %[src],         %[stride_2]  \n\t"
+    "vldx       $vr3,            %[src],         %[stride_3]  \n\t"
+    "add.d      %[src],          %[src],         %[stride_4]  \n\t"
+    "vld        $vr4,            %[src],         0            \n\t"
+    "vldx       $vr5,            %[src],         %[stride]    \n\t"
+    "vldx       $vr6,            %[src],         %[stride_2]  \n\t"
+    "vldx       $vr7,            %[src],         %[stride_3]  \n\t"
+    "add.d      %[src],          %[src],         %[stride_4]  \n\t"
 
-        "vst     $vr0,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr1,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr2,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr3,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr4,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr5,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr6,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr7,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
+    "vst        $vr0,            %[dst],         0            \n\t"
+    "vstx       $vr1,            %[dst],         %[stride]    \n\t"
+    "vstx       $vr2,            %[dst],         %[stride_2]  \n\t"
+    "vstx       $vr3,            %[dst],         %[stride_3]  \n\t"
+    "add.d      %[dst],          %[dst],         %[stride_4]  \n\t"
+    "vst        $vr4,            %[dst],         0            \n\t"
+    "vstx       $vr5,            %[dst],         %[stride]    \n\t"
+    "vstx       $vr6,            %[dst],         %[stride_2]  \n\t"
+    "vstx       $vr7,            %[dst],         %[stride_3]  \n\t"
+    "add.d      %[dst],          %[dst],         %[stride_4]  \n\t"
 
-        "vld     $vr0,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr1,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr2,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr3,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr4,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr5,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr6,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr7,    %[src],  0          \n\t"
+    "vld        $vr0,            %[src],         0            \n\t"
+    "vldx       $vr1,            %[src],         %[stride]    \n\t"
+    "vldx       $vr2,            %[src],         %[stride_2]  \n\t"
+    "vldx       $vr3,            %[src],         %[stride_3]  \n\t"
+    "add.d      %[src],          %[src],         %[stride_4]  \n\t"
+    "vld        $vr4,            %[src],         0            \n\t"
+    "vldx       $vr5,            %[src],         %[stride]    \n\t"
+    "vldx       $vr6,            %[src],         %[stride_2]  \n\t"
+    "vldx       $vr7,            %[src],         %[stride_3]  \n\t"
 
-        "vst     $vr0,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr1,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr2,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr3,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr4,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr5,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr6,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr7,    %[dst],  0          \n\t"
-        : [dst]"+&r"(dst),            [src]"+&r"(src)
-        : [stride]"r"(stride)
-        : "memory"
+    "vst        $vr0,            %[dst],         0            \n\t"
+    "vstx       $vr1,            %[dst],         %[stride]    \n\t"
+    "vstx       $vr2,            %[dst],         %[stride_2]  \n\t"
+    "vstx       $vr3,            %[dst],         %[stride_3]  \n\t"
+    "add.d      %[dst],          %[dst],         %[stride_4]  \n\t"
+    "vst        $vr4,            %[dst],         0            \n\t"
+    "vstx       $vr5,            %[dst],         %[stride]    \n\t"
+    "vstx       $vr6,            %[dst],         %[stride_2]  \n\t"
+    "vstx       $vr7,            %[dst],         %[stride_3]  \n\t"
+    : [dst]"+&r"(dst),            [src]"+&r"(src),
+      [stride_2]"=&r"(stride_2),  [stride_3]"=&r"(stride_3),
+      [stride_4]"=&r"(stride_4)
+    : [stride]"r"(stride)
+    : "memory"
     );
 }
 
@@ -648,128 +634,98 @@ static av_always_inline void
 avg_pixels16_8_lsx(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)
 {
     uint8_t *tmp = dst;
+    ptrdiff_t stride_2, stride_3, stride_4;
     __asm__ volatile (
-        /* h0~h7 */
-        "vld     $vr0,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr1,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr2,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr3,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr4,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr5,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr6,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr7,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
+    /* h0~h7 */
+    "slli.d     %[stride_2],     %[stride],      1            \n\t"
+    "add.d      %[stride_3],     %[stride_2],    %[stride]    \n\t"
+    "slli.d     %[stride_4],     %[stride_2],    1            \n\t"
+    "vld        $vr0,            %[src],         0            \n\t"
+    "vldx       $vr1,            %[src],         %[stride]    \n\t"
+    "vldx       $vr2,            %[src],         %[stride_2]  \n\t"
+    "vldx       $vr3,            %[src],         %[stride_3]  \n\t"
+    "add.d      %[src],          %[src],         %[stride_4]  \n\t"
+    "vld        $vr4,            %[src],         0            \n\t"
+    "vldx       $vr5,            %[src],         %[stride]    \n\t"
+    "vldx       $vr6,            %[src],         %[stride_2]  \n\t"
+    "vldx       $vr7,            %[src],         %[stride_3]  \n\t"
+    "add.d      %[src],          %[src],         %[stride_4]  \n\t"
 
-        "vld     $vr8,    %[tmp],  0          \n\t"
-        "add.d   %[tmp],  %[tmp],  %[stride]  \n\t"
-        "vld     $vr9,    %[tmp],  0          \n\t"
-        "add.d   %[tmp],  %[tmp],  %[stride]  \n\t"
-        "vld     $vr10,   %[tmp],  0          \n\t"
-        "add.d   %[tmp],  %[tmp],  %[stride]  \n\t"
-        "vld     $vr11,   %[tmp],  0          \n\t"
-        "add.d   %[tmp],  %[tmp],  %[stride]  \n\t"
-        "vld     $vr12,   %[tmp],  0          \n\t"
-        "add.d   %[tmp],  %[tmp],  %[stride]  \n\t"
-        "vld     $vr13,   %[tmp],  0          \n\t"
-        "add.d   %[tmp],  %[tmp],  %[stride]  \n\t"
-        "vld     $vr14,   %[tmp],  0          \n\t"
-        "add.d   %[tmp],  %[tmp],  %[stride]  \n\t"
-        "vld     $vr15,   %[tmp],  0          \n\t"
-        "add.d   %[tmp],  %[tmp],  %[stride]  \n\t"
+    "vld        $vr8,            %[tmp],         0            \n\t"
+    "vldx       $vr9,            %[tmp],         %[stride]    \n\t"
+    "vldx       $vr10,           %[tmp],         %[stride_2]  \n\t"
+    "vldx       $vr11,           %[tmp],         %[stride_3]  \n\t"
+    "add.d      %[tmp],          %[tmp],         %[stride_4]  \n\t"
+    "vld        $vr12,           %[tmp],         0            \n\t"
+    "vldx       $vr13,           %[tmp],         %[stride]    \n\t"
+    "vldx       $vr14,           %[tmp],         %[stride_2]  \n\t"
+    "vldx       $vr15,           %[tmp],         %[stride_3]  \n\t"
+    "add.d      %[tmp],          %[tmp],         %[stride_4]  \n\t"
 
-        "vavgr.bu $vr0,   $vr8,    $vr0       \n\t"
-        "vavgr.bu $vr1,   $vr9,    $vr1       \n\t"
-        "vavgr.bu $vr2,   $vr10,   $vr2       \n\t"
-        "vavgr.bu $vr3,   $vr11,   $vr3       \n\t"
-        "vavgr.bu $vr4,   $vr12,   $vr4       \n\t"
-        "vavgr.bu $vr5,   $vr13,   $vr5       \n\t"
-        "vavgr.bu $vr6,   $vr14,   $vr6       \n\t"
-        "vavgr.bu $vr7,   $vr15,   $vr7       \n\t"
+    "vavgr.bu   $vr0,            $vr8,           $vr0         \n\t"
+    "vavgr.bu   $vr1,            $vr9,           $vr1         \n\t"
+    "vavgr.bu   $vr2,            $vr10,          $vr2         \n\t"
+    "vavgr.bu   $vr3,            $vr11,          $vr3         \n\t"
+    "vavgr.bu   $vr4,            $vr12,          $vr4         \n\t"
+    "vavgr.bu   $vr5,            $vr13,          $vr5         \n\t"
+    "vavgr.bu   $vr6,            $vr14,          $vr6         \n\t"
+    "vavgr.bu   $vr7,            $vr15,          $vr7         \n\t"
 
-        "vst     $vr0,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr1,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr2,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr3,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr4,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr5,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr6,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr7,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
+    "vst        $vr0,            %[dst],         0            \n\t"
+    "vstx       $vr1,            %[dst],         %[stride]    \n\t"
+    "vstx       $vr2,            %[dst],         %[stride_2]  \n\t"
+    "vstx       $vr3,            %[dst],         %[stride_3]  \n\t"
+    "add.d      %[dst],          %[dst],         %[stride_4]  \n\t"
+    "vst        $vr4,            %[dst],         0            \n\t"
+    "vstx       $vr5,            %[dst],         %[stride]    \n\t"
+    "vstx       $vr6,            %[dst],         %[stride_2]  \n\t"
+    "vstx       $vr7,            %[dst],         %[stride_3]  \n\t"
+    "add.d      %[dst],          %[dst],         %[stride_4]  \n\t"
 
-        /* h8~h15 */
-        "vld     $vr0,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr1,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr2,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr3,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr4,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr5,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr6,    %[src],  0          \n\t"
-        "add.d   %[src],  %[src],  %[stride]  \n\t"
-        "vld     $vr7,    %[src],  0          \n\t"
+    /* h8~h15 */
+    "vld        $vr0,            %[src],         0            \n\t"
+    "vldx       $vr1,            %[src],         %[stride]    \n\t"
+    "vldx       $vr2,            %[src],         %[stride_2]  \n\t"
+    "vldx       $vr3,            %[src],         %[stride_3]  \n\t"
+    "add.d      %[src],          %[src],         %[stride_4]  \n\t"
+    "vld        $vr4,            %[src],         0            \n\t"
+    "vldx       $vr5,            %[src],         %[stride]    \n\t"
+    "vldx       $vr6,            %[src],         %[stride_2]  \n\t"
+    "vldx       $vr7,            %[src],         %[stride_3]  \n\t"
 
-        "vld     $vr8,    %[tmp],  0          \n\t"
-        "add.d   %[tmp],  %[tmp],  %[stride]  \n\t"
-        "vld     $vr9,    %[tmp],  0          \n\t"
-        "add.d   %[tmp],  %[tmp],  %[stride]  \n\t"
-        "vld     $vr10,   %[tmp],  0          \n\t"
-        "add.d   %[tmp],  %[tmp],  %[stride]  \n\t"
-        "vld     $vr11,   %[tmp],  0          \n\t"
-        "add.d   %[tmp],  %[tmp],  %[stride]  \n\t"
-        "vld     $vr12,   %[tmp],  0          \n\t"
-        "add.d   %[tmp],  %[tmp],  %[stride]  \n\t"
-        "vld     $vr13,   %[tmp],  0          \n\t"
-        "add.d   %[tmp],  %[tmp],  %[stride]  \n\t"
-        "vld     $vr14,   %[tmp],  0          \n\t"
-        "add.d   %[tmp],  %[tmp],  %[stride]  \n\t"
-        "vld     $vr15,   %[tmp],  0          \n\t"
+    "vld        $vr8,            %[tmp],         0            \n\t"
+    "vldx       $vr9,            %[tmp],         %[stride]    \n\t"
+    "vldx       $vr10,           %[tmp],         %[stride_2]  \n\t"
+    "vldx       $vr11,           %[tmp],         %[stride_3]  \n\t"
+    "add.d      %[tmp],          %[tmp],         %[stride_4]  \n\t"
+    "vld        $vr12,           %[tmp],         0            \n\t"
+    "vldx       $vr13,           %[tmp],         %[stride]    \n\t"
+    "vldx       $vr14,           %[tmp],         %[stride_2]  \n\t"
+    "vldx       $vr15,           %[tmp],         %[stride_3]  \n\t"
 
-        "vavgr.bu $vr0,   $vr8,    $vr0       \n\t"
-        "vavgr.bu $vr1,   $vr9,    $vr1       \n\t"
-        "vavgr.bu $vr2,   $vr10,   $vr2       \n\t"
-        "vavgr.bu $vr3,   $vr11,   $vr3       \n\t"
-        "vavgr.bu $vr4,   $vr12,   $vr4       \n\t"
-        "vavgr.bu $vr5,   $vr13,   $vr5       \n\t"
-        "vavgr.bu $vr6,   $vr14,   $vr6       \n\t"
-        "vavgr.bu $vr7,   $vr15,   $vr7       \n\t"
+    "vavgr.bu    $vr0,           $vr8,           $vr0         \n\t"
+    "vavgr.bu    $vr1,           $vr9,           $vr1         \n\t"
+    "vavgr.bu    $vr2,           $vr10,          $vr2         \n\t"
+    "vavgr.bu    $vr3,           $vr11,          $vr3         \n\t"
+    "vavgr.bu    $vr4,           $vr12,          $vr4         \n\t"
+    "vavgr.bu    $vr5,           $vr13,          $vr5         \n\t"
+    "vavgr.bu    $vr6,           $vr14,          $vr6         \n\t"
+    "vavgr.bu    $vr7,           $vr15,          $vr7         \n\t"
 
-        "vst     $vr0,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr1,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr2,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr3,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr4,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr5,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr6,    %[dst],  0          \n\t"
-        "add.d   %[dst],  %[dst],  %[stride]  \n\t"
-        "vst     $vr7,    %[dst],  0          \n\t"
-        : [dst]"+&r"(dst), [tmp]"+&r"(tmp), [src]"+&r"(src)
-        : [stride]"r"(stride)
-        : "memory"
+    "vst        $vr0,            %[dst],         0            \n\t"
+    "vstx       $vr1,            %[dst],         %[stride]    \n\t"
+    "vstx       $vr2,            %[dst],         %[stride_2]  \n\t"
+    "vstx       $vr3,            %[dst],         %[stride_3]  \n\t"
+    "add.d      %[dst],          %[dst],         %[stride_4]  \n\t"
+    "vst        $vr4,            %[dst],         0            \n\t"
+    "vstx       $vr5,            %[dst],         %[stride]    \n\t"
+    "vstx       $vr6,            %[dst],         %[stride_2]  \n\t"
+    "vstx       $vr7,            %[dst],         %[stride_3]  \n\t"
+    : [dst]"+&r"(dst), [tmp]"+&r"(tmp), [src]"+&r"(src),
+      [stride_2]"=&r"(stride_2),  [stride_3]"=&r"(stride_3),
+      [stride_4]"=&r"(stride_4)
+    : [stride]"r"(stride)
+    : "memory"
     );
 }
 
@@ -780,113 +736,100 @@ static av_always_inline void
 put_pixels16_l2_8_lsx(uint8_t *dst, const uint8_t *src, uint8_t *half,
                       ptrdiff_t dstStride, ptrdiff_t srcStride)
 {
+    ptrdiff_t stride_2, stride_3, stride_4;
+    ptrdiff_t dstride_2, dstride_3, dstride_4;
     __asm__ volatile (
-        /* h0~h7 */
-        "vld     $vr0,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr1,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr2,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr3,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr4,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr5,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr6,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr7,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
+    "slli.d     %[stride_2],     %[srcStride],   1            \n\t"
+    "add.d      %[stride_3],     %[stride_2],    %[srcStride] \n\t"
+    "slli.d     %[stride_4],     %[stride_2],    1            \n\t"
+    "slli.d     %[dstride_2],    %[dstStride],   1            \n\t"
+    "add.d      %[dstride_3],    %[dstride_2],   %[dstStride] \n\t"
+    "slli.d     %[dstride_4],    %[dstride_2],   1            \n\t"
+    /* h0~h7 */
+    "vld        $vr0,            %[src],         0            \n\t"
+    "vldx       $vr1,            %[src],         %[srcStride] \n\t"
+    "vldx       $vr2,            %[src],         %[stride_2]  \n\t"
+    "vldx       $vr3,            %[src],         %[stride_3]  \n\t"
+    "add.d      %[src],          %[src],         %[stride_4]  \n\t"
+    "vld        $vr4,            %[src],         0            \n\t"
+    "vldx       $vr5,            %[src],         %[srcStride] \n\t"
+    "vldx       $vr6,            %[src],         %[stride_2]  \n\t"
+    "vldx       $vr7,            %[src],         %[stride_3]  \n\t"
+    "add.d      %[src],          %[src],         %[stride_4]  \n\t"
 
-        "vld     $vr8,    %[half], 0x00          \n\t"
-        "vld     $vr9,    %[half], 0x10          \n\t"
-        "vld     $vr10,   %[half], 0x20          \n\t"
-        "vld     $vr11,   %[half], 0x30          \n\t"
-        "vld     $vr12,   %[half], 0x40          \n\t"
-        "vld     $vr13,   %[half], 0x50          \n\t"
-        "vld     $vr14,   %[half], 0x60          \n\t"
-        "vld     $vr15,   %[half], 0x70          \n\t"
+    "vld        $vr8,            %[half],        0x00         \n\t"
+    "vld        $vr9,            %[half],        0x10         \n\t"
+    "vld        $vr10,           %[half],        0x20         \n\t"
+    "vld        $vr11,           %[half],        0x30         \n\t"
+    "vld        $vr12,           %[half],        0x40         \n\t"
+    "vld        $vr13,           %[half],        0x50         \n\t"
+    "vld        $vr14,           %[half],        0x60         \n\t"
+    "vld        $vr15,           %[half],        0x70         \n\t"
 
-        "vavgr.bu $vr0,   $vr8,    $vr0          \n\t"
-        "vavgr.bu $vr1,   $vr9,    $vr1          \n\t"
-        "vavgr.bu $vr2,   $vr10,   $vr2          \n\t"
-        "vavgr.bu $vr3,   $vr11,   $vr3          \n\t"
-        "vavgr.bu $vr4,   $vr12,   $vr4          \n\t"
-        "vavgr.bu $vr5,   $vr13,   $vr5          \n\t"
-        "vavgr.bu $vr6,   $vr14,   $vr6          \n\t"
-        "vavgr.bu $vr7,   $vr15,   $vr7          \n\t"
+    "vavgr.bu   $vr0,            $vr8,           $vr0         \n\t"
+    "vavgr.bu   $vr1,            $vr9,           $vr1         \n\t"
+    "vavgr.bu   $vr2,            $vr10,          $vr2         \n\t"
+    "vavgr.bu   $vr3,            $vr11,          $vr3         \n\t"
+    "vavgr.bu   $vr4,            $vr12,          $vr4         \n\t"
+    "vavgr.bu   $vr5,            $vr13,          $vr5         \n\t"
+    "vavgr.bu   $vr6,            $vr14,          $vr6         \n\t"
+    "vavgr.bu   $vr7,            $vr15,          $vr7         \n\t"
 
-        "vst     $vr0,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr1,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr2,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr3,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr4,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr5,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr6,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr7,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
+    "vst        $vr0,            %[dst],         0            \n\t"
+    "vstx       $vr1,            %[dst],         %[dstStride] \n\t"
+    "vstx       $vr2,            %[dst],         %[dstride_2] \n\t"
+    "vstx       $vr3,            %[dst],         %[dstride_3] \n\t"
+    "add.d      %[dst],          %[dst],         %[dstride_4] \n\t"
+    "vst        $vr4,            %[dst],         0            \n\t"
+    "vstx       $vr5,            %[dst],         %[dstStride] \n\t"
+    "vstx       $vr6,            %[dst],         %[dstride_2] \n\t"
+    "vstx       $vr7,            %[dst],         %[dstride_3] \n\t"
+    "add.d      %[dst],          %[dst],         %[dstride_4] \n\t"
 
-        /* h8~h15 */
-        "vld     $vr0,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr1,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr2,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr3,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr4,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr5,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr6,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr7,    %[src],  0             \n\t"
+    /* h8~h15 */
+    "vld        $vr0,            %[src],         0            \n\t"
+    "vldx       $vr1,            %[src],         %[srcStride] \n\t"
+    "vldx       $vr2,            %[src],         %[stride_2]  \n\t"
+    "vldx       $vr3,            %[src],         %[stride_3]  \n\t"
+    "add.d      %[src],          %[src],         %[stride_4]  \n\t"
+    "vld        $vr4,            %[src],         0            \n\t"
+    "vldx       $vr5,            %[src],         %[srcStride] \n\t"
+    "vldx       $vr6,            %[src],         %[stride_2]  \n\t"
+    "vldx       $vr7,            %[src],         %[stride_3]  \n\t"
 
-        "vld     $vr8,    %[half], 0x80          \n\t"
-        "vld     $vr9,    %[half], 0x90          \n\t"
-        "vld     $vr10,   %[half], 0xa0          \n\t"
-        "vld     $vr11,   %[half], 0xb0          \n\t"
-        "vld     $vr12,   %[half], 0xc0          \n\t"
-        "vld     $vr13,   %[half], 0xd0          \n\t"
-        "vld     $vr14,   %[half], 0xe0          \n\t"
-        "vld     $vr15,   %[half], 0xf0          \n\t"
+    "vld        $vr8,            %[half],        0x80         \n\t"
+    "vld        $vr9,            %[half],        0x90         \n\t"
+    "vld        $vr10,           %[half],        0xa0         \n\t"
+    "vld        $vr11,           %[half],        0xb0         \n\t"
+    "vld        $vr12,           %[half],        0xc0         \n\t"
+    "vld        $vr13,           %[half],        0xd0         \n\t"
+    "vld        $vr14,           %[half],        0xe0         \n\t"
+    "vld        $vr15,           %[half],        0xf0         \n\t"
 
-        "vavgr.bu $vr0,   $vr8,    $vr0          \n\t"
-        "vavgr.bu $vr1,   $vr9,    $vr1          \n\t"
-        "vavgr.bu $vr2,   $vr10,   $vr2          \n\t"
-        "vavgr.bu $vr3,   $vr11,   $vr3          \n\t"
-        "vavgr.bu $vr4,   $vr12,   $vr4          \n\t"
-        "vavgr.bu $vr5,   $vr13,   $vr5          \n\t"
-        "vavgr.bu $vr6,   $vr14,   $vr6          \n\t"
-        "vavgr.bu $vr7,   $vr15,   $vr7          \n\t"
+    "vavgr.bu   $vr0,            $vr8,           $vr0         \n\t"
+    "vavgr.bu   $vr1,            $vr9,           $vr1         \n\t"
+    "vavgr.bu   $vr2,            $vr10,          $vr2         \n\t"
+    "vavgr.bu   $vr3,            $vr11,          $vr3         \n\t"
+    "vavgr.bu   $vr4,            $vr12,          $vr4         \n\t"
+    "vavgr.bu   $vr5,            $vr13,          $vr5         \n\t"
+    "vavgr.bu   $vr6,            $vr14,          $vr6         \n\t"
+    "vavgr.bu   $vr7,            $vr15,          $vr7         \n\t"
 
-        "vst     $vr0,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr1,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr2,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr3,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr4,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr5,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr6,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr7,    %[dst],  0             \n\t"
-        : [dst]"+&r"(dst), [half]"+&r"(half), [src]"+&r"(src)
-        : [dstStride]"r"(dstStride), [srcStride]"r"(srcStride)
-        : "memory"
+    "vst        $vr0,            %[dst],         0            \n\t"
+    "vstx       $vr1,            %[dst],         %[dstStride] \n\t"
+    "vstx       $vr2,            %[dst],         %[dstride_2] \n\t"
+    "vstx       $vr3,            %[dst],         %[dstride_3] \n\t"
+    "add.d      %[dst],          %[dst],         %[dstride_4] \n\t"
+    "vst        $vr4,            %[dst],         0            \n\t"
+    "vstx       $vr5,            %[dst],         %[dstStride] \n\t"
+    "vstx       $vr6,            %[dst],         %[dstride_2] \n\t"
+    "vstx       $vr7,            %[dst],         %[dstride_3] \n\t"
+    : [dst]"+&r"(dst), [half]"+&r"(half), [src]"+&r"(src),
+      [stride_2]"=&r"(stride_2),  [stride_3]"=&r"(stride_3),
+      [stride_4]"=&r"(stride_4),  [dstride_2]"=&r"(dstride_2),
+      [dstride_3]"=&r"(dstride_3), [dstride_4]"=&r"(dstride_4)
+    : [dstStride]"r"(dstStride), [srcStride]"r"(srcStride)
+    : "memory"
     );
 }
 
@@ -898,164 +841,139 @@ avg_pixels16_l2_8_lsx(uint8_t *dst, const uint8_t *src, uint8_t *half,
                       ptrdiff_t dstStride, ptrdiff_t srcStride)
 {
     uint8_t *tmp = dst;
+    ptrdiff_t stride_2, stride_3, stride_4;
+    ptrdiff_t dstride_2, dstride_3, dstride_4;
     __asm__ volatile (
-        /* h0~h7 */
-        "vld     $vr0,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr1,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr2,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr3,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr4,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr5,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr6,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr7,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
+    "slli.d     %[stride_2],     %[srcStride],   1            \n\t"
+    "add.d      %[stride_3],     %[stride_2],    %[srcStride] \n\t"
+    "slli.d     %[stride_4],     %[stride_2],    1            \n\t"
+    "slli.d     %[dstride_2],    %[dstStride],   1            \n\t"
+    "add.d      %[dstride_3],    %[dstride_2],   %[dstStride] \n\t"
+    "slli.d     %[dstride_4],    %[dstride_2],   1            \n\t"
+    /* h0~h7 */
+    "vld        $vr0,            %[src],         0            \n\t"
+    "vldx       $vr1,            %[src],         %[srcStride] \n\t"
+    "vldx       $vr2,            %[src],         %[stride_2]  \n\t"
+    "vldx       $vr3,            %[src],         %[stride_3]  \n\t"
+    "add.d      %[src],          %[src],         %[stride_4]  \n\t"
+    "vld        $vr4,            %[src],         0            \n\t"
+    "vldx       $vr5,            %[src],         %[srcStride] \n\t"
+    "vldx       $vr6,            %[src],         %[stride_2]  \n\t"
+    "vldx       $vr7,            %[src],         %[stride_3]  \n\t"
+    "add.d      %[src],          %[src],         %[stride_4]  \n\t"
 
-        "vld     $vr8,    %[half], 0x00          \n\t"
-        "vld     $vr9,    %[half], 0x10          \n\t"
-        "vld     $vr10,   %[half], 0x20          \n\t"
-        "vld     $vr11,   %[half], 0x30          \n\t"
-        "vld     $vr12,   %[half], 0x40          \n\t"
-        "vld     $vr13,   %[half], 0x50          \n\t"
-        "vld     $vr14,   %[half], 0x60          \n\t"
-        "vld     $vr15,   %[half], 0x70          \n\t"
+    "vld        $vr8,            %[half],        0x00         \n\t"
+    "vld        $vr9,            %[half],        0x10         \n\t"
+    "vld        $vr10,           %[half],        0x20         \n\t"
+    "vld        $vr11,           %[half],        0x30         \n\t"
+    "vld        $vr12,           %[half],        0x40         \n\t"
+    "vld        $vr13,           %[half],        0x50         \n\t"
+    "vld        $vr14,           %[half],        0x60         \n\t"
+    "vld        $vr15,           %[half],        0x70         \n\t"
 
-        "vavgr.bu $vr0,   $vr8,    $vr0          \n\t"
-        "vavgr.bu $vr1,   $vr9,    $vr1          \n\t"
-        "vavgr.bu $vr2,   $vr10,   $vr2          \n\t"
-        "vavgr.bu $vr3,   $vr11,   $vr3          \n\t"
-        "vavgr.bu $vr4,   $vr12,   $vr4          \n\t"
-        "vavgr.bu $vr5,   $vr13,   $vr5          \n\t"
-        "vavgr.bu $vr6,   $vr14,   $vr6          \n\t"
-        "vavgr.bu $vr7,   $vr15,   $vr7          \n\t"
+    "vavgr.bu   $vr0,            $vr8,           $vr0         \n\t"
+    "vavgr.bu   $vr1,            $vr9,           $vr1         \n\t"
+    "vavgr.bu   $vr2,            $vr10,          $vr2         \n\t"
+    "vavgr.bu   $vr3,            $vr11,          $vr3         \n\t"
+    "vavgr.bu   $vr4,            $vr12,          $vr4         \n\t"
+    "vavgr.bu   $vr5,            $vr13,          $vr5         \n\t"
+    "vavgr.bu   $vr6,            $vr14,          $vr6         \n\t"
+    "vavgr.bu   $vr7,            $vr15,          $vr7         \n\t"
 
-        "vld     $vr8,    %[tmp],  0             \n\t"
-        "add.d   %[tmp],  %[tmp],  %[dstStride]  \n\t"
-        "vld     $vr9,    %[tmp],  0             \n\t"
-        "add.d   %[tmp],  %[tmp],  %[dstStride]  \n\t"
-        "vld     $vr10,   %[tmp],  0             \n\t"
-        "add.d   %[tmp],  %[tmp],  %[dstStride]  \n\t"
-        "vld     $vr11,   %[tmp],  0             \n\t"
-        "add.d   %[tmp],  %[tmp],  %[dstStride]  \n\t"
-        "vld     $vr12,   %[tmp],  0             \n\t"
-        "add.d   %[tmp],  %[tmp],  %[dstStride]  \n\t"
-        "vld     $vr13,   %[tmp],  0             \n\t"
-        "add.d   %[tmp],  %[tmp],  %[dstStride]  \n\t"
-        "vld     $vr14,   %[tmp],  0             \n\t"
-        "add.d   %[tmp],  %[tmp],  %[dstStride]  \n\t"
-        "vld     $vr15,   %[tmp],  0             \n\t"
-        "add.d   %[tmp],  %[tmp],  %[dstStride]  \n\t"
+    "vld        $vr8,            %[tmp],         0            \n\t"
+    "vldx       $vr9,            %[tmp],         %[dstStride] \n\t"
+    "vldx       $vr10,           %[tmp],         %[dstride_2] \n\t"
+    "vldx       $vr11,           %[tmp],         %[dstride_3] \n\t"
+    "add.d      %[tmp],          %[tmp],         %[dstride_4] \n\t"
+    "vld        $vr12,           %[tmp],         0            \n\t"
+    "vldx       $vr13,           %[tmp],         %[dstStride] \n\t"
+    "vldx       $vr14,           %[tmp],         %[dstride_2] \n\t"
+    "vldx       $vr15,           %[tmp],         %[dstride_3] \n\t"
+    "add.d      %[tmp],          %[tmp],         %[dstride_4] \n\t"
 
-        "vavgr.bu $vr0,   $vr8,    $vr0          \n\t"
-        "vavgr.bu $vr1,   $vr9,    $vr1          \n\t"
-        "vavgr.bu $vr2,   $vr10,   $vr2          \n\t"
-        "vavgr.bu $vr3,   $vr11,   $vr3          \n\t"
-        "vavgr.bu $vr4,   $vr12,   $vr4          \n\t"
-        "vavgr.bu $vr5,   $vr13,   $vr5          \n\t"
-        "vavgr.bu $vr6,   $vr14,   $vr6          \n\t"
-        "vavgr.bu $vr7,   $vr15,   $vr7          \n\t"
+    "vavgr.bu    $vr0,           $vr8,           $vr0         \n\t"
+    "vavgr.bu    $vr1,           $vr9,           $vr1         \n\t"
+    "vavgr.bu    $vr2,           $vr10,          $vr2         \n\t"
+    "vavgr.bu    $vr3,           $vr11,          $vr3         \n\t"
+    "vavgr.bu    $vr4,           $vr12,          $vr4         \n\t"
+    "vavgr.bu    $vr5,           $vr13,          $vr5         \n\t"
+    "vavgr.bu    $vr6,           $vr14,          $vr6         \n\t"
+    "vavgr.bu    $vr7,           $vr15,          $vr7         \n\t"
 
-        "vst     $vr0,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr1,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr2,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr3,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr4,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr5,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr6,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr7,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
+    "vst        $vr0,            %[dst],         0            \n\t"
+    "vstx       $vr1,            %[dst],         %[dstStride] \n\t"
+    "vstx       $vr2,            %[dst],         %[dstride_2] \n\t"
+    "vstx       $vr3,            %[dst],         %[dstride_3] \n\t"
+    "add.d      %[dst],          %[dst],         %[dstride_4] \n\t"
+    "vst        $vr4,            %[dst],         0            \n\t"
+    "vstx       $vr5,            %[dst],         %[dstStride] \n\t"
+    "vstx       $vr6,            %[dst],         %[dstride_2] \n\t"
+    "vstx       $vr7,            %[dst],         %[dstride_3] \n\t"
+    "add.d      %[dst],          %[dst],         %[dstride_4] \n\t"
 
-        /* h8~h15 */
-        "vld     $vr0,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr1,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr2,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr3,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr4,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr5,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr6,    %[src],  0             \n\t"
-        "add.d   %[src],  %[src],  %[srcStride]  \n\t"
-        "vld     $vr7,    %[src],  0             \n\t"
+    /* h8~h15    */
+    "vld        $vr0,            %[src],         0            \n\t"
+    "vldx       $vr1,            %[src],         %[srcStride] \n\t"
+    "vldx       $vr2,            %[src],         %[stride_2]  \n\t"
+    "vldx       $vr3,            %[src],         %[stride_3]  \n\t"
+    "add.d      %[src],          %[src],         %[stride_4]  \n\t"
+    "vld        $vr4,            %[src],         0            \n\t"
+    "vldx       $vr5,            %[src],         %[srcStride] \n\t"
+    "vldx       $vr6,            %[src],         %[stride_2]  \n\t"
+    "vldx       $vr7,            %[src],         %[stride_3]  \n\t"
 
-        "vld     $vr8,    %[half], 0x80          \n\t"
-        "vld     $vr9,    %[half], 0x90          \n\t"
-        "vld     $vr10,   %[half], 0xa0          \n\t"
-        "vld     $vr11,   %[half], 0xb0          \n\t"
-        "vld     $vr12,   %[half], 0xc0          \n\t"
-        "vld     $vr13,   %[half], 0xd0          \n\t"
-        "vld     $vr14,   %[half], 0xe0          \n\t"
-        "vld     $vr15,   %[half], 0xf0          \n\t"
+    "vld        $vr8,            %[half],        0x80         \n\t"
+    "vld        $vr9,            %[half],        0x90         \n\t"
+    "vld        $vr10,           %[half],        0xa0         \n\t"
+    "vld        $vr11,           %[half],        0xb0         \n\t"
+    "vld        $vr12,           %[half],        0xc0         \n\t"
+    "vld        $vr13,           %[half],        0xd0         \n\t"
+    "vld        $vr14,           %[half],        0xe0         \n\t"
+    "vld        $vr15,           %[half],        0xf0         \n\t"
 
-        "vavgr.bu $vr0,   $vr8,    $vr0          \n\t"
-        "vavgr.bu $vr1,   $vr9,    $vr1          \n\t"
-        "vavgr.bu $vr2,   $vr10,   $vr2          \n\t"
-        "vavgr.bu $vr3,   $vr11,   $vr3          \n\t"
-        "vavgr.bu $vr4,   $vr12,   $vr4          \n\t"
-        "vavgr.bu $vr5,   $vr13,   $vr5          \n\t"
-        "vavgr.bu $vr6,   $vr14,   $vr6          \n\t"
-        "vavgr.bu $vr7,   $vr15,   $vr7          \n\t"
+    "vavgr.bu    $vr0,           $vr8,           $vr0         \n\t"
+    "vavgr.bu    $vr1,           $vr9,           $vr1         \n\t"
+    "vavgr.bu    $vr2,           $vr10,          $vr2         \n\t"
+    "vavgr.bu    $vr3,           $vr11,          $vr3         \n\t"
+    "vavgr.bu    $vr4,           $vr12,          $vr4         \n\t"
+    "vavgr.bu    $vr5,           $vr13,          $vr5         \n\t"
+    "vavgr.bu    $vr6,           $vr14,          $vr6         \n\t"
+    "vavgr.bu    $vr7,           $vr15,          $vr7         \n\t"
 
-        "vld     $vr8,    %[tmp],  0             \n\t"
-        "add.d   %[tmp],  %[tmp],  %[dstStride]  \n\t"
-        "vld     $vr9,    %[tmp],  0             \n\t"
-        "add.d   %[tmp],  %[tmp],  %[dstStride]  \n\t"
-        "vld     $vr10,   %[tmp],  0             \n\t"
-        "add.d   %[tmp],  %[tmp],  %[dstStride]  \n\t"
-        "vld     $vr11,   %[tmp],  0             \n\t"
-        "add.d   %[tmp],  %[tmp],  %[dstStride]  \n\t"
-        "vld     $vr12,   %[tmp],  0             \n\t"
-        "add.d   %[tmp],  %[tmp],  %[dstStride]  \n\t"
-        "vld     $vr13,   %[tmp],  0             \n\t"
-        "add.d   %[tmp],  %[tmp],  %[dstStride]  \n\t"
-        "vld     $vr14,   %[tmp],  0             \n\t"
-        "add.d   %[tmp],  %[tmp],  %[dstStride]  \n\t"
-        "vld     $vr15,   %[tmp],  0             \n\t"
+    "vld        $vr8,            %[tmp],         0            \n\t"
+    "vldx       $vr9,            %[tmp],         %[dstStride] \n\t"
+    "vldx       $vr10,           %[tmp],         %[dstride_2] \n\t"
+    "vldx       $vr11,           %[tmp],         %[dstride_3] \n\t"
+    "add.d      %[tmp],          %[tmp],         %[dstride_4] \n\t"
+    "vld        $vr12,           %[tmp],         0            \n\t"
+    "vldx       $vr13,           %[tmp],         %[dstStride] \n\t"
+    "vldx       $vr14,           %[tmp],         %[dstride_2] \n\t"
+    "vldx       $vr15,           %[tmp],         %[dstride_3] \n\t"
 
-        "vavgr.bu $vr0,   $vr8,    $vr0          \n\t"
-        "vavgr.bu $vr1,   $vr9,    $vr1          \n\t"
-        "vavgr.bu $vr2,   $vr10,   $vr2          \n\t"
-        "vavgr.bu $vr3,   $vr11,   $vr3          \n\t"
-        "vavgr.bu $vr4,   $vr12,   $vr4          \n\t"
-        "vavgr.bu $vr5,   $vr13,   $vr5          \n\t"
-        "vavgr.bu $vr6,   $vr14,   $vr6          \n\t"
-        "vavgr.bu $vr7,   $vr15,   $vr7          \n\t"
+    "vavgr.bu    $vr0,           $vr8,           $vr0         \n\t"
+    "vavgr.bu    $vr1,           $vr9,           $vr1         \n\t"
+    "vavgr.bu    $vr2,           $vr10,          $vr2         \n\t"
+    "vavgr.bu    $vr3,           $vr11,          $vr3         \n\t"
+    "vavgr.bu    $vr4,           $vr12,          $vr4         \n\t"
+    "vavgr.bu    $vr5,           $vr13,          $vr5         \n\t"
+    "vavgr.bu    $vr6,           $vr14,          $vr6         \n\t"
+    "vavgr.bu    $vr7,           $vr15,          $vr7         \n\t"
 
-        "vst     $vr0,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr1,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr2,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr3,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr4,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr5,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr6,    %[dst],  0             \n\t"
-        "add.d   %[dst],  %[dst],  %[dstStride]  \n\t"
-        "vst     $vr7,    %[dst],  0             \n\t"
-        : [dst]"+&r"(dst), [tmp]"+&r"(tmp), [half]"+&r"(half), [src]"+&r"(src)
-        : [dstStride]"r"(dstStride), [srcStride]"r"(srcStride)
-        : "memory"
+    "vst        $vr0,            %[dst],         0            \n\t"
+    "vstx       $vr1,            %[dst],         %[dstStride] \n\t"
+    "vstx       $vr2,            %[dst],         %[dstride_2] \n\t"
+    "vstx       $vr3,            %[dst],         %[dstride_3] \n\t"
+    "add.d      %[dst],          %[dst],         %[dstride_4] \n\t"
+    "vst        $vr4,            %[dst],         0            \n\t"
+    "vstx       $vr5,            %[dst],         %[dstStride] \n\t"
+    "vstx       $vr6,            %[dst],         %[dstride_2] \n\t"
+    "vstx       $vr7,            %[dst],         %[dstride_3] \n\t"
+    : [dst]"+&r"(dst), [tmp]"+&r"(tmp), [half]"+&r"(half), [src]"+&r"(src),
+      [stride_2]"=&r"(stride_2),  [stride_3]"=&r"(stride_3),
+      [stride_4]"=&r"(stride_4),  [dstride_2]"=&r"(dstride_2),
+      [dstride_3]"=&r"(dstride_3), [dstride_4]"=&r"(dstride_4)
+    : [dstStride]"r"(dstStride), [srcStride]"r"(srcStride)
+    : "memory"
     );
 }
 
@@ -1086,20 +1004,14 @@ put_h264_qpel8_h_lowpass_lasx(uint8_t *dst, const uint8_t *src, int dstStride,
     int dstStride_2x = dstStride << 1;
     __m256i src00, src01, src02, src03, src04, src05, src10;
     __m256i out0, out1, out2, out3;
-    __m256i zero = {0};
-    __m256i h_20 = {20};
-    __m256i h_5  = {5};
-    __m256i h_16 = {16};
+    __m256i h_20 = __lasx_xvldi(0x414);
+    __m256i h_5  = __lasx_xvldi(0x405);
+    __m256i h_16 = __lasx_xvldi(0x410);
     __m256i mask1 = {0x0807060504030201, 0x0, 0x0807060504030201, 0x0};
     __m256i mask2 = {0x0908070605040302, 0x0, 0x0908070605040302, 0x0};
     __m256i mask3 = {0x0a09080706050403, 0x0, 0x0a09080706050403, 0x0};
     __m256i mask4 = {0x0b0a090807060504, 0x0, 0x0b0a090807060504, 0x0};
     __m256i mask5 = {0x0c0b0a0908070605, 0x0, 0x0c0b0a0908070605, 0x0};
-
-    zero = __lasx_xvreplve0_h(zero);
-    h_20 = __lasx_xvreplve0_h(h_20);
-    h_5  = __lasx_xvreplve0_h(h_5);
-    h_16 = __lasx_xvreplve0_h(h_16);
 
     QPEL8_H_LOWPASS(out0)
     QPEL8_H_LOWPASS(out1)
@@ -1138,7 +1050,7 @@ put_h264_qpel8_h_lowpass_lasx(uint8_t *dst, const uint8_t *src, int dstStride,
 }
 
 static av_always_inline void
-put_h264_qpel8_v_lowpass_lasx(uint8_t *dst, const uint8_t *src, int dstStride,
+put_h264_qpel8_v_lowpass_lasx(uint8_t *dst, uint8_t *src, int dstStride,
                               int srcStride)
 {
     int srcStride_2x = srcStride << 1;
@@ -1148,26 +1060,20 @@ put_h264_qpel8_v_lowpass_lasx(uint8_t *dst, const uint8_t *src, int dstStride,
     __m256i src00, src01, src02, src03, src04, src05, src06;
     __m256i src07, src08, src09, src10, src11, src12;
     __m256i tmp00, tmp01, tmp02, tmp03, tmp04, tmp05;
-    __m256i zero = {0};
-    __m256i h_20 = {20};
-    __m256i h_5  = {5};
-    __m256i h_16 = {16};
+    __m256i h_20 = __lasx_xvldi(0x414);
+    __m256i h_5  = __lasx_xvldi(0x405);
+    __m256i h_16 = __lasx_xvldi(0x410);
 
-    zero = __lasx_xvreplve0_h(zero);
-    h_20 = __lasx_xvreplve0_h(h_20);
-    h_5  = __lasx_xvreplve0_h(h_5);
-    h_16 = __lasx_xvreplve0_h(h_16);
-
-    DUP2_ARG2(__lasx_xvld, src - srcStride_2x, 0, src - srcStride, 0, src00, src01);
-    DUP4_ARG2(__lasx_xvld, src, 0, src + srcStride, 0, src + srcStride_2x, 0,
-              src + srcStride_3x, 0, src02, src03, src04, src05);
+    DUP2_ARG2(__lasx_xvld, src - srcStride_2x, 0, src - srcStride, 0,
+              src00, src01);
+    src02 = __lasx_xvld(src, 0);
+    DUP4_ARG2(__lasx_xvldx, src, srcStride, src, srcStride_2x, src,
+              srcStride_3x, src, srcStride_4x, src03, src04, src05, src06);
     src += srcStride_4x;
-    DUP4_ARG2(__lasx_xvld, src, 0, src + srcStride, 0, src + srcStride_2x, 0,
-              src + srcStride_3x, 0, src06, src07, src08, src09);
+    DUP4_ARG2(__lasx_xvldx, src, srcStride, src, srcStride_2x, src,
+              srcStride_3x, src, srcStride_4x, src07, src08, src09, src10);
     src += srcStride_4x;
-    DUP2_ARG2(__lasx_xvld, src, 0, src + srcStride, 0, src10, src11);
-    src += srcStride_2x;
-    src12 = __lasx_xvld(src, 0);
+    DUP2_ARG2(__lasx_xvldx, src, srcStride, src, srcStride_2x, src11, src12);
 
     QPEL8_V_LOWPASS(src00, src01, src02, src03, src04, src05, src06,
                     tmp00, tmp01, tmp02, tmp03, tmp04, tmp05);
@@ -1191,7 +1097,7 @@ put_h264_qpel8_v_lowpass_lasx(uint8_t *dst, const uint8_t *src, int dstStride,
 }
 
 static av_always_inline void
-avg_h264_qpel8_v_lowpass_lasx(uint8_t *dst, const uint8_t *src, int dstStride,
+avg_h264_qpel8_v_lowpass_lasx(uint8_t *dst, uint8_t *src, int dstStride,
                               int srcStride)
 {
     int srcStride_2x = srcStride << 1;
@@ -1201,34 +1107,32 @@ avg_h264_qpel8_v_lowpass_lasx(uint8_t *dst, const uint8_t *src, int dstStride,
     int srcStride_3x = srcStride_2x + srcStride;
     int dstStride_3x = dstStride_2x + dstStride;
     __m256i src00, src01, src02, src03, src04, src05, src06;
-    __m256i src07, src08, src09, src10, src11, src12;
-    __m256i tmp00, tmp01, tmp02, tmp03, tmp04, tmp05, tmp06, tmp07, tmp08, tmp09;
-    __m256i zero = {0};
-    __m256i h_20 = {20};
-    __m256i h_5  = {5};
-    __m256i h_16 = {16};
+    __m256i src07, src08, src09, src10, src11, src12, tmp00;
+    __m256i tmp01, tmp02, tmp03, tmp04, tmp05, tmp06, tmp07, tmp08, tmp09;
+    __m256i h_20 = __lasx_xvldi(0x414);
+    __m256i h_5  = __lasx_xvldi(0x405);
+    __m256i h_16 = __lasx_xvldi(0x410);
 
-    zero = __lasx_xvreplve0_h(zero);
-    h_20 = __lasx_xvreplve0_h(h_20);
-    h_5  = __lasx_xvreplve0_h(h_5);
-    h_16 = __lasx_xvreplve0_h(h_16);
 
-    DUP2_ARG2(__lasx_xvld, src - srcStride_2x, 0, src - srcStride, 0, src00, src01);
-    DUP4_ARG2(__lasx_xvld, src, 0, src + srcStride, 0, src + srcStride_2x, 0,
-              src + srcStride_3x, 0, src02, src03, src04, src05);
+    DUP2_ARG2(__lasx_xvld, src - srcStride_2x, 0, src - srcStride, 0,
+              src00, src01);
+    src02 = __lasx_xvld(src, 0);
+    DUP4_ARG2(__lasx_xvldx, src, srcStride, src, srcStride_2x, src,
+              srcStride_3x, src, srcStride_4x, src03, src04, src05, src06);
     src += srcStride_4x;
-    DUP4_ARG2(__lasx_xvld, src, 0, src + srcStride, 0, src + srcStride_2x, 0,
-              src + srcStride_3x, 0, src06, src07, src08, src09);
+    DUP4_ARG2(__lasx_xvldx, src, srcStride, src, srcStride_2x, src,
+              srcStride_3x, src, srcStride_4x, src07, src08, src09, src10);
     src += srcStride_4x;
-    DUP2_ARG2(__lasx_xvld, src, 0, src + srcStride, 0, src10, src11);
-    src += srcStride_2x;
-    src12 = __lasx_xvld(src, 0);
+    DUP2_ARG2(__lasx_xvldx, src, srcStride, src, srcStride_2x, src11, src12);
 
-    DUP4_ARG2(__lasx_xvldx, dst, 0, dst, dstStride, dst, dstStride_2x, dst, dstStride_3x,
-              tmp06, tmp07, tmp02, tmp03);
+    tmp06 = __lasx_xvld(dst, 0);
+    DUP4_ARG2(__lasx_xvldx, dst, dstStride, dst, dstStride_2x,
+              dst, dstStride_3x, dst, dstStride_4x,
+              tmp07, tmp02, tmp03, tmp04);
     dst += dstStride_4x;
-    DUP4_ARG2(__lasx_xvldx, dst, 0, dst, dstStride, dst, dstStride_2x, dst, dstStride_3x,
-              tmp04, tmp05, tmp00, tmp01);
+    DUP2_ARG2(__lasx_xvldx, dst, dstStride, dst, dstStride_2x,
+              tmp05, tmp00);
+    tmp01 = __lasx_xvldx(dst, dstStride_3x);
     dst -= dstStride_4x;
 
     tmp06 = __lasx_xvpermi_q(tmp06, tmp07, 0x02);
@@ -1241,19 +1145,19 @@ avg_h264_qpel8_v_lowpass_lasx(uint8_t *dst, const uint8_t *src, int dstStride,
     tmp06 = __lasx_xvavgr_bu(tmp06, tmp02);
     __lasx_xvstelm_d(tmp06, dst, 0, 0);
     __lasx_xvstelm_d(tmp06, dst + dstStride, 0, 2);
-    dst += dstStride << 1;
+    dst += dstStride_2x;
     QPEL8_V_LOWPASS(src02, src03, src04, src05, src06, src07, src08,
                     tmp00, tmp01, tmp02, tmp03, tmp04, tmp05);
     tmp07 = __lasx_xvavgr_bu(tmp07, tmp02);
     __lasx_xvstelm_d(tmp07, dst, 0, 0);
     __lasx_xvstelm_d(tmp07, dst + dstStride, 0, 2);
-    dst += dstStride << 1;
+    dst += dstStride_2x;
     QPEL8_V_LOWPASS(src04, src05, src06, src07, src08, src09, src10,
                     tmp00, tmp01, tmp02, tmp03, tmp04, tmp05);
     tmp08 = __lasx_xvavgr_bu(tmp08, tmp02);
     __lasx_xvstelm_d(tmp08, dst, 0, 0);
     __lasx_xvstelm_d(tmp08, dst + dstStride, 0, 2);
-    dst += dstStride << 1;
+    dst += dstStride_2x;
     QPEL8_V_LOWPASS(src06, src07, src08, src09, src10, src11, src12,
                     tmp00, tmp01, tmp02, tmp03, tmp04, tmp05);
     tmp09 = __lasx_xvavgr_bu(tmp09, tmp02);
@@ -1313,10 +1217,10 @@ put_h264_qpel8_hv_lowpass_lasx(uint8_t *dst, const uint8_t *src,
     __m256i src00, src01, src02, src03, src04, src05, src10;
     __m256i tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6;
     __m256i tmp7, tmp8, tmp9, tmp10, tmp11, tmp12;
-    __m256i h_20 = {20};
-    __m256i h_5  = {5};
-    __m256i w_20 = {20};
-    __m256i w_5  = {5};
+    __m256i h_20 = __lasx_xvldi(0x414);
+    __m256i h_5  = __lasx_xvldi(0x405);
+    __m256i w_20 = __lasx_xvldi(0x814);
+    __m256i w_5  = __lasx_xvldi(0x805);
     __m256i w_512 = {512};
     __m256i mask1 = {0x0807060504030201, 0x0, 0x0807060504030201, 0x0};
     __m256i mask2 = {0x0908070605040302, 0x0, 0x0908070605040302, 0x0};
@@ -1324,10 +1228,6 @@ put_h264_qpel8_hv_lowpass_lasx(uint8_t *dst, const uint8_t *src,
     __m256i mask4 = {0x0b0a090807060504, 0x0, 0x0b0a090807060504, 0x0};
     __m256i mask5 = {0x0c0b0a0908070605, 0x0, 0x0c0b0a0908070605, 0x0};
 
-    h_20 = __lasx_xvreplve0_h(w_20);
-    h_5  = __lasx_xvreplve0_h(w_5);
-    w_20 = __lasx_xvreplve0_w(w_20);
-    w_5  = __lasx_xvreplve0_w(w_5);
     w_512 = __lasx_xvreplve0_w(w_512);
 
     src -= srcStride << 1;
@@ -1354,16 +1254,20 @@ put_h264_qpel8_hv_lowpass_lasx(uint8_t *dst, const uint8_t *src,
     QPEL8_HV_LOWPASS_V(tmp6, tmp7, tmp8, tmp9, tmp10, tmp11, src00, src01,
                        src02, src03, src04, src05, tmp6)
     __lasx_xvstelm_d(tmp0, dst, 0, 0);
-    __lasx_xvstelm_d(tmp0, dst + dstStride, 0, 2);
-    dst += dstStride << 1;
+    dst += dstStride;
+    __lasx_xvstelm_d(tmp0, dst, 0, 2);
+    dst += dstStride;
     __lasx_xvstelm_d(tmp2, dst, 0, 0);
-    __lasx_xvstelm_d(tmp2, dst + dstStride, 0, 2);
-    dst += dstStride << 1;
+    dst += dstStride;
+    __lasx_xvstelm_d(tmp2, dst, 0, 2);
+    dst += dstStride;
     __lasx_xvstelm_d(tmp4, dst, 0, 0);
-    __lasx_xvstelm_d(tmp4, dst + dstStride, 0, 2);
-    dst += dstStride << 1;
+    dst += dstStride;
+    __lasx_xvstelm_d(tmp4, dst, 0, 2);
+    dst += dstStride;
     __lasx_xvstelm_d(tmp6, dst, 0, 0);
-    __lasx_xvstelm_d(tmp6, dst + dstStride, 0, 2);
+    dst += dstStride;
+    __lasx_xvstelm_d(tmp6, dst, 0, 2);
 }
 
 static av_always_inline void
@@ -1376,30 +1280,25 @@ avg_h264_qpel8_h_lowpass_lasx(uint8_t *dst, const uint8_t *src, int dstStride,
     __m256i src00, src01, src02, src03, src04, src05, src10;
     __m256i dst00, dst01, dst0, dst1, dst2, dst3;
     __m256i out0, out1, out2, out3;
-    __m256i zero = {0};
-    __m256i h_20 = {20};
-    __m256i h_5  = {5};
-    __m256i h_16 = {16};
+    __m256i h_20 = __lasx_xvldi(0x414);
+    __m256i h_5  = __lasx_xvldi(0x405);
+    __m256i h_16 = __lasx_xvldi(0x410);
     __m256i mask1 = {0x0807060504030201, 0x0, 0x0807060504030201, 0x0};
     __m256i mask2 = {0x0908070605040302, 0x0, 0x0908070605040302, 0x0};
     __m256i mask3 = {0x0a09080706050403, 0x0, 0x0a09080706050403, 0x0};
     __m256i mask4 = {0x0b0a090807060504, 0x0, 0x0b0a090807060504, 0x0};
     __m256i mask5 = {0x0c0b0a0908070605, 0x0, 0x0c0b0a0908070605, 0x0};
 
-    zero = __lasx_xvreplve0_h(zero);
-    h_20 = __lasx_xvreplve0_h(h_20);
-    h_5  = __lasx_xvreplve0_h(h_5);
-    h_16 = __lasx_xvreplve0_h(h_16);
-
     QPEL8_H_LOWPASS(out0)
     QPEL8_H_LOWPASS(out1)
     QPEL8_H_LOWPASS(out2)
     QPEL8_H_LOWPASS(out3)
-    DUP4_ARG2(__lasx_xvldx, dst, 0, dst, dstStride, dst, dstStride_2x, dst, dstStride_3x,
-              src00, src01, src02, src03);
+    src00 = __lasx_xvld(dst, 0);
+    DUP4_ARG2(__lasx_xvldx, dst, dstStride, dst, dstStride_2x, dst,
+              dstStride_3x, dst, dstStride_4x, src01, src02, src03, src04);
     dst += dstStride_4x;
-    DUP4_ARG2(__lasx_xvldx, dst, 0, dst, dstStride, dst, dstStride_2x, dst, dstStride_3x,
-              src04, src05, dst00, dst01);
+    DUP2_ARG2(__lasx_xvldx, dst, dstStride, dst, dstStride_2x, src05, dst00);
+    dst01 = __lasx_xvldx(dst, dstStride_3x);
     dst -= dstStride_4x;
     dst0 = __lasx_xvpermi_q(src00, src01, 0x02);
     dst1 = __lasx_xvpermi_q(src02, src03, 0x02);
@@ -1427,10 +1326,10 @@ avg_h264_qpel8_hv_lowpass_lasx(uint8_t *dst, const uint8_t *src,
     __m256i src00, src01, src02, src03, src04, src05, src10;
     __m256i tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6;
     __m256i tmp7, tmp8, tmp9, tmp10, tmp11, tmp12;
-    __m256i h_20 = {20};
-    __m256i h_5  = {5};
-    __m256i w_20 = {20};
-    __m256i w_5  = {5};
+    __m256i h_20 = __lasx_xvldi(0x414);
+    __m256i h_5  = __lasx_xvldi(0x405);
+    __m256i w_20 = __lasx_xvldi(0x814);
+    __m256i w_5  = __lasx_xvldi(0x805);
     __m256i w_512 = {512};
     __m256i mask1 = {0x0807060504030201, 0x0, 0x0807060504030201, 0x0};
     __m256i mask2 = {0x0908070605040302, 0x0, 0x0908070605040302, 0x0};
@@ -1441,10 +1340,6 @@ avg_h264_qpel8_hv_lowpass_lasx(uint8_t *dst, const uint8_t *src,
     ptrdiff_t dstStride_4x = dstStride << 2;
     ptrdiff_t dstStride_3x = dstStride_2x + dstStride;
 
-    h_20 = __lasx_xvreplve0_h(w_20);
-    h_5  = __lasx_xvreplve0_h(w_5);
-    w_20 = __lasx_xvreplve0_w(w_20);
-    w_5  = __lasx_xvreplve0_w(w_5);
     w_512 = __lasx_xvreplve0_w(w_512);
 
     src -= srcStride << 1;
@@ -1471,11 +1366,12 @@ avg_h264_qpel8_hv_lowpass_lasx(uint8_t *dst, const uint8_t *src,
     QPEL8_HV_LOWPASS_V(tmp6, tmp7, tmp8, tmp9, tmp10, tmp11, src00, src01,
                        src02, src03, src04, src05, tmp6)
 
-    DUP4_ARG2(__lasx_xvldx, dst, 0, dst, dstStride, dst, dstStride_2x, dst, dstStride_3x,
-              src00, src01, src02, src03);
+    src00 = __lasx_xvld(dst, 0);
+    DUP4_ARG2(__lasx_xvldx, dst, dstStride, dst, dstStride_2x, dst,
+              dstStride_3x, dst, dstStride_4x, src01, src02, src03, src04);
     dst += dstStride_4x;
-    DUP4_ARG2(__lasx_xvldx, dst, 0, dst, dstStride, dst, dstStride_2x, dst, dstStride_3x,
-              src04, src05, tmp8, tmp9);
+    DUP2_ARG2(__lasx_xvldx, dst, dstStride, dst, dstStride_2x, src05, tmp8);
+    tmp9 = __lasx_xvldx(dst, dstStride_3x);
     dst -= dstStride_4x;
     tmp1 = __lasx_xvpermi_q(src00, src01, 0x02);
     tmp3 = __lasx_xvpermi_q(src02, src03, 0x02);
@@ -1486,16 +1382,20 @@ avg_h264_qpel8_hv_lowpass_lasx(uint8_t *dst, const uint8_t *src,
     tmp4 = __lasx_xvavgr_bu(tmp4, tmp5);
     tmp6 = __lasx_xvavgr_bu(tmp6, tmp7);
     __lasx_xvstelm_d(tmp0, dst, 0, 0);
-    __lasx_xvstelm_d(tmp0, dst + dstStride, 0, 2);
-    dst += dstStride << 1;
+    dst += dstStride;
+    __lasx_xvstelm_d(tmp0, dst, 0, 2);
+    dst += dstStride;
     __lasx_xvstelm_d(tmp2, dst, 0, 0);
-    __lasx_xvstelm_d(tmp2, dst + dstStride, 0, 2);
-    dst += dstStride << 1;
+    dst += dstStride;
+    __lasx_xvstelm_d(tmp2, dst, 0, 2);
+    dst += dstStride;
     __lasx_xvstelm_d(tmp4, dst, 0, 0);
-    __lasx_xvstelm_d(tmp4, dst + dstStride, 0, 2);
-    dst += dstStride << 1;
+    dst += dstStride;
+    __lasx_xvstelm_d(tmp4, dst, 0, 2);
+    dst += dstStride;
     __lasx_xvstelm_d(tmp6, dst, 0, 0);
-    __lasx_xvstelm_d(tmp6, dst + dstStride, 0, 2);
+    dst += dstStride;
+    __lasx_xvstelm_d(tmp6, dst, 0, 2);
 }
 
 static av_always_inline void
@@ -1525,27 +1425,27 @@ avg_h264_qpel16_h_lowpass_lasx(uint8_t *dst, const uint8_t *src,
 static void put_h264_qpel16_v_lowpass_lasx(uint8_t *dst, const uint8_t *src,
                                            int dstStride, int srcStride)
 {
-    put_h264_qpel8_v_lowpass_lasx(dst, src, dstStride, srcStride);
-    put_h264_qpel8_v_lowpass_lasx(dst+8, src+8, dstStride, srcStride);
+    put_h264_qpel8_v_lowpass_lasx(dst, (uint8_t*)src, dstStride, srcStride);
+    put_h264_qpel8_v_lowpass_lasx(dst+8, (uint8_t*)src+8, dstStride, srcStride);
     src += 8*srcStride;
     dst += 8*dstStride;
-    put_h264_qpel8_v_lowpass_lasx(dst, src, dstStride, srcStride);
-    put_h264_qpel8_v_lowpass_lasx(dst+8, src+8, dstStride, srcStride);
+    put_h264_qpel8_v_lowpass_lasx(dst, (uint8_t*)src, dstStride, srcStride);
+    put_h264_qpel8_v_lowpass_lasx(dst+8, (uint8_t*)src+8, dstStride, srcStride);
 }
 
 static void avg_h264_qpel16_v_lowpass_lasx(uint8_t *dst, const uint8_t *src,
                                            int dstStride, int srcStride)
 {
-    avg_h264_qpel8_v_lowpass_lasx(dst, src, dstStride, srcStride);
-    avg_h264_qpel8_v_lowpass_lasx(dst+8, src+8, dstStride, srcStride);
+    avg_h264_qpel8_v_lowpass_lasx(dst, (uint8_t*)src, dstStride, srcStride);
+    avg_h264_qpel8_v_lowpass_lasx(dst+8, (uint8_t*)src+8, dstStride, srcStride);
     src += 8*srcStride;
     dst += 8*dstStride;
-    avg_h264_qpel8_v_lowpass_lasx(dst, src, dstStride, srcStride);
-    avg_h264_qpel8_v_lowpass_lasx(dst+8, src+8, dstStride, srcStride);
+    avg_h264_qpel8_v_lowpass_lasx(dst, (uint8_t*)src, dstStride, srcStride);
+    avg_h264_qpel8_v_lowpass_lasx(dst+8, (uint8_t*)src+8, dstStride, srcStride);
 }
 
 static void put_h264_qpel16_hv_lowpass_lasx(uint8_t *dst, const uint8_t *src,
-                                            ptrdiff_t dstStride, ptrdiff_t srcStride)
+                                     ptrdiff_t dstStride, ptrdiff_t srcStride)
 {
     put_h264_qpel8_hv_lowpass_lasx(dst, src, dstStride, srcStride);
     put_h264_qpel8_hv_lowpass_lasx(dst + 8, src + 8, dstStride, srcStride);
@@ -1556,7 +1456,7 @@ static void put_h264_qpel16_hv_lowpass_lasx(uint8_t *dst, const uint8_t *src,
 }
 
 static void avg_h264_qpel16_hv_lowpass_lasx(uint8_t *dst, const uint8_t *src,
-                                            ptrdiff_t dstStride, ptrdiff_t srcStride)
+                                     ptrdiff_t dstStride, ptrdiff_t srcStride)
 {
     avg_h264_qpel8_hv_lowpass_lasx(dst, src, dstStride, srcStride);
     avg_h264_qpel8_hv_lowpass_lasx(dst + 8, src + 8, dstStride, srcStride);
@@ -1604,7 +1504,7 @@ void ff_put_h264_qpel8_mc01_lasx(uint8_t *dst, const uint8_t *src,
 {
     uint8_t half[64];
 
-    put_h264_qpel8_v_lowpass_lasx(half, src, 8, stride);
+    put_h264_qpel8_v_lowpass_lasx(half, (uint8_t*)src, 8, stride);
     put_pixels8_l2_8_lsx(dst, src, half, stride, stride);
 }
 
@@ -1615,7 +1515,7 @@ void ff_put_h264_qpel8_mc11_lasx(uint8_t *dst, const uint8_t *src,
     uint8_t halfV[64];
 
     put_h264_qpel8_h_lowpass_lasx(halfH, src, 8, stride);
-    put_h264_qpel8_v_lowpass_lasx(halfV, src, 8, stride);
+    put_h264_qpel8_v_lowpass_lasx(halfV, (uint8_t*)src, 8, stride);
     put_pixels8_l2_8_lsx(dst, halfH, halfV, stride, 8);
 }
 
@@ -1638,14 +1538,14 @@ void ff_put_h264_qpel8_mc31_lasx(uint8_t *dst, const uint8_t *src,
     uint8_t halfV[64];
 
     put_h264_qpel8_h_lowpass_lasx(halfH, src, 8, stride);
-    put_h264_qpel8_v_lowpass_lasx(halfV, src + 1, 8, stride);
+    put_h264_qpel8_v_lowpass_lasx(halfV, (uint8_t*)src + 1, 8, stride);
     put_pixels8_l2_8_lsx(dst, halfH, halfV, stride, 8);
 }
 
 void ff_put_h264_qpel8_mc02_lasx(uint8_t *dst, const uint8_t *src,
                                  ptrdiff_t stride)
 {
-    put_h264_qpel8_v_lowpass_lasx(dst, src, stride, stride);
+    put_h264_qpel8_v_lowpass_lasx(dst, (uint8_t*)src, stride, stride);
 }
 
 void ff_put_h264_qpel8_mc12_lasx(uint8_t *dst, const uint8_t *src,
@@ -1656,7 +1556,7 @@ void ff_put_h264_qpel8_mc12_lasx(uint8_t *dst, const uint8_t *src,
     uint8_t *const halfH  = temp + 64;
 
     put_h264_qpel8_hv_lowpass_lasx(halfHV, src, 8, stride);
-    put_h264_qpel8_v_lowpass_lasx(halfH, src, 8, stride);
+    put_h264_qpel8_v_lowpass_lasx(halfH, (uint8_t*)src, 8, stride);
     put_pixels8_l2_8_lsx(dst, halfH, halfHV, stride, 8);
 }
 
@@ -1674,7 +1574,7 @@ void ff_put_h264_qpel8_mc32_lasx(uint8_t *dst, const uint8_t *src,
     uint8_t *const halfH  = temp + 64;
 
     put_h264_qpel8_hv_lowpass_lasx(halfHV, src, 8, stride);
-    put_h264_qpel8_v_lowpass_lasx(halfH, src + 1, 8, stride);
+    put_h264_qpel8_v_lowpass_lasx(halfH, (uint8_t*)src + 1, 8, stride);
     put_pixels8_l2_8_lsx(dst, halfH, halfHV, stride, 8);
 }
 
@@ -1683,7 +1583,7 @@ void ff_put_h264_qpel8_mc03_lasx(uint8_t *dst, const uint8_t *src,
 {
     uint8_t half[64];
 
-    put_h264_qpel8_v_lowpass_lasx(half, src, 8, stride);
+    put_h264_qpel8_v_lowpass_lasx(half, (uint8_t*)src, 8, stride);
     put_pixels8_l2_8_lsx(dst, src + stride, half, stride, stride);
 }
 
@@ -1694,7 +1594,7 @@ void ff_put_h264_qpel8_mc13_lasx(uint8_t *dst, const uint8_t *src,
     uint8_t halfV[64];
 
     put_h264_qpel8_h_lowpass_lasx(halfH, src + stride, 8, stride);
-    put_h264_qpel8_v_lowpass_lasx(halfV, src, 8, stride);
+    put_h264_qpel8_v_lowpass_lasx(halfV, (uint8_t*)src, 8, stride);
     put_pixels8_l2_8_lsx(dst, halfH, halfV, stride, 8);
 }
 
@@ -1717,7 +1617,7 @@ void ff_put_h264_qpel8_mc33_lasx(uint8_t *dst, const uint8_t *src,
     uint8_t halfV[64];
 
     put_h264_qpel8_h_lowpass_lasx(halfH, src + stride, 8, stride);
-    put_h264_qpel8_v_lowpass_lasx(halfV, src + 1, 8, stride);
+    put_h264_qpel8_v_lowpass_lasx(halfV, (uint8_t*)src + 1, 8, stride);
     put_pixels8_l2_8_lsx(dst, halfH, halfV, stride, 8);
 }
 
@@ -1760,7 +1660,7 @@ void ff_avg_h264_qpel8_mc11_lasx(uint8_t *dst, const uint8_t *src,
     uint8_t halfV[64];
 
     put_h264_qpel8_h_lowpass_lasx(halfH, src, 8, stride);
-    put_h264_qpel8_v_lowpass_lasx(halfV, src, 8, stride);
+    put_h264_qpel8_v_lowpass_lasx(halfV, (uint8_t*)src, 8, stride);
     avg_pixels8_l2_8_lsx(dst, halfH, halfV, stride, 8);
 }
 
@@ -1783,14 +1683,14 @@ void ff_avg_h264_qpel8_mc31_lasx(uint8_t *dst, const uint8_t *src,
     uint8_t halfV[64];
 
     put_h264_qpel8_h_lowpass_lasx(halfH, src, 8, stride);
-    put_h264_qpel8_v_lowpass_lasx(halfV, src + 1, 8, stride);
+    put_h264_qpel8_v_lowpass_lasx(halfV, (uint8_t*)src + 1, 8, stride);
     avg_pixels8_l2_8_lsx(dst, halfH, halfV, stride, 8);
 }
 
 void ff_avg_h264_qpel8_mc02_lasx(uint8_t *dst, const uint8_t *src,
                                  ptrdiff_t stride)
 {
-    avg_h264_qpel8_v_lowpass_lasx(dst, src, stride, stride);
+    avg_h264_qpel8_v_lowpass_lasx(dst, (uint8_t*)src, stride, stride);
 }
 
 void ff_avg_h264_qpel8_mc12_lasx(uint8_t *dst, const uint8_t *src,
@@ -1801,7 +1701,7 @@ void ff_avg_h264_qpel8_mc12_lasx(uint8_t *dst, const uint8_t *src,
     uint8_t *const halfH  = temp + 64;
 
     put_h264_qpel8_hv_lowpass_lasx(halfHV, src, 8, stride);
-    put_h264_qpel8_v_lowpass_lasx(halfH, src, 8, stride);
+    put_h264_qpel8_v_lowpass_lasx(halfH, (uint8_t*)src, 8, stride);
     avg_pixels8_l2_8_lsx(dst, halfH, halfHV, stride, 8);
 }
 
@@ -1819,7 +1719,7 @@ void ff_avg_h264_qpel8_mc32_lasx(uint8_t *dst, const uint8_t *src,
     uint8_t *const halfH  = temp + 64;
 
     put_h264_qpel8_hv_lowpass_lasx(halfHV, src, 8, stride);
-    put_h264_qpel8_v_lowpass_lasx(halfH, src + 1, 8, stride);
+    put_h264_qpel8_v_lowpass_lasx(halfH, (uint8_t*)src + 1, 8, stride);
     avg_pixels8_l2_8_lsx(dst, halfH, halfHV, stride, 8);
 }
 
@@ -1830,7 +1730,7 @@ void ff_avg_h264_qpel8_mc13_lasx(uint8_t *dst, const uint8_t *src,
     uint8_t halfV[64];
 
     put_h264_qpel8_h_lowpass_lasx(halfH, src + stride, 8, stride);
-    put_h264_qpel8_v_lowpass_lasx(halfV, src, 8, stride);
+    put_h264_qpel8_v_lowpass_lasx(halfV, (uint8_t*)src, 8, stride);
     avg_pixels8_l2_8_lsx(dst, halfH, halfV, stride, 8);
 }
 
@@ -1853,7 +1753,7 @@ void ff_avg_h264_qpel8_mc33_lasx(uint8_t *dst, const uint8_t *src,
     uint8_t halfV[64];
 
     put_h264_qpel8_h_lowpass_lasx(halfH, src + stride, 8, stride);
-    put_h264_qpel8_v_lowpass_lasx(halfV, src + 1, 8, stride);
+    put_h264_qpel8_v_lowpass_lasx(halfV, (uint8_t*)src + 1, 8, stride);
     avg_pixels8_l2_8_lsx(dst, halfH, halfV, stride, 8);
 }
 
@@ -1901,7 +1801,8 @@ void ff_put_h264_qpel16_mc01_lasx(uint8_t *dst, const uint8_t *src,
 void ff_put_h264_qpel16_mc11_lasx(uint8_t *dst, const uint8_t *src,
                                   ptrdiff_t stride)
 {
-    avc_luma_hv_qrt_16x16_lasx(src - 2, src - (stride * 2), dst, stride);
+    avc_luma_hv_qrt_16x16_lasx((uint8_t*)src - 2, (uint8_t*)src - (stride * 2),
+                               dst, stride);
 }
 
 void ff_put_h264_qpel16_mc21_lasx(uint8_t *dst, const uint8_t *src,
@@ -1919,7 +1820,8 @@ void ff_put_h264_qpel16_mc21_lasx(uint8_t *dst, const uint8_t *src,
 void ff_put_h264_qpel16_mc31_lasx(uint8_t *dst, const uint8_t *src,
                                   ptrdiff_t stride)
 {
-    avc_luma_hv_qrt_16x16_lasx(src - 2, src - (stride * 2) + 1, dst, stride);
+    avc_luma_hv_qrt_16x16_lasx((uint8_t*)src - 2, (uint8_t*)src - (stride * 2) + 1,
+                               dst, stride);
 }
 
 void ff_put_h264_qpel16_mc02_lasx(uint8_t *dst, const uint8_t *src,
@@ -1970,8 +1872,8 @@ void ff_put_h264_qpel16_mc03_lasx(uint8_t *dst, const uint8_t *src,
 void ff_put_h264_qpel16_mc13_lasx(uint8_t *dst, const uint8_t *src,
                                   ptrdiff_t stride)
 {
-    avc_luma_hv_qrt_16x16_lasx(src + stride - 2, src - (stride * 2), dst,
-                               stride);
+    avc_luma_hv_qrt_16x16_lasx((uint8_t*)src + stride - 2, (uint8_t*)src - (stride * 2),
+                               dst, stride);
 }
 
 void ff_put_h264_qpel16_mc23_lasx(uint8_t *dst, const uint8_t *src,
@@ -1989,8 +1891,8 @@ void ff_put_h264_qpel16_mc23_lasx(uint8_t *dst, const uint8_t *src,
 void ff_put_h264_qpel16_mc33_lasx(uint8_t *dst, const uint8_t *src,
                                   ptrdiff_t stride)
 {
-    avc_luma_hv_qrt_16x16_lasx(src + stride - 2, src - (stride * 2) + 1, dst,
-                               stride);
+    avc_luma_hv_qrt_16x16_lasx((uint8_t*)src + stride - 2,
+                               (uint8_t*)src - (stride * 2) + 1, dst, stride);
 }
 
 void ff_avg_h264_qpel16_mc00_lasx(uint8_t *dst, const uint8_t *src,
@@ -2037,9 +1939,9 @@ void ff_avg_h264_qpel16_mc01_lasx(uint8_t *dst, const uint8_t *src,
 void ff_avg_h264_qpel16_mc11_lasx(uint8_t *dst, const uint8_t *src,
                                   ptrdiff_t stride)
 {
-    avc_luma_hv_qrt_and_aver_dst_16x16_lasx(src - 2,
-                                            src - (stride * 2),
-                                            dst, stride);
+    avc_luma_hv_qrt_and_aver_dst_16x16_lasx((uint8_t*)src - 2,
+                                           (uint8_t*)src - (stride * 2),
+                                           dst, stride);
 }
 
 void ff_avg_h264_qpel16_mc21_lasx(uint8_t *dst, const uint8_t *src,
@@ -2057,9 +1959,8 @@ void ff_avg_h264_qpel16_mc21_lasx(uint8_t *dst, const uint8_t *src,
 void ff_avg_h264_qpel16_mc31_lasx(uint8_t *dst, const uint8_t *src,
                                   ptrdiff_t stride)
 {
-    avc_luma_hv_qrt_and_aver_dst_16x16_lasx(src - 2,
-                                            src - (stride * 2) +
-                                            sizeof(uint8_t),
+    avc_luma_hv_qrt_and_aver_dst_16x16_lasx((uint8_t*)src - 2,
+                                            (uint8_t*)src - (stride * 2) + 1,
                                             dst, stride);
 }
 
@@ -2111,8 +2012,8 @@ void ff_avg_h264_qpel16_mc03_lasx(uint8_t *dst, const uint8_t *src,
 void ff_avg_h264_qpel16_mc13_lasx(uint8_t *dst, const uint8_t *src,
                                   ptrdiff_t stride)
 {
-    avc_luma_hv_qrt_and_aver_dst_16x16_lasx(src + stride - 2,
-                                            src - (stride * 2),
+    avc_luma_hv_qrt_and_aver_dst_16x16_lasx((uint8_t*)src + stride - 2,
+                                            (uint8_t*)src - (stride * 2),
                                             dst, stride);
 }
 
@@ -2131,8 +2032,7 @@ void ff_avg_h264_qpel16_mc23_lasx(uint8_t *dst, const uint8_t *src,
 void ff_avg_h264_qpel16_mc33_lasx(uint8_t *dst, const uint8_t *src,
                                   ptrdiff_t stride)
 {
-    avc_luma_hv_qrt_and_aver_dst_16x16_lasx(src + stride - 2,
-                                            src - (stride * 2) +
-                                            sizeof(uint8_t),
+    avc_luma_hv_qrt_and_aver_dst_16x16_lasx((uint8_t*)src + stride - 2,
+                                            (uint8_t*)src - (stride * 2) + 1,
                                             dst, stride);
 }

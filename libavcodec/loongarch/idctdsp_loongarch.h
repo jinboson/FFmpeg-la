@@ -23,8 +23,7 @@
 #define AVCODEC_LOONGARCH_IDCTDSP_LOONGARCH_H
 
 #include <stdint.h>
-#include <stddef.h>
-#include "../mpegvideo.h"
+#include "libavcodec/mpegvideo.h"
 
 void ff_simple_idct_lasx(int16_t *block);
 void ff_simple_idct_put_lasx(uint8_t *dest, ptrdiff_t stride_dst, int16_t *block);
