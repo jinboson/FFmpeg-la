@@ -28,7 +28,8 @@ void ff_yuv2planeX_8_lasx(const int16_t *filter, int filterSize,
 {
     int i;
     int len = dstW - 15;
-    __m256i mask = {0x1C1814100C080400, 0x0101010101010101, 0x1C1814100C080400, 0x0101010101010101};
+    __m256i mask = {0x1C0C180814041000, 0x1C1814100C080400,
+                    0x1C0C180814041000, 0x1C1814100C080400};
     __m256i val1, val2, val3;
     uint8_t dither0 = dither[offset & 7];
     uint8_t dither1 = dither[(offset + 1) & 7];
@@ -38,8 +39,8 @@ void ff_yuv2planeX_8_lasx(const int16_t *filter, int filterSize,
     uint8_t dither5 = dither[(offset + 5) & 7];
     uint8_t dither6 = dither[(offset + 6) & 7];
     uint8_t dither7 = dither[(offset + 7) & 7];
-    int val_1[8] = {dither0, dither1, dither2, dither3, dither0, dither1, dither2, dither3};
-    int val_2[8] = {dither4, dither5, dither6, dither7, dither4, dither5, dither6, dither7};
+    int val_1[8] = {dither0, dither2, dither4, dither6, dither0, dither2, dither4, dither6};
+    int val_2[8] = {dither1, dither3, dither5, dither7, dither1, dither3, dither5, dither7};
     int val_3[8] = {dither0, dither1, dither2, dither3, dither4, dither5, dither6, dither7};
 
     DUP2_ARG2(__lasx_xvld, val_1, 0, val_2, 0, val1, val2);
@@ -47,25 +48,25 @@ void ff_yuv2planeX_8_lasx(const int16_t *filter, int filterSize,
 
     for (i = 0; i < len; i += 16) {
         int j;
-        __m256i src0, filter0, val_lh;
-        __m256i val_l, val_h;
+        __m256i src0, filter0, val;
+        __m256i val_ev, val_od;
 
-        val_l = __lasx_xvslli_w(val1, 12);
-        val_h = __lasx_xvslli_w(val2, 12);
+        val_ev = __lasx_xvslli_w(val1, 12);
+        val_od = __lasx_xvslli_w(val2, 12);
 
         for (j = 0; j < filterSize; j++) {
             src0  = __lasx_xvld(src[j]+ i, 0);
             filter0 = __lasx_xvldrepl_h((filter + j), 0);
-            val_l = __lasx_xvmaddwl_w_h(val_l, src0, filter0);
-            val_h = __lasx_xvmaddwh_w_h(val_h, src0, filter0);
+            val_ev = __lasx_xvmaddwev_w_h(val_ev, src0, filter0);
+            val_od = __lasx_xvmaddwod_w_h(val_od, src0, filter0);
         }
-        val_l = __lasx_xvsrai_w(val_l, 19);
-        val_h = __lasx_xvsrai_w(val_h, 19);
-        val_l = __lasx_xvclip255_w(val_l);
-        val_h = __lasx_xvclip255_w(val_h);
-        val_lh = __lasx_xvshuf_b(val_h, val_l, mask);
-        __lasx_xvstelm_d(val_lh, (dest + i), 0, 0);
-        __lasx_xvstelm_d(val_lh, (dest + i), 8, 2);
+        val_ev = __lasx_xvsrai_w(val_ev, 19);
+        val_od = __lasx_xvsrai_w(val_od, 19);
+        val_ev = __lasx_xvclip255_w(val_ev);
+        val_od = __lasx_xvclip255_w(val_od);
+        val    = __lasx_xvshuf_b(val_od, val_ev, mask);
+        __lasx_xvstelm_d(val, (dest + i), 0, 0);
+        __lasx_xvstelm_d(val, (dest + i), 8, 2);
     }
     if (dstW - i >= 8){
         int j;
@@ -76,15 +77,16 @@ void ff_yuv2planeX_8_lasx(const int16_t *filter, int filterSize,
 
         for (j = 0; j < filterSize; j++) {
             src0  = __lasx_xvld(src[j] + i, 0);
-            src0  = __lasx_xvpermi_d(src0, 0xD8);
+            src0  = __lasx_vext2xv_w_h(src0);
             filter0 = __lasx_xvldrepl_h((filter + j), 0);
-            val_l = __lasx_xvmaddwl_w_h(val_l, src0, filter0);
+            filter0 = __lasx_vext2xv_w_h(filter0);
+            val_l = __lasx_xvmadd_w(val_l, src0, filter0);
         }
         val_l = __lasx_xvsrai_w(val_l, 19);
         val_l = __lasx_xvclip255_w(val_l);
         val_h = __lasx_xvpermi_d(val_l, 0x4E);
         val_l = __lasx_xvshuf_b(val_h, val_l, mask);
-        __lasx_xvstelm_d(val_l, (dest + i), 0, 0);
+        __lasx_xvstelm_d(val_l, (dest + i), 0, 1);
         i += 8;
     }
     for (; i < dstW; i++) {
@@ -1423,128 +1425,24 @@ static av_always_inline void yuv2rgb_write_full(SwsContext *c,
      B = __lasx_xvmadd_w(y, u, u2b);                           \
 }
 
-#define WRITE_FULL_L_A(r, g, b, a, c, dest, i, R, A, G, B,                    \
-                       y, target, hasAlpha, err)                              \
-{                                                                             \
-    R = __lasx_xvpickve2gr_w(r, 0);                                           \
-    G = __lasx_xvpickve2gr_w(g, 0);                                           \
-    B = __lasx_xvpickve2gr_w(b, 0);                                           \
-    A = __lasx_xvpickve2gr_w(a, 0);                                           \
-    if (A & 0x100)                                                            \
-        A = av_clip_uint8(A);                                                 \
-    yuv2rgb_write_full(c, dest, i, R, A, G, B, y, target, hasAlpha, err);     \
-    dest += step;                                                             \
-    R = __lasx_xvpickve2gr_w(r, 1);                                           \
-    G = __lasx_xvpickve2gr_w(g, 1);                                           \
-    B = __lasx_xvpickve2gr_w(b, 1);                                           \
-    A = __lasx_xvpickve2gr_w(a, 1);                                           \
-    if (A & 0x100)                                                            \
-        A = av_clip_uint8(A);                                                 \
-    yuv2rgb_write_full(c, dest, i + 1, R, A, G, B, y, target, hasAlpha, err); \
-    dest += step;                                                             \
-    R = __lasx_xvpickve2gr_w(r, 2);                                           \
-    G = __lasx_xvpickve2gr_w(g, 2);                                           \
-    B = __lasx_xvpickve2gr_w(b, 2);                                           \
-    A = __lasx_xvpickve2gr_w(a, 2);                                           \
-    if (A & 0x100)                                                            \
-        A = av_clip_uint8(A);                                                 \
-    yuv2rgb_write_full(c, dest, i + 2, R, A, G, B, y, target, hasAlpha, err); \
-    dest += step;                                                             \
-    R = __lasx_xvpickve2gr_w(r, 3);                                           \
-    G = __lasx_xvpickve2gr_w(g, 3);                                           \
-    B = __lasx_xvpickve2gr_w(b, 3);                                           \
-    A = __lasx_xvpickve2gr_w(a, 3);                                           \
-    if (A & 0x100)                                                            \
-        A = av_clip_uint8(A);                                                 \
-    yuv2rgb_write_full(c, dest, i + 3, R, A, G, B, y, target, hasAlpha, err); \
-    dest += step;                                                             \
+#define WRITE_FULL_A(r, g, b, a, t1, s)                                      \
+{                                                                            \
+    R = __lasx_xvpickve2gr_w(r, t1);                                         \
+    G = __lasx_xvpickve2gr_w(g, t1);                                         \
+    B = __lasx_xvpickve2gr_w(b, t1);                                         \
+    A = __lasx_xvpickve2gr_w(a, t1);                                         \
+    if (A & 0x100)                                                           \
+        A = av_clip_uint8(A);                                                \
+    yuv2rgb_write_full(c, dest, i + s, R, A, G, B, y, target, hasAlpha, err);\
+    dest += step;                                                            \
 }
 
-#define WRITE_FULL_H_A(r, g, b, a, c, dest, i, R, A, G, B,                    \
-                       y, target, hasAlpha, err)                              \
+#define WRITE_FULL(r, g, b, t1, s)                                            \
 {                                                                             \
-    R = __lasx_xvpickve2gr_w(r, 4);                                           \
-    G = __lasx_xvpickve2gr_w(g, 4);                                           \
-    B = __lasx_xvpickve2gr_w(b, 4);                                           \
-    A = __lasx_xvpickve2gr_w(a, 4);                                           \
-    if (A & 0x100)                                                            \
-        A = av_clip_uint8(A);                                                 \
-    yuv2rgb_write_full(c, dest, i, R, A, G, B, y, target, hasAlpha, err);     \
-    dest += step;                                                             \
-    R = __lasx_xvpickve2gr_w(r, 5);                                           \
-    G = __lasx_xvpickve2gr_w(g, 5);                                           \
-    B = __lasx_xvpickve2gr_w(b, 5);                                           \
-    A = __lasx_xvpickve2gr_w(a, 5);                                           \
-    if (A & 0x100)                                                            \
-        A = av_clip_uint8(A);                                                 \
-    yuv2rgb_write_full(c, dest, i + 1, R, A, G, B, y, target, hasAlpha, err); \
-    dest += step;                                                             \
-    R = __lasx_xvpickve2gr_w(r, 6);                                           \
-    G = __lasx_xvpickve2gr_w(g, 6);                                           \
-    B = __lasx_xvpickve2gr_w(b, 6);                                           \
-    A = __lasx_xvpickve2gr_w(a, 6);                                           \
-    if (A & 0x100)                                                            \
-        A = av_clip_uint8(A);                                                 \
-    yuv2rgb_write_full(c, dest, i + 2, R, A, G, B, y, target, hasAlpha, err); \
-    dest += step;                                                             \
-    R = __lasx_xvpickve2gr_w(r, 7);                                           \
-    G = __lasx_xvpickve2gr_w(g, 7);                                           \
-    B = __lasx_xvpickve2gr_w(b, 7);                                           \
-    A = __lasx_xvpickve2gr_w(a, 7);                                           \
-    if (A & 0x100)                                                            \
-        A = av_clip_uint8(A);                                                 \
-    yuv2rgb_write_full(c, dest, i + 3, R, A, G, B, y, target, hasAlpha, err); \
-    dest += step;                                                             \
-}
-
-
-#define WRITE_FULL_L(r, g, b, c, dest, i, R, G, B,                            \
-                     y, target, hasAlpha, err)                                \
-{                                                                             \
-    R = __lasx_xvpickve2gr_w(r, 0);                                           \
-    G = __lasx_xvpickve2gr_w(g, 0);                                           \
-    B = __lasx_xvpickve2gr_w(b, 0);                                           \
-    yuv2rgb_write_full(c, dest, i, R, 0, G, B, y, target, hasAlpha, err);     \
-    dest += step;                                                             \
-    R = __lasx_xvpickve2gr_w(r, 1);                                           \
-    G = __lasx_xvpickve2gr_w(g, 1);                                           \
-    B = __lasx_xvpickve2gr_w(b, 1);                                           \
-    yuv2rgb_write_full(c, dest, i + 1, R, 0, G, B, y, target, hasAlpha, err); \
-    dest += step;                                                             \
-    R = __lasx_xvpickve2gr_w(r, 2);                                           \
-    G = __lasx_xvpickve2gr_w(g, 2);                                           \
-    B = __lasx_xvpickve2gr_w(b, 2);                                           \
-    yuv2rgb_write_full(c, dest, i + 2, R, 0, G, B, y, target, hasAlpha, err); \
-    dest += step;                                                             \
-    R = __lasx_xvpickve2gr_w(r, 3);                                           \
-    G = __lasx_xvpickve2gr_w(g, 3);                                           \
-    B = __lasx_xvpickve2gr_w(b, 3);                                           \
-    yuv2rgb_write_full(c, dest, i + 3, R, 0, G, B, y, target, hasAlpha, err); \
-    dest += step;                                                             \
-}
-
-#define WRITE_FULL_H(r, g, b, c, dest, i, R, G, B,                            \
-                     y, target, hasAlpha, err)                                \
-{                                                                             \
-    R = __lasx_xvpickve2gr_w(r, 4);                                           \
-    G = __lasx_xvpickve2gr_w(g, 4);                                           \
-    B = __lasx_xvpickve2gr_w(b, 4);                                           \
-    yuv2rgb_write_full(c, dest, i, R, 0, G, B, y, target, hasAlpha, err);     \
-    dest += step;                                                             \
-    R = __lasx_xvpickve2gr_w(r, 5);                                           \
-    G = __lasx_xvpickve2gr_w(g, 5);                                           \
-    B = __lasx_xvpickve2gr_w(b, 5);                                           \
-    yuv2rgb_write_full(c, dest, i + 1, R, 0, G, B, y, target, hasAlpha, err); \
-    dest += step;                                                             \
-    R = __lasx_xvpickve2gr_w(r, 6);                                           \
-    G = __lasx_xvpickve2gr_w(g, 6);                                           \
-    B = __lasx_xvpickve2gr_w(b, 6);                                           \
-    yuv2rgb_write_full(c, dest, i + 2, R, 0, G, B, y, target, hasAlpha, err); \
-    dest += step;                                                             \
-    R = __lasx_xvpickve2gr_w(r, 7);                                           \
-    G = __lasx_xvpickve2gr_w(g, 7);                                           \
-    B = __lasx_xvpickve2gr_w(b, 7);                                           \
-    yuv2rgb_write_full(c, dest, i + 3, R, 0, G, B, y, target, hasAlpha, err); \
+    R = __lasx_xvpickve2gr_w(r, t1);                                          \
+    G = __lasx_xvpickve2gr_w(g, t1);                                          \
+    B = __lasx_xvpickve2gr_w(b, t1);                                          \
+    yuv2rgb_write_full(c, dest, i + s, R, 0, G, B, y, target, hasAlpha, err); \
     dest += step;                                                             \
 }
 
@@ -1554,10 +1452,12 @@ yuv2rgb_full_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
                              const int16_t *chrFilter, const int16_t **chrUSrc,
                              const int16_t **chrVSrc, int chrFilterSize,
                              const int16_t **alpSrc, uint8_t *dest,
-                             int dstW, int y, enum AVPixelFormat target, int hasAlpha)
+                             int dstW, int y, enum AVPixelFormat target,
+                             int hasAlpha)
 {
     int i, j, B, G, R, A;
-    int step       = (target == AV_PIX_FMT_RGB24 || target == AV_PIX_FMT_BGR24) ? 3 : 4;
+    int step       = (target == AV_PIX_FMT_RGB24 ||
+                      target == AV_PIX_FMT_BGR24) ? 3 : 4;
     int err[4]     = {0};
     int a_temp     = 1 << 18;
     int templ      = 1 << 9;
@@ -1573,111 +1473,144 @@ yuv2rgb_full_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
 
     for (i = 0; i < len; i += 16) {
         __m256i l_src, u_src, v_src;
-        __m256i y_l, y_h, u_l, u_h, v_l, v_h, temp;
-        __m256i R_l, R_h, G_l, G_h, B_l, B_h;
+        __m256i y_ev, y_od, u_ev, u_od, v_ev, v_od, temp;
+        __m256i R_ev, R_od, G_ev, G_od, B_ev, B_od;
+        int n = i << 1;
 
-        y_l = y_h = __lasx_xvreplgr2vr_w(templ);
-        u_l = u_h = v_l = v_h = __lasx_xvreplgr2vr_w(tempc);
+        y_ev = y_od = __lasx_xvreplgr2vr_w(templ);
+        u_ev = u_od = v_ev = v_od = __lasx_xvreplgr2vr_w(tempc);
         for (j = 0; j < lumFilterSize; j++) {
             temp  = __lasx_xvldrepl_h((lumFilter + j), 0);
-            l_src = __lasx_xvld(lumSrc[j] + i, 0);
-            y_l = __lasx_xvmaddwl_w_h(y_l, l_src, temp);
-            y_h = __lasx_xvmaddwh_w_h(y_h, l_src, temp);
+            l_src = __lasx_xvldx(lumSrc[j], n);
+            y_ev  = __lasx_xvmaddwev_w_h(y_ev, l_src, temp);
+            y_od  = __lasx_xvmaddwod_w_h(y_od, l_src, temp);
         }
         for (j = 0; j < chrFilterSize; j++) {
             temp  = __lasx_xvldrepl_h((chrFilter + j), 0);
-            DUP2_ARG2(__lasx_xvld, chrUSrc[j] + i, 0, chrVSrc[j] + i, 0, u_src, v_src);
-            DUP2_ARG3(__lasx_xvmaddwl_w_h, u_l, u_src, temp, v_l, v_src, temp, u_l, v_l);
-            DUP2_ARG3(__lasx_xvmaddwh_w_h, u_h, u_src, temp, v_h, v_src, temp, u_h, v_h);
+            DUP2_ARG2(__lasx_xvldx, chrUSrc[j], n, chrVSrc[j], n,
+                      u_src, v_src);
+            DUP2_ARG3(__lasx_xvmaddwev_w_h, u_ev, u_src, temp, v_ev,
+                      v_src, temp, u_ev, v_ev);
+            DUP2_ARG3(__lasx_xvmaddwod_w_h, u_od, u_src, temp, v_od,
+                      v_src, temp, u_od, v_od);
         }
-        y_l = __lasx_xvsrai_w(y_l, 10);
-        y_h = __lasx_xvsrai_w(y_h, 10);
-        u_l = __lasx_xvsrai_w(u_l, 10);
-        u_h = __lasx_xvsrai_w(u_h, 10);
-        v_l = __lasx_xvsrai_w(v_l, 10);
-        v_h = __lasx_xvsrai_w(v_h, 10);
-        YUVTORGB(y_l, u_l, v_l, R_l, G_l, B_l, offset, coeff,
+        y_ev = __lasx_xvsrai_w(y_ev, 10);
+        y_od = __lasx_xvsrai_w(y_od, 10);
+        u_ev = __lasx_xvsrai_w(u_ev, 10);
+        u_od = __lasx_xvsrai_w(u_od, 10);
+        v_ev = __lasx_xvsrai_w(v_ev, 10);
+        v_od = __lasx_xvsrai_w(v_od, 10);
+        YUVTORGB(y_ev, u_ev, v_ev, R_ev, G_ev, B_ev, offset, coeff,
                  y_temp, v2r, v2g, u2g, u2b);
-        YUVTORGB(y_h, u_h, v_h, R_h, G_h, B_h, offset, coeff,
+        YUVTORGB(y_od, u_od, v_od, R_od, G_od, B_od, offset, coeff,
                  y_temp, v2r, v2g, u2g, u2b);
 
         if (hasAlpha) {
-            __m256i a_src, a_l, a_h;
+            __m256i a_src, a_ev, a_od;
 
-            a_l = a_h = __lasx_xvreplgr2vr_w(a_temp);
+            a_ev = a_od = __lasx_xvreplgr2vr_w(a_temp);
             for (j = 0; j < lumFilterSize; j++) {
                 temp  = __lasx_xvldrepl_h(lumFilter + j, 0);
-                a_src = __lasx_xvld(alpSrc[j] + i, 0);
-                a_l = __lasx_xvmaddwl_w_h(a_l, a_src, temp);
-                a_h = __lasx_xvmaddwh_w_h(a_h, a_src, temp);
+                a_src = __lasx_xvldx(alpSrc[j], n);
+                a_ev  = __lasx_xvmaddwev_w_h(a_ev, a_src, temp);
+                a_od  = __lasx_xvmaddwod_w_h(a_od, a_src, temp);
             }
-            a_h = __lasx_xvsrai_w(a_h, 19);
-            a_l = __lasx_xvsrai_w(a_l, 19);
-            WRITE_FULL_L_A(R_l, G_l, B_l, a_l, c, dest, i, R, A, G, B,
-                           y, target, hasAlpha, err);
-            WRITE_FULL_L_A(R_h, G_h, B_h, a_h, c, dest, i + 4, R, A, G, B,
-                           y, target, hasAlpha, err);
-            WRITE_FULL_H_A(R_l, G_l, B_l, a_l, c, dest, i + 8, R, A, G, B,
-                           y, target, hasAlpha, err);
-            WRITE_FULL_H_A(R_h, G_h, B_h, a_h, c, dest, i + 12, R, A, G, B,
-                           y, target, hasAlpha, err);
+            a_ev = __lasx_xvsrai_w(a_ev, 19);
+            a_od = __lasx_xvsrai_w(a_od, 19);
+            WRITE_FULL_A(R_ev, G_ev, B_ev, a_ev, 0, 0);
+            WRITE_FULL_A(R_od, G_od, B_od, a_od, 0, 1);
+            WRITE_FULL_A(R_ev, G_ev, B_ev, a_ev, 1, 2);
+            WRITE_FULL_A(R_od, G_od, B_od, a_od, 1, 3);
+            WRITE_FULL_A(R_ev, G_ev, B_ev, a_ev, 2, 4);
+            WRITE_FULL_A(R_od, G_od, B_od, a_od, 2, 5);
+            WRITE_FULL_A(R_ev, G_ev, B_ev, a_ev, 3, 6);
+            WRITE_FULL_A(R_od, G_od, B_od, a_od, 3, 7);
+            WRITE_FULL_A(R_ev, G_ev, B_ev, a_ev, 4, 8);
+            WRITE_FULL_A(R_od, G_od, B_od, a_od, 4, 9);
+            WRITE_FULL_A(R_ev, G_ev, B_ev, a_ev, 5, 10);
+            WRITE_FULL_A(R_od, G_od, B_od, a_od, 5, 11);
+            WRITE_FULL_A(R_ev, G_ev, B_ev, a_ev, 6, 12);
+            WRITE_FULL_A(R_od, G_od, B_od, a_od, 6, 13);
+            WRITE_FULL_A(R_ev, G_ev, B_ev, a_ev, 7, 14);
+            WRITE_FULL_A(R_od, G_od, B_od, a_od, 7, 15);
         } else {
-            WRITE_FULL_L(R_l, G_l, B_l, c, dest, i, R, G, B,
-                         y, target, hasAlpha, err);
-            WRITE_FULL_L(R_h, G_h, B_h, c, dest, i + 4, R, G, B,
-                         y, target, hasAlpha, err);
-            WRITE_FULL_H(R_l, G_l, B_l, c, dest, i + 8, R, G, B,
-                         y, target, hasAlpha, err);
-            WRITE_FULL_H(R_h, G_h, B_h, c, dest, i + 12, R, G, B,
-                           y, target, hasAlpha, err);
+            WRITE_FULL(R_ev, G_ev, B_ev, 0, 0);
+            WRITE_FULL(R_od, G_od, B_od, 0, 1);
+            WRITE_FULL(R_ev, G_ev, B_ev, 1, 2);
+            WRITE_FULL(R_od, G_od, B_od, 1, 3);
+            WRITE_FULL(R_ev, G_ev, B_ev, 2, 4);
+            WRITE_FULL(R_od, G_od, B_od, 2, 5);
+            WRITE_FULL(R_ev, G_ev, B_ev, 3, 6);
+            WRITE_FULL(R_od, G_od, B_od, 3, 7);
+            WRITE_FULL(R_ev, G_ev, B_ev, 4, 8);
+            WRITE_FULL(R_od, G_od, B_od, 4, 9);
+            WRITE_FULL(R_ev, G_ev, B_ev, 5, 10);
+            WRITE_FULL(R_od, G_od, B_od, 5, 11);
+            WRITE_FULL(R_ev, G_ev, B_ev, 6, 12);
+            WRITE_FULL(R_od, G_od, B_od, 6, 13);
+            WRITE_FULL(R_ev, G_ev, B_ev, 7, 14);
+            WRITE_FULL(R_od, G_od, B_od, 7, 15);
         }
     }
     if (dstW - i >= 8) {
         __m256i l_src, u_src, v_src;
-        __m256i y_l, u_l, v_l, temp;
-        __m256i R_l, G_l, B_l;
+        __m256i y_ev, u_ev, v_ev, uv, temp;
+        __m256i R_ev, G_ev, B_ev;
+        int n = i << 1;
 
-        y_l = __lasx_xvreplgr2vr_w(templ);
-        u_l = v_l = __lasx_xvreplgr2vr_w(tempc);
+        y_ev = __lasx_xvreplgr2vr_w(templ);
+        u_ev = v_ev = __lasx_xvreplgr2vr_w(tempc);
         for (j = 0; j < lumFilterSize; j++) {
             temp  = __lasx_xvldrepl_h((lumFilter + j), 0);
-            l_src = __lasx_xvld(lumSrc[j] + i, 0);
+            l_src = __lasx_xvldx(lumSrc[j], n);
             l_src = __lasx_xvpermi_d(l_src, 0xD8);
-            y_l = __lasx_xvmaddwl_w_h(y_l, l_src, temp);
+            l_src = __lasx_xvilvl_h(l_src, l_src);
+            y_ev  = __lasx_xvmaddwev_w_h(y_ev, l_src, temp);
         }
         for (j = 0; j < chrFilterSize; j++) {
             temp  = __lasx_xvldrepl_h((chrFilter + j), 0);
-            DUP2_ARG2(__lasx_xvld, chrUSrc[j] + i, 0, chrVSrc[j] + i, 0, u_src, v_src);
+            DUP2_ARG2(__lasx_xvldx, chrUSrc[j], n, chrVSrc[j], n, u_src, v_src);
             u_src = __lasx_xvpermi_d(u_src, 0xD8);
             v_src = __lasx_xvpermi_d(v_src, 0xD8);
-            DUP2_ARG3(__lasx_xvmaddwl_w_h, u_l, u_src, temp, v_l, v_src, temp, u_l, v_l);
+            uv    = __lasx_xvilvl_h(v_src, u_src);
+            u_ev  = __lasx_xvmaddwev_w_h(u_ev, uv, temp);
+            v_ev  = __lasx_xvmaddwod_w_h(v_ev, uv, temp);
         }
-        y_l = __lasx_xvsrai_w(y_l, 10);
-        u_l = __lasx_xvsrai_w(u_l, 10);
-        v_l = __lasx_xvsrai_w(v_l, 10);
-        YUVTORGB(y_l, u_l, v_l, R_l, G_l, B_l, offset, coeff,
+        y_ev = __lasx_xvsrai_w(y_ev, 10);
+        u_ev = __lasx_xvsrai_w(u_ev, 10);
+        v_ev = __lasx_xvsrai_w(v_ev, 10);
+        YUVTORGB(y_ev, u_ev, v_ev, R_ev, G_ev, B_ev, offset, coeff,
                  y_temp, v2r, v2g, u2g, u2b);
 
         if (hasAlpha) {
-            __m256i a_src, a_l;
+            __m256i a_src, a_ev;
 
-            a_l = __lasx_xvreplgr2vr_w(a_temp);
+            a_ev = __lasx_xvreplgr2vr_w(a_temp);
             for (j = 0; j < lumFilterSize; j++) {
                 temp  = __lasx_xvldrepl_h(lumFilter + j, 0);
-                a_src = __lasx_xvld(alpSrc[j] + i, 0);
+                a_src = __lasx_xvldx(alpSrc[j], n);
                 a_src = __lasx_xvpermi_d(a_src, 0xD8);
-                a_l =  __lasx_xvmaddwl_w_h(a_l, a_src, temp);
+                a_src = __lasx_xvilvl_h(a_src, a_src);
+                a_ev  =  __lasx_xvmaddwev_w_h(a_ev, a_src, temp);
             }
-            a_l = __lasx_xvsrai_w(a_l, 19);
-            WRITE_FULL_L_A(R_l, G_l, B_l, a_l, c, dest, i, R, A, G, B,
-                           y, target, hasAlpha, err);
-            WRITE_FULL_H_A(R_l, G_l, B_l, a_l, c, dest, i + 4, R, A, G, B,
-                           y, target, hasAlpha, err);
+            a_ev = __lasx_xvsrai_w(a_ev, 19);
+            WRITE_FULL_A(R_ev, G_ev, B_ev, a_ev, 0, 0);
+            WRITE_FULL_A(R_ev, G_ev, B_ev, a_ev, 1, 1);
+            WRITE_FULL_A(R_ev, G_ev, B_ev, a_ev, 2, 2);
+            WRITE_FULL_A(R_ev, G_ev, B_ev, a_ev, 3, 3);
+            WRITE_FULL_A(R_ev, G_ev, B_ev, a_ev, 4, 4);
+            WRITE_FULL_A(R_ev, G_ev, B_ev, a_ev, 5, 5);
+            WRITE_FULL_A(R_ev, G_ev, B_ev, a_ev, 6, 6);
+            WRITE_FULL_A(R_ev, G_ev, B_ev, a_ev, 7, 7);
         } else {
-            WRITE_FULL_L(R_l, G_l, B_l, c, dest, i, R, G, B,
-                         y, target, hasAlpha, err);
-            WRITE_FULL_H(R_l, G_l, B_l, c, dest, i + 4, R, G, B,
-                         y, target, hasAlpha, err);
+            WRITE_FULL(R_ev, G_ev, B_ev, 0, 0);
+            WRITE_FULL(R_ev, G_ev, B_ev, 1, 1);
+            WRITE_FULL(R_ev, G_ev, B_ev, 2, 2);
+            WRITE_FULL(R_ev, G_ev, B_ev, 3, 3);
+            WRITE_FULL(R_ev, G_ev, B_ev, 4, 4);
+            WRITE_FULL(R_ev, G_ev, B_ev, 5, 5);
+            WRITE_FULL(R_ev, G_ev, B_ev, 6, 6);
+            WRITE_FULL(R_ev, G_ev, B_ev, 7, 7);
         }
         i += 8;
     }
@@ -1740,7 +1673,8 @@ yuv2rgb_full_2_template_lasx(SwsContext *c, const int16_t *buf[2],
     int ytemp    = 1 << 21;
     int len      = dstW - 15;
     int i, R, G, B, A;
-    int step = (target == AV_PIX_FMT_RGB24 || target == AV_PIX_FMT_BGR24) ? 3 : 4;
+    int step = (target == AV_PIX_FMT_RGB24 ||
+                target == AV_PIX_FMT_BGR24) ? 3 : 4;
     __m256i v_uvalpha1 = __lasx_xvreplgr2vr_w(uvalpha1);
     __m256i v_yalpha1  = __lasx_xvreplgr2vr_w(yalpha1);
     __m256i v_uvalpha  = __lasx_xvreplgr2vr_w(uvalpha);
@@ -1763,20 +1697,17 @@ yuv2rgb_full_2_template_lasx(SwsContext *c, const int16_t *buf[2],
         __m256i v0_l, v0_h, u1_l, u1_h, v1_l, v1_h;
         __m256i y_l, y_h, v_l, v_h, u_l, u_h;
         __m256i R_l, R_h, G_l, G_h, B_l, B_h;
+        int n = i << 1;
 
-        DUP4_ARG2(__lasx_xvld, buf0 + i, 0, buf1 + i, 0, ubuf0 + i, 0, ubuf1 + i, 0,
-                  b0, b1, ub0, ub1);
-        DUP2_ARG2(__lasx_xvld, vbuf0 + i, 0, vbuf1 + i, 0, vb0 , vb1);
-        DUP2_ARG1(__lasx_vext2xv_w_h, b0, b1, y0_l, y1_l);
-        DUP4_ARG1(__lasx_vext2xv_w_h, ub0, ub1, vb0, vb1, u0_l, u1_l, v0_l, v1_l);
-        b0   = __lasx_xvpermi_d(b0, 0x4E);
-        b1   = __lasx_xvpermi_d(b1, 0x4E);
-        ub0  = __lasx_xvpermi_d(ub0, 0x4E);
-        ub1  = __lasx_xvpermi_d(ub1, 0x4E);
-        vb0  = __lasx_xvpermi_d(vb0, 0x4E);
-        vb1  = __lasx_xvpermi_d(vb1, 0x4E);
-        DUP2_ARG1(__lasx_vext2xv_w_h, b0, b1, y0_h, y1_h);
-        DUP4_ARG1(__lasx_vext2xv_w_h, ub0, ub1, vb0, vb1, u0_h, u1_h, v0_h, v1_h);
+        DUP4_ARG2(__lasx_xvldx, buf0, n, buf1, n, ubuf0,
+                  n, ubuf1, n, b0, b1, ub0, ub1);
+        DUP2_ARG2(__lasx_xvldx, vbuf0, n, vbuf1, n, vb0 , vb1);
+        DUP2_ARG2(__lasx_xvsllwil_w_h, b0, 0, b1, 0, y0_l, y1_l);
+        DUP4_ARG2(__lasx_xvsllwil_w_h, ub0, 0, ub1, 0, vb0, 0, vb1, 0,
+                  u0_l, u1_l, v0_l, v1_l);
+        DUP2_ARG1(__lasx_xvexth_w_h, b0, b1, y0_h, y1_h);
+        DUP4_ARG1(__lasx_xvexth_w_h, ub0, ub1, vb0, vb1,
+                  u0_h, u1_h, v0_h, v1_h);
         y0_l = __lasx_xvmul_w(y0_l, v_yalpha1);
         y0_h = __lasx_xvmul_w(y0_h, v_yalpha1);
         u0_l = __lasx_xvmul_w(u0_l, v_uvalpha1);
@@ -1808,34 +1739,48 @@ yuv2rgb_full_2_template_lasx(SwsContext *c, const int16_t *buf[2],
             __m256i a0, a1, a0_l, a0_h;
             __m256i a_l, a_h, a1_l, a1_h;
 
-            DUP2_ARG2(__lasx_xvld, abuf0 + i, 0, abuf1 + i, 0, a0, a1);
-            DUP2_ARG1(__lasx_vext2xv_w_h, a0, a1, a0_l, a1_l);
-            a0  = __lasx_xvpermi_d(a0, 0x4E);
-            a1  = __lasx_xvpermi_d(a1, 0x4E);
-            DUP2_ARG1(__lasx_vext2xv_w_h, a0, a1, a0_h, a1_h);
+            DUP2_ARG2(__lasx_xvldx, abuf0, n, abuf1, n, a0, a1);
+            DUP2_ARG2(__lasx_xvsllwil_w_h, a0, 0, a1, 0, a0_l, a1_l);
+            DUP2_ARG1(__lasx_xvexth_w_h, a0, a1, a0_h, a1_h);
             a_l = __lasx_xvmadd_w(a_bias, a0_l, v_yalpha1);
             a_h = __lasx_xvmadd_w(a_bias, a0_h, v_yalpha1);
             a_l = __lasx_xvmadd_w(a_l, v_yalpha, a1_l);
             a_h = __lasx_xvmadd_w(a_h, v_yalpha, a1_h);
             a_l = __lasx_xvsrai_w(a_l, 19);
             a_h = __lasx_xvsrai_w(a_h, 19);
-            WRITE_FULL_L_A(R_l, G_l, B_l, a_l, c, dest, i, R, A, G, B,
-                           y, target, hasAlpha, err);
-            WRITE_FULL_H_A(R_l, G_l, B_l, a_l, c, dest, i + 4, R, A, G, B,
-                           y, target, hasAlpha, err);
-            WRITE_FULL_L_A(R_h, G_h, B_h, a_h, c, dest, i + 8, R, A, G, B,
-                           y, target, hasAlpha, err);
-            WRITE_FULL_H_A(R_h, G_h, B_h, a_h, c, dest, i + 12, R, A, G, B,
-                           y, target, hasAlpha, err);
+            WRITE_FULL_A(R_l, G_l, B_l, a_l, 0, 0);
+            WRITE_FULL_A(R_l, G_l, B_l, a_l, 1, 1);
+            WRITE_FULL_A(R_l, G_l, B_l, a_l, 2, 2);
+            WRITE_FULL_A(R_l, G_l, B_l, a_l, 3, 3);
+            WRITE_FULL_A(R_h, G_h, B_h, a_h, 0, 4);
+            WRITE_FULL_A(R_h, G_h, B_h, a_h, 1, 5);
+            WRITE_FULL_A(R_h, G_h, B_h, a_h, 2, 6);
+            WRITE_FULL_A(R_h, G_h, B_h, a_h, 3, 7);
+            WRITE_FULL_A(R_l, G_l, B_l, a_l, 4, 8);
+            WRITE_FULL_A(R_l, G_l, B_l, a_l, 5, 9);
+            WRITE_FULL_A(R_l, G_l, B_l, a_l, 6, 10);
+            WRITE_FULL_A(R_l, G_l, B_l, a_l, 7, 11);
+            WRITE_FULL_A(R_h, G_h, B_h, a_h, 4, 12);
+            WRITE_FULL_A(R_h, G_h, B_h, a_h, 5, 13);
+            WRITE_FULL_A(R_h, G_h, B_h, a_h, 6, 14);
+            WRITE_FULL_A(R_h, G_h, B_h, a_h, 7, 15);
         } else {
-            WRITE_FULL_L(R_l, G_l, B_l, c, dest, i, R, G, B,
-                         y, target, hasAlpha, err);
-            WRITE_FULL_H(R_l, G_l, B_l, c, dest, i + 4, R, G, B,
-                         y, target, hasAlpha, err);
-            WRITE_FULL_L(R_h, G_h, B_h, c, dest, i + 8, R, G, B,
-                         y, target, hasAlpha, err);
-            WRITE_FULL_H(R_h, G_h, B_h, c, dest, i + 12, R, G, B,
-                         y, target, hasAlpha, err);
+            WRITE_FULL(R_l, G_l, B_l, 0, 0);
+            WRITE_FULL(R_l, G_l, B_l, 1, 1);
+            WRITE_FULL(R_l, G_l, B_l, 2, 2);
+            WRITE_FULL(R_l, G_l, B_l, 3, 3);
+            WRITE_FULL(R_h, G_h, B_h, 0, 4);
+            WRITE_FULL(R_h, G_h, B_h, 1, 5);
+            WRITE_FULL(R_h, G_h, B_h, 2, 6);
+            WRITE_FULL(R_h, G_h, B_h, 3, 7);
+            WRITE_FULL(R_l, G_l, B_l, 4, 8);
+            WRITE_FULL(R_l, G_l, B_l, 5, 9);
+            WRITE_FULL(R_l, G_l, B_l, 6, 10);
+            WRITE_FULL(R_l, G_l, B_l, 7, 11);
+            WRITE_FULL(R_h, G_h, B_h, 4, 12);
+            WRITE_FULL(R_h, G_h, B_h, 5, 13);
+            WRITE_FULL(R_h, G_h, B_h, 6, 14);
+            WRITE_FULL(R_h, G_h, B_h, 7, 15);
         }
     }
     if (dstW - i >= 8) {
@@ -1844,10 +1789,11 @@ yuv2rgb_full_2_template_lasx(SwsContext *c, const int16_t *buf[2],
         __m256i v0_l, u1_l, v1_l;
         __m256i y_l, u_l, v_l;
         __m256i R_l, G_l, B_l;
+        int n = i << 1;
 
-        DUP4_ARG2(__lasx_xvld, buf0 + i, 0, buf1 + i, 0, ubuf0 + i, 0, ubuf1 + i, 0,
-                  b0, b1, ub0, ub1);
-        DUP2_ARG2(__lasx_xvld, vbuf0 + i, 0, vbuf1 + i, 0, vb0, vb1);
+        DUP4_ARG2(__lasx_xvldx, buf0, n, buf1, n, ubuf0, n,
+                  ubuf1, n, b0, b1, ub0, ub1);
+        DUP2_ARG2(__lasx_xvldx, vbuf0, n, vbuf1, n, vb0, vb1);
         DUP2_ARG1(__lasx_vext2xv_w_h, b0, b1, y0_l, y1_l);
         DUP4_ARG1(__lasx_vext2xv_w_h, ub0, ub1, vb0, vb1, u0_l, u1_l, v0_l, v1_l);
         y0_l = __lasx_xvmul_w(y0_l, v_yalpha1);
@@ -1868,20 +1814,28 @@ yuv2rgb_full_2_template_lasx(SwsContext *c, const int16_t *buf[2],
             __m256i a0, a1, a0_l;
             __m256i a_l, a1_l;
 
-            DUP2_ARG2(__lasx_xvld, abuf0 + i, 0, abuf1 + i, 0, a0, a1);
+            DUP2_ARG2(__lasx_xvldx, abuf0, n, abuf1, n, a0, a1);
             DUP2_ARG1(__lasx_vext2xv_w_h, a0, a1, a0_l, a1_l);
             a_l = __lasx_xvmadd_w(a_bias, a0_l, v_yalpha1);
             a_l = __lasx_xvmadd_w(a_l, v_yalpha, a1_l);
             a_l = __lasx_xvsrai_w(a_l, 19);
-            WRITE_FULL_L_A(R_l, G_l, B_l, a_l, c, dest, i, R, A, G, B,
-                           y, target, hasAlpha, err);
-            WRITE_FULL_H_A(R_l, G_l, B_l, a_l, c, dest, i + 4, R, A, G, B,
-                           y, target, hasAlpha, err);
+            WRITE_FULL_A(R_l, G_l, B_l, a_l, 0, 0);
+            WRITE_FULL_A(R_l, G_l, B_l, a_l, 1, 1);
+            WRITE_FULL_A(R_l, G_l, B_l, a_l, 2, 2);
+            WRITE_FULL_A(R_l, G_l, B_l, a_l, 3, 3);
+            WRITE_FULL_A(R_l, G_l, B_l, a_l, 4, 4);
+            WRITE_FULL_A(R_l, G_l, B_l, a_l, 5, 5);
+            WRITE_FULL_A(R_l, G_l, B_l, a_l, 6, 6);
+            WRITE_FULL_A(R_l, G_l, B_l, a_l, 7, 7);
         } else {
-            WRITE_FULL_L(R_l, G_l, B_l, c, dest, i, R, G, B,
-                         y, target, hasAlpha, err);
-            WRITE_FULL_H(R_l, G_l, B_l, c, dest, i + 4, R, G, B,
-                         y, target, hasAlpha, err);
+            WRITE_FULL(R_l, G_l, B_l, 0, 0);
+            WRITE_FULL(R_l, G_l, B_l, 1, 1);
+            WRITE_FULL(R_l, G_l, B_l, 2, 2);
+            WRITE_FULL(R_l, G_l, B_l, 3, 3);
+            WRITE_FULL(R_l, G_l, B_l, 4, 4);
+            WRITE_FULL(R_l, G_l, B_l, 5, 5);
+            WRITE_FULL(R_l, G_l, B_l, 6, 6);
+            WRITE_FULL(R_l, G_l, B_l, 7, 7);
         }
         i += 8;
     }
@@ -1925,7 +1879,6 @@ yuv2rgb_full_1_template_lasx(SwsContext *c, const int16_t *buf0,
     int ytemp      = 1 << 21;
     int bias_int   = 64;
     int len        = dstW - 15;
-    __m256i bias   = __lasx_xvreplgr2vr_w(bias_int);
     __m256i y_temp = __lasx_xvreplgr2vr_w(ytemp);
     YUVTORGB_SETUP
 
@@ -1933,24 +1886,22 @@ yuv2rgb_full_1_template_lasx(SwsContext *c, const int16_t *buf0,
        || target == AV_PIX_FMT_BGR8      || target == AV_PIX_FMT_RGB8)
         step = 1;
     if (uvalpha < 2048) {
-        int uvtemp = 128 << 7;
-        __m256i uv = __lasx_xvreplgr2vr_w(uvtemp);
+        int uvtemp   = 128 << 7;
+        __m256i uv   = __lasx_xvreplgr2vr_w(uvtemp);
+        __m256i bias = __lasx_xvreplgr2vr_w(bias_int);
 
         for (i = 0; i < len; i += 16) {
             __m256i b, ub, vb, ub_l, ub_h, vb_l, vb_h;
             __m256i y_l, y_h, u_l, u_h, v_l, v_h;
             __m256i R_l, R_h, G_l, G_h, B_l, B_h;
+            int n = i << 1;
 
-            DUP2_ARG2(__lasx_xvld, buf0 + i, 0, ubuf0 + i, 0, b, ub);
-            vb  = __lasx_xvld(vbuf0 + i, 0);
-            y_l = __lasx_vext2xv_w_h(b);
-            DUP2_ARG1(__lasx_vext2xv_w_h, ub, vb, ub_l, vb_l);
-            b   = __lasx_xvpermi_d(b, 0x4E);
-            ub  = __lasx_xvpermi_d(ub, 0x4E);
-            vb  = __lasx_xvpermi_d(vb, 0x4E);
-            y_h = __lasx_vext2xv_w_h(b);
-            DUP2_ARG1(__lasx_vext2xv_w_h, ub, vb, ub_h, vb_h);
-            y_l = __lasx_xvslli_w(y_l, 2);
+            DUP2_ARG2(__lasx_xvldx, buf0, n, ubuf0, n, b, ub);
+            vb  = __lasx_xvldx(vbuf0, n);
+            y_l = __lasx_xvsllwil_w_h(b, 2);
+            y_h = __lasx_xvexth_w_h(b);
+            DUP2_ARG2(__lasx_xvsllwil_w_h, ub, 0, vb, 0, ub_l, vb_l);
+            DUP2_ARG1(__lasx_xvexth_w_h, ub, vb, ub_h, vb_h);
             y_h = __lasx_xvslli_w(y_h, 2);
             u_l = __lasx_xvsub_w(ub_l, uv);
             u_h = __lasx_xvsub_w(ub_h, uv);
@@ -1970,38 +1921,55 @@ yuv2rgb_full_1_template_lasx(SwsContext *c, const int16_t *buf0,
                 __m256i a_l, a_h;
 
                 a_src = __lasx_xvld(abuf0 + i, 0);
-                a_src = __lasx_xvpermi_d(a_src, 0xD8);
-                a_l = __lasx_xvaddw_h_h_bu(bias, a_src);
-                a_src = __lasx_xvpermi_d(a_src, 0xB1);
-                a_h = __lasx_xvaddw_w_w_h(bias, a_src);
+                a_l   = __lasx_xvsllwil_w_h(a_src, 0);
+                a_h   = __lasx_xvexth_w_h(a_src);
+                a_l   = __lasx_xvadd_w(a_l, bias);
+                a_h   = __lasx_xvadd_w(a_h, bias);
                 a_l   = __lasx_xvsrai_w(a_l, 7);
                 a_h   = __lasx_xvsrai_w(a_h, 7);
-                WRITE_FULL_L_A(R_l, G_l, B_l, a_l, c, dest, i, R, A, G, B,
-                               y, target, hasAlpha, err);
-                WRITE_FULL_H_A(R_l, G_l, B_l, a_l, c, dest, i + 4, R, A, G, B,
-                               y, target, hasAlpha, err);
-                WRITE_FULL_L_A(R_h, G_h, B_h, a_h, c, dest, i + 8, R, A, G, B,
-                               y, target, hasAlpha, err);
-                WRITE_FULL_H_A(R_h, G_h, B_h, a_h, c, dest, i + 12, R, A, G, B,
-                               y, target, hasAlpha, err);
+                WRITE_FULL_A(R_l, G_l, B_l, a_l, 0, 0);
+                WRITE_FULL_A(R_l, G_l, B_l, a_l, 1, 1);
+                WRITE_FULL_A(R_l, G_l, B_l, a_l, 2, 2);
+                WRITE_FULL_A(R_l, G_l, B_l, a_l, 3, 3);
+                WRITE_FULL_A(R_h, G_h, B_h, a_h, 0, 4);
+                WRITE_FULL_A(R_h, G_h, B_h, a_h, 1, 5);
+                WRITE_FULL_A(R_h, G_h, B_h, a_h, 2, 6);
+                WRITE_FULL_A(R_h, G_h, B_h, a_h, 3, 7);
+                WRITE_FULL_A(R_l, G_l, B_l, a_l, 4, 8);
+                WRITE_FULL_A(R_l, G_l, B_l, a_l, 5, 9);
+                WRITE_FULL_A(R_l, G_l, B_l, a_l, 6, 10);
+                WRITE_FULL_A(R_l, G_l, B_l, a_l, 7, 11);
+                WRITE_FULL_A(R_h, G_h, B_h, a_h, 4, 12);
+                WRITE_FULL_A(R_h, G_h, B_h, a_h, 5, 13);
+                WRITE_FULL_A(R_h, G_h, B_h, a_h, 6, 14);
+                WRITE_FULL_A(R_h, G_h, B_h, a_h, 7, 15);
             } else {
-                WRITE_FULL_L(R_l, G_l, B_l, c, dest, i, R, G, B,
-                             y, target, hasAlpha, err);
-                WRITE_FULL_H(R_l, G_l, B_l, c, dest, i + 4, R, G, B,
-                             y, target, hasAlpha, err);
-                WRITE_FULL_L(R_h, G_h, B_h, c, dest, i + 8, R, G, B,
-                             y, target, hasAlpha, err);
-                WRITE_FULL_H(R_h, G_h, B_h, c, dest, i + 12, R, G, B,
-                             y, target, hasAlpha, err);
+                WRITE_FULL(R_l, G_l, B_l, 0, 0);
+                WRITE_FULL(R_l, G_l, B_l, 1, 1);
+                WRITE_FULL(R_l, G_l, B_l, 2, 2);
+                WRITE_FULL(R_l, G_l, B_l, 3, 3);
+                WRITE_FULL(R_h, G_h, B_h, 0, 4);
+                WRITE_FULL(R_h, G_h, B_h, 1, 5);
+                WRITE_FULL(R_h, G_h, B_h, 2, 6);
+                WRITE_FULL(R_h, G_h, B_h, 3, 7);
+                WRITE_FULL(R_l, G_l, B_l, 4, 8);
+                WRITE_FULL(R_l, G_l, B_l, 5, 9);
+                WRITE_FULL(R_l, G_l, B_l, 6, 10);
+                WRITE_FULL(R_l, G_l, B_l, 7, 11);
+                WRITE_FULL(R_h, G_h, B_h, 4, 12);
+                WRITE_FULL(R_h, G_h, B_h, 5, 13);
+                WRITE_FULL(R_h, G_h, B_h, 6, 14);
+                WRITE_FULL(R_h, G_h, B_h, 7, 15);
             }
         }
         if (dstW - i >= 8) {
             __m256i b, ub, vb, ub_l, vb_l;
             __m256i y_l, u_l, v_l;
             __m256i R_l, G_l, B_l;
+            int n = i << 1;
 
-            DUP2_ARG2(__lasx_xvld, buf0 + i, 0, ubuf0 + i, 0, b, ub);
-            vb  = __lasx_xvld(vbuf0 + i, 0);
+            DUP2_ARG2(__lasx_xvldx, buf0, n, ubuf0, n, b, ub);
+            vb  = __lasx_xvldx(vbuf0, n);
             y_l = __lasx_vext2xv_w_h(b);
             DUP2_ARG1(__lasx_vext2xv_w_h, ub, vb, ub_l, vb_l);
             y_l = __lasx_xvslli_w(y_l, 2);
@@ -2015,19 +1983,27 @@ yuv2rgb_full_1_template_lasx(SwsContext *c, const int16_t *buf0,
             if(hasAlpha) {
                 __m256i a_src, a_l;
 
-                a_src = __lasx_xvld(abuf0 + i, 0);
-                a_src = __lasx_xvpermi_d(a_src, 0xD8);
-                a_l = __lasx_xvaddw_w_w_h(bias, a_src);
+                a_src = __lasx_xvldx(abuf0, n);
+                a_src = __lasx_vext2xv_w_h(a_src);
+                a_l   = __lasx_xvadd_w(bias, a_src);
                 a_l   = __lasx_xvsrai_w(a_l, 7);
-                WRITE_FULL_L_A(R_l, G_l, B_l, a_l, c, dest, i, R, A, G, B,
-                               y, target, hasAlpha, err);
-                WRITE_FULL_H_A(R_l, G_l, B_l, a_l, c, dest, i + 4, R, A, G, B,
-                               y, target, hasAlpha, err);
+                WRITE_FULL_A(R_l, G_l, B_l, a_l, 0, 0);
+                WRITE_FULL_A(R_l, G_l, B_l, a_l, 1, 1);
+                WRITE_FULL_A(R_l, G_l, B_l, a_l, 2, 2);
+                WRITE_FULL_A(R_l, G_l, B_l, a_l, 3, 3);
+                WRITE_FULL_A(R_l, G_l, B_l, a_l, 4, 4);
+                WRITE_FULL_A(R_l, G_l, B_l, a_l, 5, 5);
+                WRITE_FULL_A(R_l, G_l, B_l, a_l, 6, 6);
+                WRITE_FULL_A(R_l, G_l, B_l, a_l, 7, 7);
             } else {
-                WRITE_FULL_L(R_l, G_l, B_l, c, dest, i, R, G, B,
-                             y, target, hasAlpha, err);
-                WRITE_FULL_H(R_l, G_l, B_l, c, dest, i + 4, R, G, B,
-                             y, target, hasAlpha, err);
+                WRITE_FULL(R_l, G_l, B_l, 0, 0);
+                WRITE_FULL(R_l, G_l, B_l, 1, 1);
+                WRITE_FULL(R_l, G_l, B_l, 2, 2);
+                WRITE_FULL(R_l, G_l, B_l, 3, 3);
+                WRITE_FULL(R_l, G_l, B_l, 4, 4);
+                WRITE_FULL(R_l, G_l, B_l, 5, 5);
+                WRITE_FULL(R_l, G_l, B_l, 6, 6);
+                WRITE_FULL(R_l, G_l, B_l, 7, 7);
             }
             i += 8;
         }
@@ -2053,87 +2029,92 @@ yuv2rgb_full_1_template_lasx(SwsContext *c, const int16_t *buf0,
         }
     } else {
         const int16_t *ubuf1 = ubuf[1], *vbuf1 = vbuf[1];
-        int uvtemp = 128 << 8;
-        __m256i uv = __lasx_xvreplgr2vr_w(uvtemp);
+        int uvtemp   = 128 << 8;
+        __m256i uv   = __lasx_xvreplgr2vr_w(uvtemp);
+        __m256i zero = __lasx_xvldi(0);
+        __m256i bias = __lasx_xvreplgr2vr_h(bias_int);
 
         for (i = 0; i < len; i += 16) {
             __m256i b, ub0, ub1, vb0, vb1;
-            __m256i y_l, y_h, u_l, u_h, v_l, v_h;
-            __m256i R_l, R_h, G_l, G_h, B_l, B_h;
+            __m256i y_ev, y_od, u_ev, u_od, v_ev, v_od;
+            __m256i R_ev, R_od, G_ev, G_od, B_ev, B_od;
+            int n = i << 1;
 
-            DUP4_ARG2(__lasx_xvld, buf0 + i, 0, ubuf0 + i, 0, vbuf0 + i, 0, ubuf1 + i, 0,
-                      b, ub0, vb0, ub1);
-            vb1 = __lasx_xvld(vbuf1 + i, 0);
-            y_l = __lasx_vext2xv_w_h(b);
-            b   = __lasx_xvpermi_d(b, 0X4E);
-            y_h = __lasx_vext2xv_w_h(b);
-            y_l = __lasx_xvslli_w(y_l, 2);
-            y_h = __lasx_xvslli_w(y_h, 2);
-            ub0 = __lasx_xvpermi_d(ub0, 0xD8);
-            vb0 = __lasx_xvpermi_d(vb0, 0xD8);
-            ub1 = __lasx_xvpermi_d(ub1, 0xD8);
-            vb1 = __lasx_xvpermi_d(vb1, 0xD8);
-
-            DUP2_ARG2(__lasx_xvaddwl_w_h, ub0, ub1, vb0, vb1, u_l, v_l);
-            DUP2_ARG2(__lasx_xvaddwh_w_h, ub0, ub1, vb0, vb1, u_h, v_h);
-            u_l = __lasx_xvsub_w(u_l, uv);
-            u_h = __lasx_xvsub_w(u_h, uv);
-            v_l = __lasx_xvsub_w(v_l, uv);
-            v_h = __lasx_xvsub_w(v_h, uv);
-            u_l = __lasx_xvslli_w(u_l, 1);
-            u_h = __lasx_xvslli_w(u_h, 1);
-            v_l = __lasx_xvslli_w(v_l, 1);
-            v_h = __lasx_xvslli_w(v_h, 1);
-            YUVTORGB(y_l, u_l, v_l, R_l, G_l, B_l, offset, coeff,
+            DUP4_ARG2(__lasx_xvldx, buf0, n, ubuf0, n, vbuf0, n,
+                      ubuf1, n, b, ub0, vb0, ub1);
+            vb1 = __lasx_xvldx(vbuf, n);
+            y_ev = __lasx_xvaddwev_w_h(b, zero);
+            y_od = __lasx_xvaddwod_w_h(b, zero);
+            DUP2_ARG2(__lasx_xvaddwev_w_h, ub0, vb0, ub1, vb1, u_ev, v_ev);
+            DUP2_ARG2(__lasx_xvaddwod_w_h, ub0, vb0, ub1, vb1, u_od, v_od);
+            DUP2_ARG2(__lasx_xvslli_w, y_ev, 2, y_od, 2, y_ev, y_od);
+            DUP4_ARG2(__lasx_xvsub_w, u_ev, uv, u_od, uv, v_ev, uv, v_od, uv,
+                      u_ev, u_od, v_ev, v_od);
+            DUP4_ARG2(__lasx_xvslli_w, u_ev, 1, u_od, 1, v_ev, 1, v_od, 1,
+                      u_ev, u_od, v_ev, v_od);
+            YUVTORGB(y_ev, u_ev, v_ev, R_ev, G_ev, B_ev, offset, coeff,
                      y_temp, v2r, v2g, u2g, u2b);
-            YUVTORGB(y_h, u_h, v_h, R_h, G_h, B_h, offset, coeff,
+            YUVTORGB(y_od, u_od, v_od, R_od, G_od, B_od, offset, coeff,
                      y_temp, v2r, v2g, u2g, u2b);
 
             if(hasAlpha) {
                 __m256i a_src;
-                __m256i a_l, a_h;
+                __m256i a_ev, a_od;
 
                 a_src = __lasx_xvld(abuf0 + i, 0);
-                a_src = __lasx_xvpermi_d(a_src, 0xD8);
-                a_l = __lasx_xvaddw_w_w_h(bias, a_src);
-                a_src = __lasx_xvpermi_d(a_src, 0xB1);
-                a_h = __lasx_xvaddw_w_w_h(bias, a_src);
-                a_l   = __lasx_xvsrai_w(a_l, 7);
-                a_h   = __lasx_xvsrai_w(a_h, 7);
-                WRITE_FULL_L_A(R_l, G_l, B_l, a_l, c, dest, i, R, A, G, B,
-                               y, target, hasAlpha, err);
-                WRITE_FULL_H_A(R_l, G_l, B_l, a_l, c, dest, i + 4, R, A, G, B,
-                               y, target, hasAlpha, err);
-                WRITE_FULL_L_A(R_h, G_h, B_h, a_h, c, dest, i + 8, R, A, G, B,
-                               y, target, hasAlpha, err);
-                WRITE_FULL_H_A(R_h, G_h, B_h, a_h, c, dest, i + 12, R, A, G, B,
-                               y, target, hasAlpha, err);
+                a_ev  = __lasx_xvaddwev_w_h(bias, a_src);
+                a_od  = __lasx_xvaddwod_w_h(bias, a_src);
+                a_ev  = __lasx_xvsrai_w(a_ev, 7);
+                a_od  = __lasx_xvsrai_w(a_od, 7);
+                WRITE_FULL_A(R_ev, G_ev, B_ev, a_ev, 0, 0);
+                WRITE_FULL_A(R_od, G_od, B_od, a_od, 0, 1);
+                WRITE_FULL_A(R_ev, G_ev, B_ev, a_ev, 1, 2);
+                WRITE_FULL_A(R_od, G_od, B_od, a_od, 1, 3);
+                WRITE_FULL_A(R_ev, G_ev, B_ev, a_ev, 2, 4);
+                WRITE_FULL_A(R_od, G_od, B_od, a_od, 2, 5);
+                WRITE_FULL_A(R_ev, G_ev, B_ev, a_ev, 3, 6);
+                WRITE_FULL_A(R_od, G_od, B_od, a_od, 3, 7);
+                WRITE_FULL_A(R_ev, G_ev, B_ev, a_ev, 4, 8);
+                WRITE_FULL_A(R_od, G_od, B_od, a_od, 4, 9);
+                WRITE_FULL_A(R_ev, G_ev, B_ev, a_ev, 5, 10);
+                WRITE_FULL_A(R_od, G_od, B_od, a_od, 5, 11);
+                WRITE_FULL_A(R_ev, G_ev, B_ev, a_ev, 6, 12);
+                WRITE_FULL_A(R_od, G_od, B_od, a_od, 6, 13);
+                WRITE_FULL_A(R_ev, G_ev, B_ev, a_ev, 7, 14);
+                WRITE_FULL_A(R_od, G_od, B_od, a_od, 7, 15);
             } else {
-                WRITE_FULL_L(R_l, G_l, B_l, c, dest, i, R, G, B,
-                             y, target, hasAlpha, err);
-                WRITE_FULL_H(R_l, G_l, B_l, c, dest, i + 4, R, G, B,
-                             y, target, hasAlpha, err);
-                WRITE_FULL_L(R_h, G_h, B_h, c, dest, i + 8, R, G, B,
-                             y, target, hasAlpha, err);
-                WRITE_FULL_H(R_h, G_h, B_h, c, dest, i + 12, R, G, B,
-                             y, target, hasAlpha, err);
+                WRITE_FULL(R_ev, G_ev, B_ev, 0, 0);
+                WRITE_FULL(R_od, G_od, B_od, 0, 1);
+                WRITE_FULL(R_ev, G_ev, B_ev, 1, 2);
+                WRITE_FULL(R_od, G_od, B_od, 1, 3);
+                WRITE_FULL(R_ev, G_ev, B_ev, 2, 4);
+                WRITE_FULL(R_od, G_od, B_od, 2, 5);
+                WRITE_FULL(R_ev, G_ev, B_ev, 3, 6);
+                WRITE_FULL(R_od, G_od, B_od, 3, 7);
+                WRITE_FULL(R_ev, G_ev, B_ev, 4, 8);
+                WRITE_FULL(R_od, G_od, B_od, 4, 9);
+                WRITE_FULL(R_ev, G_ev, B_ev, 5, 10);
+                WRITE_FULL(R_od, G_od, B_od, 5, 11);
+                WRITE_FULL(R_ev, G_ev, B_ev, 6, 12);
+                WRITE_FULL(R_od, G_od, B_od, 6, 13);
+                WRITE_FULL(R_ev, G_ev, B_ev, 7, 14);
+                WRITE_FULL(R_od, G_od, B_od, 7, 15);
             }
         }
         if (dstW - i >= 8) {
             __m256i b, ub0, ub1, vb0, vb1;
             __m256i y_l, u_l, v_l;
             __m256i R_l, G_l, B_l;
+            int n = i << 1;
 
-            DUP4_ARG2(__lasx_xvld, buf0 + i, 0, ubuf0 + i, 0, vbuf0 + i, 0, ubuf1 + i, 0,
-                      b, ub0, vb0, ub1);
-            vb1 = __lasx_xvld(vbuf1 + i, 0);
+            DUP4_ARG2(__lasx_xvldx, buf0, n, ubuf0, n, vbuf0, n,
+                      ubuf1, n, b, ub0, vb0, ub1);
+            vb1 = __lasx_xvldx(vbuf1, n);
             y_l = __lasx_vext2xv_w_h(b);
             y_l = __lasx_xvslli_w(y_l, 2);
-            ub0 = __lasx_xvpermi_d(ub0, 0xD8);
-            vb0 = __lasx_xvpermi_d(vb0, 0xD8);
-            ub1 = __lasx_xvpermi_d(ub1, 0xD8);
-            vb1 = __lasx_xvpermi_d(vb1, 0xD8);
-            DUP2_ARG2(__lasx_xvaddwl_w_h, ub0, ub1, vb0, vb1, u_l, v_l);
+            DUP4_ARG1(__lasx_vext2xv_w_h, ub0, vb0, ub1, vb1,
+                      ub0, vb0, ub1, vb1);
+            DUP2_ARG2(__lasx_xvadd_w, ub0, ub1, vb0, vb1, u_l, v_l);
             u_l = __lasx_xvsub_w(u_l, uv);
             v_l = __lasx_xvsub_w(v_l, uv);
             u_l = __lasx_xvslli_w(u_l, 1);
@@ -2145,19 +2126,28 @@ yuv2rgb_full_1_template_lasx(SwsContext *c, const int16_t *buf0,
                 __m256i a_src;
                 __m256i a_l;
 
-                a_src = __lasx_xvld(abuf0 + i, 0);
-                a_src = __lasx_xvpermi_d(a_src, 0xD8);
-                a_l =  __lasx_xvaddw_w_w_h(bias, a_src);
+                a_src  = __lasx_xvld(abuf0 + i, 0);
+                a_src  = __lasx_xvpermi_d(a_src, 0xD8);
+                a_src  = __lasx_xvilvl_h(a_src, a_src);
+                a_l    = __lasx_xvaddwev_w_h(bias, a_l);
                 a_l   = __lasx_xvsrai_w(a_l, 7);
-                WRITE_FULL_L_A(R_l, G_l, B_l, a_l, c, dest, i, R, A, G, B,
-                               y, target, hasAlpha, err);
-                WRITE_FULL_H_A(R_l, G_l, B_l, a_l, c, dest, i + 4, R, A, G, B,
-                               y, target, hasAlpha, err);
+                WRITE_FULL_A(R_l, G_l, B_l, a_l, 0, 0);
+                WRITE_FULL_A(R_l, G_l, B_l, a_l, 1, 1);
+                WRITE_FULL_A(R_l, G_l, B_l, a_l, 2, 2);
+                WRITE_FULL_A(R_l, G_l, B_l, a_l, 3, 3);
+                WRITE_FULL_A(R_l, G_l, B_l, a_l, 4, 4);
+                WRITE_FULL_A(R_l, G_l, B_l, a_l, 5, 5);
+                WRITE_FULL_A(R_l, G_l, B_l, a_l, 6, 6);
+                WRITE_FULL_A(R_l, G_l, B_l, a_l, 7, 7);
             } else {
-                WRITE_FULL_L(R_l, G_l, B_l, c, dest, i, R, G, B,
-                             y, target, hasAlpha, err);
-                WRITE_FULL_H(R_l, G_l, B_l, c, dest, i + 4, R, G, B,
-                             y, target, hasAlpha, err);
+                WRITE_FULL(R_l, G_l, B_l, 0, 0);
+                WRITE_FULL(R_l, G_l, B_l, 1, 1);
+                WRITE_FULL(R_l, G_l, B_l, 2, 2);
+                WRITE_FULL(R_l, G_l, B_l, 3, 3);
+                WRITE_FULL(R_l, G_l, B_l, 4, 4);
+                WRITE_FULL(R_l, G_l, B_l, 5, 5);
+                WRITE_FULL(R_l, G_l, B_l, 6, 6);
+                WRITE_FULL(R_l, G_l, B_l, 7, 7);
             }
             i += 8;
         }
@@ -2187,10 +2177,14 @@ yuv2rgb_full_1_template_lasx(SwsContext *c, const int16_t *buf0,
     c->dither_error[2][i] = err[2];
 }
 #if CONFIG_SMALL
-YUV2RGBWRAPPER(yuv2, rgb_full, bgra32_full, AV_PIX_FMT_BGRA,  CONFIG_SWSCALE_ALPHA && c->needAlpha)
-YUV2RGBWRAPPER(yuv2, rgb_full, abgr32_full, AV_PIX_FMT_ABGR,  CONFIG_SWSCALE_ALPHA && c->needAlpha)
-YUV2RGBWRAPPER(yuv2, rgb_full, rgba32_full, AV_PIX_FMT_RGBA,  CONFIG_SWSCALE_ALPHA && c->needAlpha)
-YUV2RGBWRAPPER(yuv2, rgb_full, argb32_full, AV_PIX_FMT_ARGB,  CONFIG_SWSCALE_ALPHA && c->needAlpha)
+YUV2RGBWRAPPER(yuv2, rgb_full, bgra32_full, AV_PIX_FMT_BGRA,
+               CONFIG_SWSCALE_ALPHA && c->needAlpha)
+YUV2RGBWRAPPER(yuv2, rgb_full, abgr32_full, AV_PIX_FMT_ABGR,
+               CONFIG_SWSCALE_ALPHA && c->needAlpha)
+YUV2RGBWRAPPER(yuv2, rgb_full, rgba32_full, AV_PIX_FMT_RGBA,
+               CONFIG_SWSCALE_ALPHA && c->needAlpha)
+YUV2RGBWRAPPER(yuv2, rgb_full, argb32_full, AV_PIX_FMT_ARGB,
+               CONFIG_SWSCALE_ALPHA && c->needAlpha)
 #else
 #if CONFIG_SWSCALE_ALPHA
 YUV2RGBWRAPPER(yuv2, rgb_full, bgra32_full, AV_PIX_FMT_BGRA,  1)
