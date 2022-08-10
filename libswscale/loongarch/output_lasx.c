@@ -39,9 +39,12 @@ void ff_yuv2planeX_8_lasx(const int16_t *filter, int filterSize,
     uint8_t dither5 = dither[(offset + 5) & 7];
     uint8_t dither6 = dither[(offset + 6) & 7];
     uint8_t dither7 = dither[(offset + 7) & 7];
-    int val_1[8] = {dither0, dither2, dither4, dither6, dither0, dither2, dither4, dither6};
-    int val_2[8] = {dither1, dither3, dither5, dither7, dither1, dither3, dither5, dither7};
-    int val_3[8] = {dither0, dither1, dither2, dither3, dither4, dither5, dither6, dither7};
+    int val_1[8] = {dither0, dither2, dither4, dither6,
+                    dither0, dither2, dither4, dither6};
+    int val_2[8] = {dither1, dither3, dither5, dither7,
+                    dither1, dither3, dither5, dither7};
+    int val_3[8] = {dither0, dither1, dither2, dither3,
+                    dither4, dither5, dither6, dither7};
 
     DUP2_ARG2(__lasx_xvld, val_1, 0, val_2, 0, val1, val2);
     val3 = __lasx_xvld(val_3, 0);
@@ -209,518 +212,19 @@ yuv2rgb_write(uint8_t *_dest, int i, int Y1, int Y2,
     }
 }
 
-#define WRITE_YUV2RGB_16(y_l, y_h, u, v, count, r, g, b, y,               \
-                         target, Y1, Y2, U, V)                            \
-{                                                                         \
-    Y1 = __lasx_xvpickve2gr_w(y_l, 0);                                    \
-    Y2 = __lasx_xvpickve2gr_w(y_l, 1);                                    \
-    U  = __lasx_xvpickve2gr_w(u, 0);                                      \
-    V  = __lasx_xvpickve2gr_w(v, 0);                                      \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_l, 2);                                    \
-    Y2 = __lasx_xvpickve2gr_w(y_l, 3);                                    \
-    U  = __lasx_xvpickve2gr_w(u, 1);                                      \
-    V  = __lasx_xvpickve2gr_w(v, 1);                                      \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_h, 0);                                    \
-    Y2 = __lasx_xvpickve2gr_w(y_h, 1);                                    \
-    U  = __lasx_xvpickve2gr_w(u, 2);                                      \
-    V  = __lasx_xvpickve2gr_w(v, 2);                                      \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_h, 2);                                    \
-    Y2 = __lasx_xvpickve2gr_w(y_h, 3);                                    \
-    U  = __lasx_xvpickve2gr_w(u, 3);                                      \
-    V  = __lasx_xvpickve2gr_w(v, 3);                                      \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_l, 4);                                    \
-    Y2 = __lasx_xvpickve2gr_w(y_l, 5);                                    \
-    U  = __lasx_xvpickve2gr_w(u, 4);                                      \
-    V  = __lasx_xvpickve2gr_w(v, 4);                                      \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_l, 6);                                    \
-    Y2 = __lasx_xvpickve2gr_w(y_l, 7);                                    \
-    U  = __lasx_xvpickve2gr_w(u, 5);                                      \
-    V  = __lasx_xvpickve2gr_w(v, 5);                                      \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_h, 4);                                    \
-    Y2 = __lasx_xvpickve2gr_w(y_h, 5);                                    \
-    U  = __lasx_xvpickve2gr_w(u, 6);                                      \
-    V  = __lasx_xvpickve2gr_w(v, 6);                                      \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_h, 6);                                    \
-    Y2 = __lasx_xvpickve2gr_w(y_h, 7);                                    \
-    U  = __lasx_xvpickve2gr_w(u, 7);                                      \
-    V  = __lasx_xvpickve2gr_w(v, 7);                                      \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
+#define WRITE_YUV2RGB(vec_y1, vec_y2, vec_u, vec_v, t1, t2, t3, t4)    \
+{                                                                      \
+    Y1 = __lasx_xvpickve2gr_w(vec_y1, t1);                             \
+    Y2 = __lasx_xvpickve2gr_w(vec_y2, t2);                             \
+    U  = __lasx_xvpickve2gr_w(vec_u, t3);                              \
+    V  = __lasx_xvpickve2gr_w(vec_v, t4);                              \
+    r  =  c->table_rV[V];                                              \
+    g  = (c->table_gU[U] + c->table_gV[V]);                            \
+    b  =  c->table_bU[U];                                              \
+    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                           \
+                  r, g, b, y, target, 0);                              \
+    count++;                                                           \
 }
-
-#define WRITE_YUV2RGB_16_L(y_ev, y_od, u_ev, u_od, v_ev, v_od,            \
-                           count, r, g, b, y, target, Y1, Y2, U, V)       \
-{                                                                         \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 0);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_od, 0);                                   \
-    U  = __lasx_xvpickve2gr_w(u_ev, 0);                                   \
-    V  = __lasx_xvpickve2gr_w(v_ev, 0);                                   \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 1);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_od, 1);                                   \
-    U  = __lasx_xvpickve2gr_w(u_od, 0);                                   \
-    V  = __lasx_xvpickve2gr_w(v_od, 0);                                   \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 2);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_od, 2);                                   \
-    U  = __lasx_xvpickve2gr_w(u_ev, 1);                                   \
-    V  = __lasx_xvpickve2gr_w(v_ev, 1);                                   \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 3);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_od, 3);                                   \
-    U  = __lasx_xvpickve2gr_w(u_od, 1);                                   \
-    V  = __lasx_xvpickve2gr_w(v_od, 1);                                   \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 4);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_od, 4);                                   \
-    U  = __lasx_xvpickve2gr_w(u_ev, 2);                                   \
-    V  = __lasx_xvpickve2gr_w(v_ev, 2);                                   \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 5);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_od, 5);                                   \
-    U  = __lasx_xvpickve2gr_w(u_od, 2);                                   \
-    V  = __lasx_xvpickve2gr_w(v_od, 2);                                   \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 6);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_od, 6);                                   \
-    U  = __lasx_xvpickve2gr_w(u_ev, 3);                                   \
-    V  = __lasx_xvpickve2gr_w(v_ev, 3);                                   \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 7);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_od, 7);                                   \
-    U  = __lasx_xvpickve2gr_w(u_od, 3);                                   \
-    V  = __lasx_xvpickve2gr_w(v_od, 3);                                   \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-}
-
-#define WRITE_YUV2RGB_16_H(y_ev, y_od, u_ev, u_od, v_ev, v_od,            \
-                           count, r, g, b, y, target, Y1, Y2, U, V)       \
-{                                                                         \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 0);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_od, 0);                                   \
-    U  = __lasx_xvpickve2gr_w(u_ev, 4);                                   \
-    V  = __lasx_xvpickve2gr_w(v_ev, 4);                                   \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 1);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_od, 1);                                   \
-    U  = __lasx_xvpickve2gr_w(u_od, 4);                                   \
-    V  = __lasx_xvpickve2gr_w(v_od, 4);                                   \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 2);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_od, 2);                                   \
-    U  = __lasx_xvpickve2gr_w(u_ev, 5);                                   \
-    V  = __lasx_xvpickve2gr_w(v_ev, 5);                                   \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 3);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_od, 3);                                   \
-    U  = __lasx_xvpickve2gr_w(u_od, 5);                                   \
-    V  = __lasx_xvpickve2gr_w(v_od, 5);                                   \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 4);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_od, 4);                                   \
-    U  = __lasx_xvpickve2gr_w(u_ev, 6);                                   \
-    V  = __lasx_xvpickve2gr_w(v_ev, 6);                                   \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 5);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_od, 5);                                   \
-    U  = __lasx_xvpickve2gr_w(u_od, 6);                                   \
-    V  = __lasx_xvpickve2gr_w(v_od, 6);                                   \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 6);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_od, 6);                                   \
-    U  = __lasx_xvpickve2gr_w(u_ev, 7);                                   \
-    V  = __lasx_xvpickve2gr_w(v_ev, 7);                                   \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 7);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_od, 7);                                   \
-    U  = __lasx_xvpickve2gr_w(u_od, 7);                                   \
-    V  = __lasx_xvpickve2gr_w(v_od, 7);                                   \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-}
-
-#define WRITE_YUV2RGB_16_N(y_ev, y_od, u, v, count,                       \
-                           r, g, b, y, target, Y1, Y2, U, V)              \
-{                                                                         \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 0);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_od, 0);                                   \
-    U  = __lasx_xvpickve2gr_w(u, 0);                                      \
-    V  = __lasx_xvpickve2gr_w(v, 0);                                      \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 1);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_od, 1);                                   \
-    U  = __lasx_xvpickve2gr_w(u, 1);                                      \
-    V  = __lasx_xvpickve2gr_w(v, 1);                                      \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 2);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_od, 2);                                   \
-    U  = __lasx_xvpickve2gr_w(u, 2);                                      \
-    V  = __lasx_xvpickve2gr_w(v, 2);                                      \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 3);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_od, 3);                                   \
-    U  = __lasx_xvpickve2gr_w(u, 3);                                      \
-    V  = __lasx_xvpickve2gr_w(v, 3);                                      \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 4);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_od, 4);                                   \
-    U  = __lasx_xvpickve2gr_w(u, 4);                                      \
-    V  = __lasx_xvpickve2gr_w(v, 4);                                      \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 5);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_od, 5);                                   \
-    U  = __lasx_xvpickve2gr_w(u, 5);                                      \
-    V  = __lasx_xvpickve2gr_w(v, 5);                                      \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 6);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_od, 6);                                   \
-    U  = __lasx_xvpickve2gr_w(u, 6);                                      \
-    V  = __lasx_xvpickve2gr_w(v, 6);                                      \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 7);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_od, 7);                                   \
-    U  = __lasx_xvpickve2gr_w(u, 7);                                      \
-    V  = __lasx_xvpickve2gr_w(v, 7);                                      \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-}
-
-#define WRITE_YUV2RGB_8_N(y_ev, uv, count, r, g, b,                       \
-                          y, target, Y1, Y2, U, V)                        \
-{                                                                         \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 0);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_ev, 1);                                   \
-    U  = __lasx_xvpickve2gr_w(uv, 0);                                     \
-    V  = __lasx_xvpickve2gr_w(uv, 4);                                     \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 2);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_ev, 3);                                   \
-    U  = __lasx_xvpickve2gr_w(uv, 1);                                     \
-    V  = __lasx_xvpickve2gr_w(uv, 5);                                     \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 4);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_ev, 5);                                   \
-    U  = __lasx_xvpickve2gr_w(uv, 2);                                     \
-    V  = __lasx_xvpickve2gr_w(uv, 6);                                     \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_ev, 6);                                   \
-    Y2 = __lasx_xvpickve2gr_w(y_ev, 7);                                   \
-    U  = __lasx_xvpickve2gr_w(uv, 3);                                     \
-    V  = __lasx_xvpickve2gr_w(uv, 7);                                     \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-}
-
-#define WRITE_YUV2RGBL_8(y_l, u, v, count, r, g, b, y, target,            \
-                         Y1, Y2, U, V)                                    \
-{                                                                         \
-    Y1 = __lasx_xvpickve2gr_w(y_l, 0);                                    \
-    Y2 = __lasx_xvpickve2gr_w(y_l, 1);                                    \
-    U  = __lasx_xvpickve2gr_w(u, 0);                                      \
-    V  = __lasx_xvpickve2gr_w(v, 0);                                      \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_l, 2);                                    \
-    Y2 = __lasx_xvpickve2gr_w(y_l, 3);                                    \
-    U  = __lasx_xvpickve2gr_w(u, 1);                                      \
-    V  = __lasx_xvpickve2gr_w(v, 1);                                      \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_l, 4);                                    \
-    Y2 = __lasx_xvpickve2gr_w(y_l, 5);                                    \
-    U  = __lasx_xvpickve2gr_w(u, 2);                                      \
-    V  = __lasx_xvpickve2gr_w(v, 2);                                      \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_l, 6);                                    \
-    Y2 = __lasx_xvpickve2gr_w(y_l, 7);                                    \
-    U  = __lasx_xvpickve2gr_w(u, 3);                                      \
-    V  = __lasx_xvpickve2gr_w(v, 3);                                      \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-}
-
-#define WRITE_YUV2RGBH_8(y_h, u, v, count, r, g, b, y, target,            \
-                         Y1, Y2, U, V)                                    \
-{                                                                         \
-    Y1 = __lasx_xvpickve2gr_w(y_h, 0);                                    \
-    Y2 = __lasx_xvpickve2gr_w(y_h, 1);                                    \
-    U  = __lasx_xvpickve2gr_w(u, 4);                                      \
-    V  = __lasx_xvpickve2gr_w(v, 4);                                      \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_h, 2);                                    \
-    Y2 = __lasx_xvpickve2gr_w(y_h, 3);                                    \
-    U  = __lasx_xvpickve2gr_w(u, 5);                                      \
-    V  = __lasx_xvpickve2gr_w(v, 5);                                      \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_h, 4);                                    \
-    Y2 = __lasx_xvpickve2gr_w(y_h, 5);                                    \
-    U  = __lasx_xvpickve2gr_w(u, 6);                                      \
-    V  = __lasx_xvpickve2gr_w(v, 6);                                      \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-                                                                          \
-    Y1 = __lasx_xvpickve2gr_w(y_h, 6);                                    \
-    Y2 = __lasx_xvpickve2gr_w(y_h, 7);                                    \
-    U  = __lasx_xvpickve2gr_w(u, 7);                                      \
-    V  = __lasx_xvpickve2gr_w(v, 7);                                      \
-    r  =  c->table_rV[V];                                                 \
-    g  = (c->table_gU[U] + c->table_gV[V]);                               \
-    b  =  c->table_bU[U];                                                 \
-    yuv2rgb_write(dest, count, Y1, Y2, 0, 0,                              \
-                  r, g, b, y, target, 0);                                 \
-    count++;                                                              \
-}
-
 
 static void
 yuv2rgb_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
@@ -738,7 +242,7 @@ yuv2rgb_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
     int len_count = (dstW + 1) >> 1;
     const void *r, *g, *b;
     int head = YUVRGB_TABLE_HEADROOM;
-    __m256i headroom  = __lasx_xvldrepl_w(&head, 0);
+    __m256i headroom  = __lasx_xvreplgr2vr_w(head);
 
     for (i = 0; i < len; i++) {
         int Y1, Y2, U, V, count_lum = count << 1;
@@ -763,10 +267,10 @@ yuv2rgb_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
         u2_od  = yl1_ev;
         v2_od  = yl1_ev;
         for (j = 0; j < lumFilterSize; j++) {
+            int16_t *src_lum = lumSrc[j] + count_lum;
             temp    = __lasx_xvldrepl_h((lumFilter + j), 0);
-            DUP4_ARG2(__lasx_xvld, lumSrc[j] + count_lum, 0, lumSrc[j] + count_lum,
-                      32, lumSrc[j] + count_lum, 64, lumSrc[j] + count_lum, 96, l_src1,
-                      l_src2, l_src3, l_src4);
+            DUP4_ARG2(__lasx_xvld, src_lum, 0, src_lum, 32, src_lum, 64,
+                      src_lum, 96, l_src1, l_src2, l_src3, l_src4);
 
             yl1_ev  = __lasx_xvmaddwev_w_h(yl1_ev, temp, l_src1);
             yl1_od  = __lasx_xvmaddwod_w_h(yl1_od, temp, l_src1);
@@ -816,14 +320,38 @@ yuv2rgb_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
         v2_ev  = __lasx_xvadd_w(v2_ev, headroom);
         u2_od  = __lasx_xvadd_w(u2_od, headroom);
         v2_od  = __lasx_xvadd_w(v2_od, headroom);
-        WRITE_YUV2RGB_16_L(yl1_ev, yl1_od, u1_ev, u1_od, v1_ev, v1_od, count,
-                           r, g, b, y, target, Y1, Y2, U, V);
-        WRITE_YUV2RGB_16_H(yh1_ev, yh1_od, u1_ev, u1_od, v1_ev, v1_od, count,
-                           r, g, b, y, target, Y1, Y2, U, V);
-        WRITE_YUV2RGB_16_L(yl2_ev, yl2_od, u2_ev, u2_od, v2_ev, v2_od, count,
-                           r, g, b, y, target, Y1, Y2, U, V);
-        WRITE_YUV2RGB_16_H(yh2_ev, yh2_od, u2_ev, u2_od, v2_ev, v2_od, count,
-                           r, g, b, y, target, Y1, Y2, U, V);
+        WRITE_YUV2RGB(yl1_ev, yl1_od, u1_ev, v1_ev, 0, 0, 0, 0);
+        WRITE_YUV2RGB(yl1_ev, yl1_od, u1_od, v1_od, 1, 1, 0, 0);
+        WRITE_YUV2RGB(yl1_ev, yl1_od, u1_ev, v1_ev, 2, 2, 1, 1);
+        WRITE_YUV2RGB(yl1_ev, yl1_od, u1_od, v1_od, 3, 3, 1, 1);
+        WRITE_YUV2RGB(yl1_ev, yl1_od, u1_ev, v1_ev, 4, 4, 2, 2);
+        WRITE_YUV2RGB(yl1_ev, yl1_od, u1_od, v1_od, 5, 5, 2, 2);
+        WRITE_YUV2RGB(yl1_ev, yl1_od, u1_ev, v1_ev, 6, 6, 3, 3);
+        WRITE_YUV2RGB(yl1_ev, yl1_od, u1_od, v1_od, 7, 7, 3, 3);
+        WRITE_YUV2RGB(yh1_ev, yh1_od, u1_ev, v1_ev, 0, 0, 4, 4);
+        WRITE_YUV2RGB(yh1_ev, yh1_od, u1_od, v1_od, 1, 1, 4, 4);
+        WRITE_YUV2RGB(yh1_ev, yh1_od, u1_ev, v1_ev, 2, 2, 5, 5);
+        WRITE_YUV2RGB(yh1_ev, yh1_od, u1_od, v1_od, 3, 3, 5, 5);
+        WRITE_YUV2RGB(yh1_ev, yh1_od, u1_ev, v1_ev, 4, 4, 6, 6);
+        WRITE_YUV2RGB(yh1_ev, yh1_od, u1_od, v1_od, 5, 5, 6, 6);
+        WRITE_YUV2RGB(yh1_ev, yh1_od, u1_ev, v1_ev, 6, 6, 7, 7);
+        WRITE_YUV2RGB(yh1_ev, yh1_od, u1_od, v1_od, 7, 7, 7, 7);
+        WRITE_YUV2RGB(yl2_ev, yl2_od, u2_ev, v2_ev, 0, 0, 0, 0);
+        WRITE_YUV2RGB(yl2_ev, yl2_od, u2_od, v2_od, 1, 1, 0, 0);
+        WRITE_YUV2RGB(yl2_ev, yl2_od, u2_ev, v2_ev, 2, 2, 1, 1);
+        WRITE_YUV2RGB(yl2_ev, yl2_od, u2_od, v2_od, 3, 3, 1, 1);
+        WRITE_YUV2RGB(yl2_ev, yl2_od, u2_ev, v2_ev, 4, 4, 2, 2);
+        WRITE_YUV2RGB(yl2_ev, yl2_od, u2_od, v2_od, 5, 5, 2, 2);
+        WRITE_YUV2RGB(yl2_ev, yl2_od, u2_ev, v2_ev, 6, 6, 3, 3);
+        WRITE_YUV2RGB(yl2_ev, yl2_od, u2_od, v2_od, 7, 7, 3, 3);
+        WRITE_YUV2RGB(yh2_ev, yh2_od, u2_ev, v2_ev, 0, 0, 4, 4);
+        WRITE_YUV2RGB(yh2_ev, yh2_od, u2_od, v2_od, 1, 1, 4, 4);
+        WRITE_YUV2RGB(yh2_ev, yh2_od, u2_ev, v2_ev, 2, 2, 5, 5);
+        WRITE_YUV2RGB(yh2_ev, yh2_od, u2_od, v2_od, 3, 3, 5, 5);
+        WRITE_YUV2RGB(yh2_ev, yh2_od, u2_ev, v2_ev, 4, 4, 6, 6);
+        WRITE_YUV2RGB(yh2_ev, yh2_od, u2_od, v2_od, 5, 5, 6, 6);
+        WRITE_YUV2RGB(yh2_ev, yh2_od, u2_ev, v2_ev, 6, 6, 7, 7);
+        WRITE_YUV2RGB(yh2_ev, yh2_od, u2_od, v2_od, 7, 7, 7, 7);
     }
     if (res >= 32) {
         int Y1, Y2, U, V, count_lum = count << 1;
@@ -869,10 +397,22 @@ yuv2rgb_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
         v_ev  = __lasx_xvadd_w(v_ev, headroom);
         u_od  = __lasx_xvadd_w(u_od, headroom);
         v_od  = __lasx_xvadd_w(v_od, headroom);
-        WRITE_YUV2RGB_16_L(yl_ev, yl_od, u_ev, u_od, v_ev, v_od, count,
-                           r, g, b, y, target, Y1, Y2, U, V);
-        WRITE_YUV2RGB_16_H(yh_ev, yh_od, u_ev, u_od, v_ev, v_od, count,
-                           r, g, b, y, target, Y1, Y2, U, V);
+        WRITE_YUV2RGB(yl_ev, yl_od, u_ev, v_ev, 0, 0, 0, 0);
+        WRITE_YUV2RGB(yl_ev, yl_od, u_od, v_od, 1, 1, 0, 0);
+        WRITE_YUV2RGB(yl_ev, yl_od, u_ev, v_ev, 2, 2, 1, 1);
+        WRITE_YUV2RGB(yl_ev, yl_od, u_od, v_od, 3, 3, 1, 1);
+        WRITE_YUV2RGB(yl_ev, yl_od, u_ev, v_ev, 4, 4, 2, 2);
+        WRITE_YUV2RGB(yl_ev, yl_od, u_od, v_od, 5, 5, 2, 2);
+        WRITE_YUV2RGB(yl_ev, yl_od, u_ev, v_ev, 6, 6, 3, 3);
+        WRITE_YUV2RGB(yl_ev, yl_od, u_od, v_od, 7, 7, 3, 3);
+        WRITE_YUV2RGB(yh_ev, yh_od, u_ev, v_ev, 0, 0, 4, 4);
+        WRITE_YUV2RGB(yh_ev, yh_od, u_od, v_od, 1, 1, 4, 4);
+        WRITE_YUV2RGB(yh_ev, yh_od, u_ev, v_ev, 2, 2, 5, 5);
+        WRITE_YUV2RGB(yh_ev, yh_od, u_od, v_od, 3, 3, 5, 5);
+        WRITE_YUV2RGB(yh_ev, yh_od, u_ev, v_ev, 4, 4, 6, 6);
+        WRITE_YUV2RGB(yh_ev, yh_od, u_od, v_od, 5, 5, 6, 6);
+        WRITE_YUV2RGB(yh_ev, yh_od, u_ev, v_ev, 6, 6, 7, 7);
+        WRITE_YUV2RGB(yh_ev, yh_od, u_od, v_od, 7, 7, 7, 7);
         res -= 32;
     }
     if (res >= 16) {
@@ -906,7 +446,14 @@ yuv2rgb_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
         v    = __lasx_xvsrai_w(v, 19);
         u    = __lasx_xvadd_w(u, headroom);
         v    = __lasx_xvadd_w(v, headroom);
-        WRITE_YUV2RGB_16_N(y_ev, y_od, u, v, count, r, g, b, y, target, Y1, Y2, U, V);
+        WRITE_YUV2RGB(y_ev, y_od, u, v, 0, 0, 0, 0);
+        WRITE_YUV2RGB(y_ev, y_od, u, v, 1, 1, 1, 1);
+        WRITE_YUV2RGB(y_ev, y_od, u, v, 2, 2, 2, 2);
+        WRITE_YUV2RGB(y_ev, y_od, u, v, 3, 3, 3, 3);
+        WRITE_YUV2RGB(y_ev, y_od, u, v, 4, 4, 4, 4);
+        WRITE_YUV2RGB(y_ev, y_od, u, v, 5, 5, 5, 5);
+        WRITE_YUV2RGB(y_ev, y_od, u, v, 6, 6, 6, 6);
+        WRITE_YUV2RGB(y_ev, y_od, u, v, 7, 7, 7, 7);
         res -= 16;
     }
     if (res >= 8) {
@@ -934,7 +481,10 @@ yuv2rgb_X_template_lasx(SwsContext *c, const int16_t *lumFilter,
         y_ev = __lasx_xvsrai_w(y_ev, 19);
         uv   = __lasx_xvsrai_w(uv, 19);
         uv   = __lasx_xvadd_w(uv, headroom);
-        WRITE_YUV2RGB_8_N(y_ev, uv, count, r, g, b, y, target, Y1, Y2, U, V);
+        WRITE_YUV2RGB(y_ev, y_ev, uv, uv, 0, 1, 0, 4);
+        WRITE_YUV2RGB(y_ev, y_ev, uv, uv, 2, 3, 1, 5);
+        WRITE_YUV2RGB(y_ev, y_ev, uv, uv, 4, 5, 2, 6);
+        WRITE_YUV2RGB(y_ev, y_ev, uv, uv, 6, 7, 3, 7);
     }
     for (; count < len_count; count++) {
         int Y1 = 1 << 18;
@@ -989,17 +539,21 @@ yuv2rgb_2_template_lasx(SwsContext *c, const int16_t *buf[2],
 
     for (i = 0; i < len; i += 16) {
         int Y1, Y2, U, V;
+        int i_dex = i << 1;
+        int c_dex = count << 1;
         __m256i y0_h, y0_l, y0, u0, v0;
         __m256i y1_h, y1_l, y1, u1, v1;
         __m256i y_l, y_h, u, v;
 
-        DUP4_ARG2(__lasx_xvld, buf0 + i, 0, ubuf0 + count, 0, vbuf0 + count,
-                  0, buf1 + i, 0, y0, u0, v0, y1);
-        DUP2_ARG2(__lasx_xvld, ubuf1 + count, 0, vbuf1 + count, 0, u1, v1);
-        DUP2_ARG1(__lasx_vext2xv_w_h, y0, y1, y0_l, y1_l);
-        y0   = __lasx_xvpermi_d(y0, 0x4E);
-        y1   = __lasx_xvpermi_d(y1, 0x4E);
-        DUP2_ARG1(__lasx_vext2xv_w_h, y0, y1, y0_h, y1_h);
+        DUP4_ARG2(__lasx_xvldx, buf0, i_dex, ubuf0, c_dex, vbuf0, c_dex,
+                  buf1, i_dex, y0, u0, v0, y1);
+        DUP2_ARG2(__lasx_xvldx, ubuf1, c_dex, vbuf1, c_dex, u1, v1);
+        DUP2_ARG2(__lasx_xvsllwil_w_h, y0, 0, y1, 0, y0_l, y1_l);
+        DUP2_ARG1(__lasx_xvexth_w_h, y0, y1, y0_h, y1_h);
+        //DUP2_ARG1(__lasx_vext2xv_w_h, y0, y1, y0_l, y1_l);
+        //y0   = __lasx_xvpermi_d(y0, 0x4E);
+        //y1   = __lasx_xvpermi_d(y1, 0x4E);
+        //DUP2_ARG1(__lasx_vext2xv_w_h, y0, y1, y0_h, y1_h);
         DUP4_ARG1(__lasx_vext2xv_w_h, u0, u1, v0, v1, u0, u1, v0, v1);
         y0_l = __lasx_xvmul_w(y0_l, v_yalpha1);
         y0_h = __lasx_xvmul_w(y0_h, v_yalpha1);
@@ -1015,19 +569,26 @@ yuv2rgb_2_template_lasx(SwsContext *c, const int16_t *buf[2],
         v    = __lasx_xvsrai_w(v, 19);
         u    = __lasx_xvadd_w(u, headroom);
         v    = __lasx_xvadd_w(v, headroom);
-        WRITE_YUV2RGBL_8(y_l, u, v, count, r, g, b, y, target, Y1, Y2, U, V);
-        WRITE_YUV2RGBH_8(y_h, u, v, count, r, g, b, y, target, Y1, Y2, U, V);
+        WRITE_YUV2RGB(y_l, y_l, u, v, 0, 1, 0, 0);
+        WRITE_YUV2RGB(y_l, y_l, u, v, 2, 3, 1, 1);
+        WRITE_YUV2RGB(y_h, y_h, u, v, 0, 1, 2, 2);
+        WRITE_YUV2RGB(y_h, y_h, u, v, 2, 3, 3, 3);
+        WRITE_YUV2RGB(y_l, y_l, u, v, 4, 5, 4, 4);
+        WRITE_YUV2RGB(y_l, y_l, u, v, 6, 7, 5, 5);
+        WRITE_YUV2RGB(y_h, y_h, u, v, 4, 5, 6, 6);
+        WRITE_YUV2RGB(y_h, y_h, u, v, 6, 7, 7, 7);
     }
     if (dstW - i >= 8) {
         int Y1, Y2, U, V;
+        int i_dex = i << 1;
         __m256i y0_l, y0, u0, v0;
         __m256i y1_l, y1, u1, v1;
         __m256i y_l, u, v;
 
-        y0   = __lasx_xvld(buf0 + i, 0);
+        y0   = __lasx_xvldx(buf0, i_dex);
         u0   = __lasx_xvldrepl_d((ubuf0 + count), 0);
         v0   = __lasx_xvldrepl_d((vbuf0 + count), 0);
-        y1   = __lasx_xvld(buf1 + i, 0);
+        y1   = __lasx_xvldx(buf1, i_dex);
         u1   = __lasx_xvldrepl_d((ubuf1 + count), 0);
         v1   = __lasx_xvldrepl_d((vbuf1 + count), 0);
         DUP2_ARG1(__lasx_vext2xv_w_h, y0, y1, y0_l, y1_l);
@@ -1043,7 +604,10 @@ yuv2rgb_2_template_lasx(SwsContext *c, const int16_t *buf[2],
         v    = __lasx_xvsrai_w(v, 19);
         u    = __lasx_xvadd_w(u, headroom);
         v    = __lasx_xvadd_w(v, headroom);
-        WRITE_YUV2RGBL_8(y_l, u, v, count, r, g, b, y, target, Y1, Y2, U, V);
+        WRITE_YUV2RGB(y_l, y_l, u, v, 0, 1, 0, 0);
+        WRITE_YUV2RGB(y_l, y_l, u, v, 2, 3, 1, 1);
+        WRITE_YUV2RGB(y_l, y_l, u, v, 4, 5, 2, 2);
+        WRITE_YUV2RGB(y_l, y_l, u, v, 6, 7, 3, 3);
         i += 8;
     }
     for (; count < len_count; count++) {
@@ -1079,48 +643,53 @@ yuv2rgb_1_template_lasx(SwsContext *c, const int16_t *buf0,
 
     if (uvalpha < 2048) {
         int count    = 0;
-        int16_t bias_int = 64;
         int head = YUVRGB_TABLE_HEADROOM;
-        __m256i headroom  = __lasx_xvreplgr2vr_w(head);
-        __m256i bias_64   = __lasx_xvreplgr2vr_h(bias_int);
+        __m256i headroom  = __lasx_xvreplgr2vr_h(head);
 
         for (i = 0; i < len; i += 16) {
             int Y1, Y2, U, V;
+            int i_dex = i << 1;
+            int c_dex = count << 1;
             __m256i src_y, src_u, src_v;
-            __m256i y_h, y_l, u, v;
+            __m256i u, v, y_l, y_h;
 
-            DUP2_ARG2(__lasx_xvld, buf0 + i, 0, ubuf0 + count, 0, src_y, src_u);
-            src_v = __lasx_xvld(vbuf0 + count, 0);
-            y_l = __lasx_xvaddwl_w_h(src_y, bias_64);
-            y_h = __lasx_xvaddwh_w_h(src_y, bias_64);
-            src_u = __lasx_xvpermi_d(src_u, 0xD8);
-            src_v = __lasx_xvpermi_d(src_v, 0xD8);
-            DUP2_ARG2(__lasx_xvaddwl_w_h, src_u, bias_64, src_v, bias_64, u, v);
-            y_l   = __lasx_xvsrai_w(y_l, 7);
-            y_h   = __lasx_xvsrai_w(y_h, 7);
-            u     = __lasx_xvsrai_w(u, 7);
-            v     = __lasx_xvsrai_w(v, 7);
-            u     = __lasx_xvadd_w(u, headroom);
-            v     = __lasx_xvadd_w(v, headroom);
-            WRITE_YUV2RGB_16(y_l, y_h, u, v, count, r, g, b, y, target, Y1, Y2, U, V);
+            DUP2_ARG2(__lasx_xvldx, buf0, i_dex, ubuf0, c_dex, src_y, src_u);
+            src_v = __lasx_xvldx(vbuf0, c_dex);
+            src_u = __lasx_xvpermi_q(src_u, src_v, 0x02);
+            src_y = __lasx_xvsrari_h(src_y, 7);
+            src_u = __lasx_xvsrari_h(src_u, 7);
+            y_l   = __lasx_xvsllwil_w_h(src_y, 0);
+            y_h   = __lasx_xvexth_w_h(src_y);
+            u     = __lasx_xvaddwev_w_h(src_u, headroom);
+            v     = __lasx_xvaddwod_w_h(src_u, headroom);
+            WRITE_YUV2RGB(y_l, y_l, u, u, 0, 1, 0, 4);
+            WRITE_YUV2RGB(y_l, y_l, v, v, 2, 3, 0, 4);
+            WRITE_YUV2RGB(y_h, y_h, u, u, 0, 1, 1, 5);
+            WRITE_YUV2RGB(y_h, y_h, v, v, 2, 3, 1, 5);
+            WRITE_YUV2RGB(y_l, y_l, u, u, 4, 5, 2, 6);
+            WRITE_YUV2RGB(y_l, y_l, v, v, 6, 7, 2, 6);
+            WRITE_YUV2RGB(y_h, y_h, u, u, 4, 5, 3, 7);
+            WRITE_YUV2RGB(y_h, y_h, v, v, 6, 7, 3, 7);
         }
         if (dstW - i >= 8){
             int Y1, Y2, U, V;
+            int i_dex = i << 1;
             __m256i src_y, src_u, src_v;
-            __m256i y_l, u, v;
+            __m256i y_l, uv;
 
-            src_y = __lasx_xvld(buf0 + i, 0);
-            src_u = __lasx_xvldrepl_d((ubuf0 + count), 0);
-            src_v = __lasx_xvldrepl_d((vbuf0 + count), 0);
-            src_y = __lasx_xvpermi_d(src_y, 0xD8);
-            DUP2_ARG2(__lasx_xvaddwl_w_h, src_y, bias_64, src_u, bias_64, y_l, u);
-            v = __lasx_xvaddwl_w_h(src_v, bias_64);
-            y_l   = __lasx_xvsrai_w(y_l, 7);
-            u     = __lasx_xvsrai_w(u, 7);
-            v     = __lasx_xvsrai_w(v, 7);
-            u     = __lasx_xvadd_w(u, headroom);
-            v     = __lasx_xvadd_w(v, headroom);
-            WRITE_YUV2RGBL_8(y_l, u, v, count, r, g, b, y, target, Y1, Y2, U, V);
+            src_y  = __lasx_xvldx(buf0, i_dex);
+            src_u  = __lasx_xvldrepl_d((ubuf0 + count), 0);
+            src_v  = __lasx_xvldrepl_d((vbuf0 + count), 0);
+            src_u  = __lasx_xvilvl_d(src_v, src_u);
+            y_l    = __lasx_xvsrari_h(src_y, 7);
+            uv     = __lasx_xvsrari_h(src_u, 7);
+            y_l    = __lasx_vext2xv_w_h(y_l);
+            uv     = __lasx_vext2xv_w_h(uv);
+            uv     = __lasx_xvaddwev_w_h(uv, headroom);
+            WRITE_YUV2RGB(y_l, y_l, uv, uv, 0, 1, 0, 4);
+            WRITE_YUV2RGB(y_l, y_l, uv, uv, 2, 3, 1, 5);
+            WRITE_YUV2RGB(y_l, y_l, uv, uv, 4, 5, 2, 6);
+            WRITE_YUV2RGB(y_l, y_l, uv, uv, 6, 7, 3, 7);
             i += 8;
         }
         for (; count < len_count; count++) {
@@ -1140,60 +709,63 @@ yuv2rgb_1_template_lasx(SwsContext *c, const int16_t *buf0,
     } else {
         const int16_t *ubuf1 = ubuf[1], *vbuf1 = vbuf[1];
         int count = 0;
-        int16_t bias_int_64 = 64;
-        int bias_int_128    = 128;
         int HEADROOM = YUVRGB_TABLE_HEADROOM;
         __m256i headroom    = __lasx_xvreplgr2vr_w(HEADROOM);
-        __m256i bias_64     = __lasx_xvreplgr2vr_h(bias_int_64);
-        __m256i bias_128    = __lasx_xvreplgr2vr_w(bias_int_128);
 
         for (i = 0; i < len; i += 16) {
             int Y1, Y2, U, V;
+            int i_dex = i << 1;
+            int c_dex = count << 1;
             __m256i src_y, src_u0, src_v0, src_u1, src_v1;
-            __m256i y_h, y_l, u, v;
+            __m256i y_l, y_h, u, v;
 
-            DUP4_ARG2(__lasx_xvld, buf0 + i, 0, ubuf0 + count, 0, vbuf0 + count,
-                      0, ubuf1 + count, 0, src_y, src_u0, src_v0, src_u1);
-            src_v1 = __lasx_xvld(vbuf1 + count, 0);
-            src_u0 = __lasx_xvpermi_d(src_u0, 0xD8);
-            src_v0 = __lasx_xvpermi_d(src_v0, 0xD8);
-            src_u1 = __lasx_xvpermi_d(src_u1, 0xD8);
-            src_v1 = __lasx_xvpermi_d(src_v1, 0xD8);
-            y_l = __lasx_xvaddwl_w_h(src_y, bias_64);
-            y_h =  __lasx_xvaddwh_w_h(src_y, bias_64);
-            DUP2_ARG2(__lasx_xvaddwl_w_h, src_u0, src_u1, src_v0, src_v1, u, v);
-            u      = __lasx_xvadd_w(u, bias_128);
-            v      = __lasx_xvadd_w(v, bias_128);
-            y_l    = __lasx_xvsrai_w(y_l, 7);
-            y_h    = __lasx_xvsrai_w(y_h, 7);
-            u      = __lasx_xvsrai_w(u, 8);
-            v      = __lasx_xvsrai_w(v, 8);
+            DUP4_ARG2(__lasx_xvldx, buf0, i_dex, ubuf0, c_dex, vbuf0, c_dex,
+                      ubuf1, c_dex, src_y, src_u0, src_v0, src_u1);
+            src_v1 = __lasx_xvldx(vbuf1, c_dex);
+            src_u0 = __lasx_xvpermi_q(src_u0, src_v0, 0x02);
+            src_u1 = __lasx_xvpermi_q(src_u1, src_v1, 0x02);
+            src_y  = __lasx_xvsrari_h(src_y, 7);
+            u      = __lasx_xvaddwev_w_h(src_u0, src_u1);
+            v      = __lasx_xvaddwod_w_h(src_u0, src_u1);
+            y_l    = __lasx_xvsllwil_w_h(src_y, 0);
+            y_h    = __lasx_xvexth_w_h(src_y);
+            u      = __lasx_xvsrari_w(u, 8);
+            v      = __lasx_xvsrari_w(v, 8);
             u      = __lasx_xvadd_w(u, headroom);
             v      = __lasx_xvadd_w(v, headroom);
-            WRITE_YUV2RGB_16(y_l, y_h, u, v, count, r, g, b, y, target, Y1, Y2, U, V);
+            WRITE_YUV2RGB(y_l, y_l, u, u, 0, 1, 0, 4);
+            WRITE_YUV2RGB(y_l, y_l, v, v, 2, 3, 0, 4);
+            WRITE_YUV2RGB(y_h, y_h, u, u, 0, 1, 1, 5);
+            WRITE_YUV2RGB(y_h, y_h, v, v, 2, 3, 1, 5);
+            WRITE_YUV2RGB(y_l, y_l, u, u, 4, 5, 2, 6);
+            WRITE_YUV2RGB(y_l, y_l, v, v, 6, 7, 2, 6);
+            WRITE_YUV2RGB(y_h, y_h, u, u, 4, 5, 3, 7);
+            WRITE_YUV2RGB(y_h, y_h, v, v, 6, 7, 3, 7);
         }
-        if (dstW - i >= 8){
+        if (dstW - i >= 8) {
             int Y1, Y2, U, V;
+            int i_dex = i << 1;
             __m256i src_y, src_u0, src_v0, src_u1, src_v1;
-            __m256i y_l, u, v;
+            __m256i uv;
 
-            src_y  = __lasx_xvld(buf0 + i, 0);
+            src_y  = __lasx_xvldx(buf0, i_dex);
             src_u0 = __lasx_xvldrepl_d((ubuf0 + count), 0);
             src_v0 = __lasx_xvldrepl_d((vbuf0 + count), 0);
             src_u1 = __lasx_xvldrepl_d((ubuf1 + count), 0);
             src_v1 = __lasx_xvldrepl_d((vbuf1 + count), 0);
 
-            src_y  = __lasx_xvpermi_d(src_y, 0xD8);
-            y_l = __lasx_xvaddwl_w_h(src_y, bias_64);
-            DUP2_ARG2(__lasx_xvaddwl_w_h, src_u0, src_u1, src_v0, src_v1, u, v);
-            u      = __lasx_xvadd_w(u, bias_128);
-            v      = __lasx_xvadd_w(v, bias_128);
-            y_l    = __lasx_xvsrai_w(y_l, 7);
-            u      = __lasx_xvsrai_w(u, 8);
-            v      = __lasx_xvsrai_w(v, 8);
-            u      = __lasx_xvadd_w(u, headroom);
-            v      = __lasx_xvadd_w(v, headroom);
-            WRITE_YUV2RGBL_8(y_l, u, v, count, r, g, b, y, target, Y1, Y2, U, V);
+            src_u0 = __lasx_xvilvl_h(src_u1, src_u0);
+            src_v0 = __lasx_xvilvl_h(src_v1, src_v0);
+            src_u0 = __lasx_xvpermi_q(src_u0, src_v0, 0x02);
+            src_y  = __lasx_xvsrari_h(src_y, 7);
+            uv     = __lasx_xvhaddw_w_h(src_u0, src_u0);
+            src_y  = __lasx_vext2xv_w_h(src_y);
+            uv     = __lasx_xvsrari_w(uv, 8);
+            uv     = __lasx_xvadd_w(uv, headroom);
+            WRITE_YUV2RGB(src_y, src_y, uv, uv, 0, 1, 0, 4);
+            WRITE_YUV2RGB(src_y, src_y, uv, uv, 2, 3, 1, 5);
+            WRITE_YUV2RGB(src_y, src_y, uv, uv, 4, 5, 2, 6);
+            WRITE_YUV2RGB(src_y, src_y, uv, uv, 6, 7, 3, 7);
             i += 8;
         }
         for (; count < len_count; count++) {
@@ -1795,7 +1367,8 @@ yuv2rgb_full_2_template_lasx(SwsContext *c, const int16_t *buf[2],
                   ubuf1, n, b0, b1, ub0, ub1);
         DUP2_ARG2(__lasx_xvldx, vbuf0, n, vbuf1, n, vb0, vb1);
         DUP2_ARG1(__lasx_vext2xv_w_h, b0, b1, y0_l, y1_l);
-        DUP4_ARG1(__lasx_vext2xv_w_h, ub0, ub1, vb0, vb1, u0_l, u1_l, v0_l, v1_l);
+        DUP4_ARG1(__lasx_vext2xv_w_h, ub0, ub1, vb0, vb1,
+                  u0_l, u1_l, v0_l, v1_l);
         y0_l = __lasx_xvmul_w(y0_l, v_yalpha1);
         u0_l = __lasx_xvmul_w(u0_l, v_uvalpha1);
         v0_l = __lasx_xvmul_w(v0_l, v_uvalpha1);
@@ -1840,7 +1413,7 @@ yuv2rgb_full_2_template_lasx(SwsContext *c, const int16_t *buf[2],
         i += 8;
     }
     for (; i < dstW; i++){
-        int Y = ( buf0[i] * yalpha1  +  buf1[i] * yalpha         ) >> 10; //FIXME rounding
+        int Y = ( buf0[i] * yalpha1  +  buf1[i] * yalpha         ) >> 10;
         int U = (ubuf0[i] * uvalpha1 + ubuf1[i] * uvalpha- uvtemp) >> 10;
         int V = (vbuf0[i] * uvalpha1 + vbuf1[i] * uvalpha- uvtemp) >> 10;
 
