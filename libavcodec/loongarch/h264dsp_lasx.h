@@ -25,6 +25,8 @@
 
 #include "libavcodec/h264dec.h"
 
+void ff_h264_idct4x4_addblk_dc_lsx(uint8_t *dst, int16_t *src, int32_t dst_stride);
+
 void ff_h264_h_lpf_luma_8_lasx(uint8_t *src, ptrdiff_t stride,
                                int alpha, int beta, int8_t *tc0);
 void ff_h264_v_lpf_luma_8_lasx(uint8_t *src, ptrdiff_t stride,
