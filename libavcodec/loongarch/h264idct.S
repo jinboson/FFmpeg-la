@@ -57,3 +57,63 @@ function ff_h264_idct_dc_add_8_lsx
     fstx.s        f4,     a0,    t3
 endfunc
 
+/*
+ * #define FUNC2(a, b, c)  FUNC3(a, b, c)
+ * #define FUNCC(a) FUNC2(a, BIT_DEPTH, _c)
+ * void FUNCC(ff_h264_idct8_dc_add)(uint8_t *_dst, int16_t *_block, int stride)
+ */
+function ff_h264_idct8_dc_add_8_lsx
+    vldrepl.h     vr8,    a1,    0
+    add.d         t2,     a2,    a2
+    add.d         t3,     t2,    a2
+    add.d         t4,     t3,    a2
+    add.d         t5,     t4,    a2
+    add.d         t6,     t5,    a2
+    add.d         t7,     t6,    a2
+
+    vld           vr0,    a0,    0
+    vldx          vr1,    a0,    a2
+    vldx          vr2,    a0,    t2
+    vldx          vr3,    a0,    t3
+    vldx          vr4,    a0,    t4
+    vldx          vr5,    a0,    t5
+    vldx          vr6,    a0,    t6
+    vldx          vr7,    a0,    t7
+    st.h          zero,   a1,    0
+
+    vsrari.h      vr8,    vr8,   6
+    vsllwil.hu.bu vr0,    vr0,   0
+    vsllwil.hu.bu vr1,    vr1,   0
+    vsllwil.hu.bu vr2,    vr2,   0
+    vsllwil.hu.bu vr3,    vr3,   0
+    vsllwil.hu.bu vr4,    vr4,   0
+    vsllwil.hu.bu vr5,    vr5,   0
+    vsllwil.hu.bu vr6,    vr6,   0
+    vsllwil.hu.bu vr7,    vr7,   0
+    vadd.h        vr0,    vr0,   vr8
+    vadd.h        vr1,    vr1,   vr8
+    vadd.h        vr2,    vr2,   vr8
+    vadd.h        vr3,    vr3,   vr8
+    vadd.h        vr4,    vr4,   vr8
+    vadd.h        vr5,    vr5,   vr8
+    vadd.h        vr6,    vr6,   vr8
+    vadd.h        vr7,    vr7,   vr8
+    vssrarni.bu.h vr1,    vr0,   0
+    vssrarni.bu.h vr3,    vr2,   0
+    vssrarni.bu.h vr5,    vr4,   0
+    vssrarni.bu.h vr7,    vr6,   0
+
+    vbsrl.v       vr0,    vr1,   8
+    vbsrl.v       vr2,    vr3,   8
+    vbsrl.v       vr4,    vr5,   8
+    vbsrl.v       vr6,    vr7,   8
+    fst.d         f1,     a0,    0
+    fstx.d        f0,     a0,    a2
+    fstx.d        f3,     a0,    t2
+    fstx.d        f2,     a0,    t3
+    fstx.d        f5,     a0,    t4
+    fstx.d        f4,     a0,    t5
+    fstx.d        f7,     a0,    t6
+    fstx.d        f6,     a0,    t7
+endfunc
+
