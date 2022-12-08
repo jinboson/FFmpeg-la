@@ -231,51 +231,6 @@ void ff_h264_idct8_addblk_lasx(uint8_t *dst, int16_t *src,
     __lasx_xvstelm_d(res1, dst + dst_stride_3x, 0, 3);
 }
 
-void ff_h264_idct8_dc_addblk_lasx(uint8_t *dst, int16_t *src,
-                                  int32_t dst_stride)
-{
-    int32_t dc_val;
-    int32_t dst_stride_2x = dst_stride << 1;
-    int32_t dst_stride_4x = dst_stride << 2;
-    int32_t dst_stride_3x = dst_stride_2x + dst_stride;
-    __m256i dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
-    __m256i dc;
-
-    dc_val = (src[0] + 32) >> 6;
-    dc = __lasx_xvreplgr2vr_h(dc_val);
-
-    src[0] = 0;
-
-    DUP4_ARG2(__lasx_xvldx, dst, 0, dst, dst_stride, dst, dst_stride_2x,
-              dst, dst_stride_3x, dst0, dst1, dst2, dst3);
-    dst += dst_stride_4x;
-    DUP4_ARG2(__lasx_xvldx, dst, 0, dst, dst_stride, dst, dst_stride_2x,
-              dst, dst_stride_3x, dst4, dst5, dst6, dst7);
-    dst -= dst_stride_4x;
-    DUP4_ARG1(__lasx_vext2xv_hu_bu, dst0, dst1, dst2, dst3,
-              dst0, dst1, dst2, dst3);
-    DUP4_ARG1(__lasx_vext2xv_hu_bu, dst4, dst5, dst6, dst7,
-              dst4, dst5, dst6, dst7);
-    DUP4_ARG3(__lasx_xvpermi_q, dst1, dst0, 0x20, dst3, dst2, 0x20, dst5,
-              dst4, 0x20, dst7, dst6, 0x20, dst0, dst1, dst2, dst3);
-    dst0 = __lasx_xvadd_h(dst0, dc);
-    dst1 = __lasx_xvadd_h(dst1, dc);
-    dst2 = __lasx_xvadd_h(dst2, dc);
-    dst3 = __lasx_xvadd_h(dst3, dc);
-    DUP4_ARG1(__lasx_xvclip255_h, dst0, dst1, dst2, dst3,
-              dst0, dst1, dst2, dst3);
-    DUP2_ARG2(__lasx_xvpickev_b, dst1, dst0, dst3, dst2, dst0, dst1);
-    __lasx_xvstelm_d(dst0, dst, 0, 0);
-    __lasx_xvstelm_d(dst0, dst + dst_stride, 0, 2);
-    __lasx_xvstelm_d(dst0, dst + dst_stride_2x, 0, 1);
-    __lasx_xvstelm_d(dst0, dst + dst_stride_3x, 0, 3);
-    dst += dst_stride_4x;
-    __lasx_xvstelm_d(dst1, dst, 0, 0);
-    __lasx_xvstelm_d(dst1, dst + dst_stride, 0, 2);
-    __lasx_xvstelm_d(dst1, dst + dst_stride_2x, 0, 1);
-    __lasx_xvstelm_d(dst1, dst + dst_stride_3x, 0, 3);
-}
-
 void ff_h264_idct_add16_lasx(uint8_t *dst,
                              const int32_t *blk_offset,
                              int16_t *block, int32_t dst_stride,
@@ -310,7 +265,7 @@ void ff_h264_idct8_add4_lasx(uint8_t *dst, const int32_t *blk_offset,
 
         if (nnz) {
             if (nnz == 1 && ((dctcoef *) block)[cnt * 16])
-                ff_h264_idct8_dc_addblk_lasx(dst + blk_offset[cnt],
+                ff_h264_idct8_dc_add_8_lasx(dst + blk_offset[cnt],
                                              block + cnt * 16 * sizeof(pixel),
                                              dst_stride);
             else

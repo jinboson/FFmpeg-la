@@ -33,10 +33,10 @@ function ff_h264_idct_dc_add_8_lsx
     vldrepl.h     vr4,    a1,    0
     add.d         t2,     a2,    a2
     add.d         t3,     t2,    a2
-    vld           vr0,    a0,    0
-    vldx          vr1,    a0,    a2
-    vldx          vr2,    a0,    t2
-    vldx          vr3,    a0,    t3
+    fld.s         f0,     a0,    0
+    fldx.s        f1,     a0,    a2
+    fldx.s        f2,     a0,    t2
+    fldx.s        f3,     a0,    t3
     st.h          zero,   a1,    0
 
     vsrari.h      vr4,    vr4,   6
@@ -71,14 +71,14 @@ function ff_h264_idct8_dc_add_8_lsx
     add.d         t6,     t5,    a2
     add.d         t7,     t6,    a2
 
-    vld           vr0,    a0,    0
-    vldx          vr1,    a0,    a2
-    vldx          vr2,    a0,    t2
-    vldx          vr3,    a0,    t3
-    vldx          vr4,    a0,    t4
-    vldx          vr5,    a0,    t5
-    vldx          vr6,    a0,    t6
-    vldx          vr7,    a0,    t7
+    fld.d         f0,     a0,    0
+    fldx.d        f1,     a0,    a2
+    fldx.d        f2,     a0,    t2
+    fldx.d        f3,     a0,    t3
+    fldx.d        f4,     a0,    t4
+    fldx.d        f5,     a0,    t5
+    fldx.d        f6,     a0,    t6
+    fldx.d        f7,     a0,    t7
     st.h          zero,   a1,    0
 
     vsrari.h      vr8,    vr8,   6
@@ -115,5 +115,57 @@ function ff_h264_idct8_dc_add_8_lsx
     fstx.d        f4,     a0,    t5
     fstx.d        f7,     a0,    t6
     fstx.d        f6,     a0,    t7
+endfunc
+function ff_h264_idct8_dc_add_8_lasx
+    xvldrepl.h    xr8,    a1,    0
+    add.d         t2,     a2,    a2
+    add.d         t3,     t2,    a2
+    add.d         t4,     t3,    a2
+    add.d         t5,     t4,    a2
+    add.d         t6,     t5,    a2
+    add.d         t7,     t6,    a2
+
+    fld.d         f0,     a0,    0
+    fldx.d        f1,     a0,    a2
+    fldx.d        f2,     a0,    t2
+    fldx.d        f3,     a0,    t3
+    fldx.d        f4,     a0,    t4
+    fldx.d        f5,     a0,    t5
+    fldx.d        f6,     a0,    t6
+    fldx.d        f7,     a0,    t7
+    st.h          zero,   a1,    0
+
+    xvsrari.h     xr8,    xr8,   6
+    xvpermi.q     xr1,    xr0,   0x20
+    xvpermi.q     xr3,    xr2,   0x20
+    xvpermi.q     xr5,    xr4,   0x20
+    xvpermi.q     xr7,    xr6,   0x20
+    xvsllwil.hu.bu xr1,   xr1,   0
+    xvsllwil.hu.bu xr3,   xr3,   0
+    xvsllwil.hu.bu xr5,   xr5,   0
+    xvsllwil.hu.bu xr7,   xr7,   0
+    xvadd.h       xr1,    xr1,   xr8
+    xvadd.h       xr3,    xr3,   xr8
+    xvadd.h       xr5,    xr5,   xr8
+    xvadd.h       xr7,    xr7,   xr8
+
+    xvssrarni.bu.h xr3,   xr1,   0
+    xvssrarni.bu.h xr7,   xr5,   0
+
+    xvpermi.q     xr1,    xr3,   0x11
+    xvpermi.q     xr5,    xr7,   0x11
+    xvbsrl.v      xr0,    xr1,   8
+    xvbsrl.v      xr2,    xr3,   8
+    xvbsrl.v      xr4,    xr5,   8
+    xvbsrl.v      xr6,    xr7,   8
+
+    fst.d         f3,     a0,    0
+    fstx.d        f1,     a0,    a2
+    fstx.d        f2,     a0,    t2
+    fstx.d        f0,     a0,    t3
+    fstx.d        f7,     a0,    t4
+    fstx.d        f5,     a0,    t5
+    fstx.d        f6,     a0,    t6
+    fstx.d        f4,     a0,    t7
 endfunc
 
