@@ -25,7 +25,7 @@
 
 #include "libavcodec/h264dec.h"
 
-void ff_h264_idct4x4_addblk_dc_lsx(uint8_t *dst, int16_t *src, int32_t dst_stride);
+void ff_h264_idct_dc_add_8_lsx(uint8_t *dst, int16_t *src, int32_t dst_stride);
 
 void ff_h264_h_lpf_luma_8_lasx(uint8_t *src, ptrdiff_t stride,
                                int alpha, int beta, int8_t *tc0);
@@ -69,8 +69,6 @@ void ff_h264_add_pixels4_8_lasx(uint8_t *_dst, int16_t *_src, int stride);
 void ff_h264_add_pixels8_8_lasx(uint8_t *_dst, int16_t *_src, int stride);
 void ff_h264_idct_add_lasx(uint8_t *dst, int16_t *src, int32_t dst_stride);
 void ff_h264_idct8_addblk_lasx(uint8_t *dst, int16_t *src, int32_t dst_stride);
-void ff_h264_idct4x4_addblk_dc_lasx(uint8_t *dst, int16_t *src,
-                                    int32_t dst_stride);
 void ff_h264_idct8_dc_addblk_lasx(uint8_t *dst, int16_t *src,
                                   int32_t dst_stride);
 void ff_h264_idct_add16_lasx(uint8_t *dst, const int32_t *blk_offset,

@@ -231,31 +231,6 @@ void ff_h264_idct8_addblk_lasx(uint8_t *dst, int16_t *src,
     __lasx_xvstelm_d(res1, dst + dst_stride_3x, 0, 3);
 }
 
-void ff_h264_idct4x4_addblk_dc_lasx(uint8_t *dst, int16_t *src,
-                                    int32_t dst_stride)
-{
-    const int16_t dc = (src[0] + 32) >> 6;
-    int32_t dst_stride_2x = dst_stride << 1;
-    int32_t dst_stride_3x = dst_stride_2x + dst_stride;
-    __m256i pred, out;
-    __m256i src0, src1, src2, src3;
-    __m256i input_dc = __lasx_xvreplgr2vr_h(dc);
-
-    src[0] = 0;
-    DUP4_ARG2(__lasx_xvldx, dst, 0, dst, dst_stride, dst, dst_stride_2x,
-              dst, dst_stride_3x, src0, src1, src2, src3);
-    DUP2_ARG2(__lasx_xvilvl_w, src1, src0, src3, src2, src0, src1);
-
-    pred = __lasx_xvpermi_q(src0, src1, 0x02);
-    pred = __lasx_xvaddw_h_h_bu(input_dc, pred);
-    pred = __lasx_xvclip255_h(pred);
-    out = __lasx_xvpickev_b(pred, pred);
-    __lasx_xvstelm_w(out, dst, 0, 0);
-    __lasx_xvstelm_w(out, dst + dst_stride, 0, 1);
-    __lasx_xvstelm_w(out, dst + dst_stride_2x, 0, 4);
-    __lasx_xvstelm_w(out, dst + dst_stride_3x, 0, 5);
-}
-
 void ff_h264_idct8_dc_addblk_lasx(uint8_t *dst, int16_t *src,
                                   int32_t dst_stride)
 {
@@ -313,7 +288,7 @@ void ff_h264_idct_add16_lasx(uint8_t *dst,
 
         if (nnz) {
             if (nnz == 1 && ((dctcoef *) block)[i * 16])
-                ff_h264_idct4x4_addblk_dc_lasx(dst + blk_offset[i],
+                ff_h264_idct_dc_add_8_lsx(dst + blk_offset[i],
                                                block + i * 16 * sizeof(pixel),
                                                dst_stride);
             else
@@ -360,7 +335,7 @@ void ff_h264_idct_add8_lasx(uint8_t **dst,
                                   block + i * 16 * sizeof(pixel),
                                   dst_stride);
         else if (((dctcoef *) block)[i * 16])
-            ff_h264_idct4x4_addblk_dc_lasx(dst[0] + blk_offset[i],
+            ff_h264_idct_dc_add_8_lsx(dst[0] + blk_offset[i],
                                            block + i * 16 * sizeof(pixel),
                                            dst_stride);
     }
@@ -370,7 +345,7 @@ void ff_h264_idct_add8_lasx(uint8_t **dst,
                                   block + i * 16 * sizeof(pixel),
                                   dst_stride);
         else if (((dctcoef *) block)[i * 16])
-            ff_h264_idct4x4_addblk_dc_lasx(dst[1] + blk_offset[i],
+            ff_h264_idct_dc_add_8_lsx(dst[1] + blk_offset[i],
                                            block + i * 16 * sizeof(pixel),
                                            dst_stride);
     }
@@ -389,7 +364,7 @@ void ff_h264_idct_add8_422_lasx(uint8_t **dst,
                                   block + i * 16 * sizeof(pixel),
                                   dst_stride);
         else if (((dctcoef *) block)[i * 16])
-            ff_h264_idct4x4_addblk_dc_lasx(dst[0] + blk_offset[i],
+            ff_h264_idct_dc_add_8_lsx(dst[0] + blk_offset[i],
                                            block + i * 16 * sizeof(pixel),
                                            dst_stride);
     }
@@ -399,7 +374,7 @@ void ff_h264_idct_add8_422_lasx(uint8_t **dst,
                                   block + i * 16 * sizeof(pixel),
                                   dst_stride);
         else if (((dctcoef *) block)[i * 16])
-            ff_h264_idct4x4_addblk_dc_lasx(dst[1] + blk_offset[i],
+            ff_h264_idct_dc_add_8_lsx(dst[1] + blk_offset[i],
                                            block + i * 16 * sizeof(pixel),
                                            dst_stride);
     }
@@ -409,7 +384,7 @@ void ff_h264_idct_add8_422_lasx(uint8_t **dst,
                                   block + i * 16 * sizeof(pixel),
                                   dst_stride);
         else if (((dctcoef *) block)[i * 16])
-            ff_h264_idct4x4_addblk_dc_lasx(dst[0] + blk_offset[i + 4],
+            ff_h264_idct_dc_add_8_lsx(dst[0] + blk_offset[i + 4],
                                            block + i * 16 * sizeof(pixel),
                                            dst_stride);
     }
@@ -419,7 +394,7 @@ void ff_h264_idct_add8_422_lasx(uint8_t **dst,
                                   block + i * 16 * sizeof(pixel),
                                   dst_stride);
         else if (((dctcoef *) block)[i * 16])
-            ff_h264_idct4x4_addblk_dc_lasx(dst[1] + blk_offset[i + 4],
+            ff_h264_idct_dc_add_8_lsx(dst[1] + blk_offset[i + 4],
                                            block + i * 16 * sizeof(pixel),
                                            dst_stride);
     }
@@ -438,7 +413,7 @@ void ff_h264_idct_add16_intra_lasx(uint8_t *dst,
             ff_h264_idct_add_lasx(dst + blk_offset[i],
                                   block + i * 16 * sizeof(pixel), dst_stride);
         else if (((dctcoef *) block)[i * 16])
-            ff_h264_idct4x4_addblk_dc_lasx(dst + blk_offset[i],
+            ff_h264_idct_dc_add_8_lsx(dst + blk_offset[i],
                                            block + i * 16 * sizeof(pixel),
                                            dst_stride);
     }

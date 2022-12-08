@@ -30,7 +30,7 @@ av_cold void ff_h264dsp_init_loongarch(H264DSPContext *c, const int bit_depth,
 
     if (have_lsx(cpu_flags)) {
         if (bit_depth == 8) {
-            c->h264_idct_dc_add = ff_h264_idct4x4_addblk_dc_lsx;
+            c->h264_idct_dc_add = ff_h264_idct_dc_add_8_lsx;
         }
     }
     if (have_lasx(cpu_flags)) {
@@ -63,7 +63,6 @@ av_cold void ff_h264dsp_init_loongarch(H264DSPContext *c, const int bit_depth,
 
             c->h264_idct_add = ff_h264_idct_add_lasx;
             c->h264_idct8_add = ff_h264_idct8_addblk_lasx;
-            c->h264_idct_dc_add = ff_h264_idct4x4_addblk_dc_lasx;
             c->h264_idct8_dc_add = ff_h264_idct8_dc_addblk_lasx;
             c->h264_idct_add16 = ff_h264_idct_add16_lasx;
             c->h264_idct8_add4 = ff_h264_idct8_add4_lasx;
