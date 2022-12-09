@@ -26,6 +26,67 @@
 /*
  * #define FUNC2(a, b, c)  FUNC3(a, b, c)
  * #define FUNCC(a) FUNC2(a, BIT_DEPTH, _c)
+ * void FUNCC(ff_h264_idct_add)(uint8_t *_dst, int16_t *_block, int stride)
+ */
+function ff_h264_idct_add_8_lsx
+    fld.d         f0,     a1,    0
+    fld.d         f1,     a1,    8
+    fld.d         f2,     a1,    16
+    fld.d         f3,     a1,    24
+    vxor.v        vr7,    vr7,   vr7
+    add.d         t2,     a2,    a2
+    add.d         t3,     t2,    a2
+    vst           vr7,    a1,    0
+    vst           vr7,    a1,    16
+
+    vadd.h        vr4,    vr0,   vr2
+    vsub.h        vr5,    vr0,   vr2
+    vsrai.h       vr6,    vr1,   1
+    vsrai.h       vr7,    vr3,   1
+    vsub.h        vr6,    vr6,   vr3
+    vadd.h        vr7,    vr1,   vr7
+    LSX_BUTTERFLY_4_H vr4, vr5, vr6, vr7,  vr0, vr1, vr2, vr3
+    LSX_TRANSPOSE4x4_H vr0, vr1, vr2, vr3,  vr0, vr1, vr2, vr3,  vr4, vr5
+    vadd.h        vr4,    vr0,   vr2
+    vsub.h        vr5,    vr0,   vr2
+    vsrai.h       vr6,    vr1,   1
+    vsrai.h       vr7,    vr3,   1
+    vsub.h        vr6,    vr6,   vr3
+    vadd.h        vr7,    vr1,   vr7
+    LSX_BUTTERFLY_4_H vr4, vr5, vr6, vr7,  vr0, vr1, vr2, vr3
+
+    fld.s         f4,     a0,    0
+    fldx.s        f5,     a0,    a2
+    fldx.s        f6,     a0,    t2
+    fldx.s        f7,     a0,    t3
+
+    vsrari.h      vr0,    vr0,   6
+    vsrari.h      vr1,    vr1,   6
+    vsrari.h      vr2,    vr2,   6
+    vsrari.h      vr3,    vr3,   6
+
+    vsllwil.hu.bu vr4,    vr4,   0
+    vsllwil.hu.bu vr5,    vr5,   0
+    vsllwil.hu.bu vr6,    vr6,   0
+    vsllwil.hu.bu vr7,    vr7,   0
+    vadd.h        vr0,    vr0,   vr4
+    vadd.h        vr1,    vr1,   vr5
+    vadd.h        vr2,    vr2,   vr6
+    vadd.h        vr3,    vr3,   vr7
+    vssrarni.bu.h vr1,    vr0,   0
+    vssrarni.bu.h vr3,    vr2,   0
+
+    vbsrl.v       vr0,    vr1,   8
+    vbsrl.v       vr2,    vr3,   8
+    fst.s         f1,     a0,    0
+    fstx.s        f0,     a0,    a2
+    fstx.s        f3,     a0,    t2
+    fstx.s        f2,     a0,    t3
+endfunc
+
+/*
+ * #define FUNC2(a, b, c)  FUNC3(a, b, c)
+ * #define FUNCC(a) FUNC2(a, BIT_DEPTH, _c)
  * void FUNCC(ff_h264_idct_dc_add)(uint8_t *_dst, int16_t *_block, int stride)
  * LSX optimization is enough for this function.
  */

@@ -30,7 +30,8 @@ av_cold void ff_h264dsp_init_loongarch(H264DSPContext *c, const int bit_depth,
 
     if (have_lsx(cpu_flags)) {
         if (bit_depth == 8) {
-            c->h264_idct_dc_add = ff_h264_idct_dc_add_8_lsx;
+            c->h264_idct_add     = ff_h264_idct_add_8_lsx;
+            c->h264_idct_dc_add  = ff_h264_idct_dc_add_8_lsx;
             c->h264_idct8_dc_add = ff_h264_idct8_dc_add_8_lsx;
         }
     }

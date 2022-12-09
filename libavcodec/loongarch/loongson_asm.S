@@ -735,3 +735,38 @@ ASM_PREF\name: ;
     xvpermi.q   \_out1,   \_tmp1,   0x02
 .endm
 
+/*
+ * Description : Butterfly of 4 input vectors
+ * Arguments   : Inputs  - _in0, _in1, _in2, _in3
+ *               Outputs - _out0, _out1, _out2, _out3
+ * Details     : Butterfly operation
+ * Example     : LSX_BUTTERFLY_4
+ *               _out0 = _in0 + _in3;
+ *               _out1 = _in1 + _in2;
+ *               _out2 = _in1 - _in2;
+ *               _out3 = _in0 - _in3;
+ */
+.macro LSX_BUTTERFLY_4_B _in0, _in1, _in2, _in3, _out0, _out1, _out2, _out3
+    vadd.b   \_out0,   \_in0,   \_in3
+    vadd.b   \_out1,   \_in1,   \_in2
+    vsub.b   \_out2,   \_in1,   \_in2
+    vsub.b   \_out3,   \_in0,   \_in3
+.endm
+.macro LSX_BUTTERFLY_4_H _in0, _in1, _in2, _in3, _out0, _out1, _out2, _out3
+    vadd.h   \_out0,   \_in0,   \_in3
+    vadd.h   \_out1,   \_in1,   \_in2
+    vsub.h   \_out2,   \_in1,   \_in2
+    vsub.h   \_out3,   \_in0,   \_in3
+.endm
+.macro LSX_BUTTERFLY_4_W _in0, _in1, _in2, _in3, _out0, _out1, _out2, _out3
+    vadd.w   \_out0,   \_in0,   \_in3
+    vadd.w   \_out1,   \_in1,   \_in2
+    vsub.w   \_out2,   \_in1,   \_in2
+    vsub.w   \_out3,   \_in0,   \_in3
+.endm
+.macro LSX_BUTTERFLY_4_D _in0, _in1, _in2, _in3, _out0, _out1, _out2, _out3
+    vadd.d   \_out0,   \_in0,   \_in3
+    vadd.d   \_out1,   \_in1,   \_in2
+    vsub.d   \_out2,   \_in1,   \_in2
+    vsub.d   \_out3,   \_in0,   \_in3
+.endm
