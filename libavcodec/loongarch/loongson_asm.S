@@ -310,6 +310,11 @@ ASM_PREF\name: ;
     vsat.wu   \vd,   \vd,  7
 .endm
 
+.macro vclip255.h  vd, vj
+    vmaxi.h   \vd,   \vj,  0
+    vsat.hu   \vd,   \vd,  7
+.endm
+
 .macro xvclip.h  xd,  xj, xk, xa
     xvmax.h    \xd,  \xj,   \xk
     xvmin.h    \xd,  \xd,   \xa
@@ -522,6 +527,50 @@ ASM_PREF\name: ;
     xvilvh.d   \out5,    \tmp5,    \tmp4
     xvilvl.d   \out6,    \tmp7,    \tmp6
     xvilvh.d   \out7,    \tmp7,    \tmp6
+.endm
+
+/*
+ * Description : Transpose 16x8 block with byte elements in vectors
+ * Arguments   : Inputs  - in0, in1, in2, in3, in4, in5, in6, in7
+ *               Outputs - out0, out1, out2, out3, out4, out5, out6, out7
+ */
+.macro LSX_TRANSPOSE16X8_B in0, in1, in2, in3, in4, in5, in6, in7,        \
+                           in8, in9, in10, in11, in12, in13, in14, in15,  \
+                           out0, out1, out2, out3, out4, out5, out6, out7,\
+                           tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7
+    vilvl.b   \tmp0,    \in2,     \in0
+    vilvl.b   \tmp1,    \in3,     \in1
+    vilvl.b   \tmp2,    \in6,     \in4
+    vilvl.b   \tmp3,    \in7,     \in5
+    vilvl.b   \tmp4,    \in10,    \in8
+    vilvl.b   \tmp5,    \in11,    \in9
+    vilvl.b   \tmp6,    \in14,    \in12
+    vilvl.b   \tmp7,    \in15,    \in13
+
+    vilvl.b   \out0,    \tmp1,    \tmp0
+    vilvh.b   \out1,    \tmp1,    \tmp0
+    vilvl.b   \out2,    \tmp3,    \tmp2
+    vilvh.b   \out3,    \tmp3,    \tmp2
+    vilvl.b   \out4,    \tmp5,    \tmp4
+    vilvh.b   \out5,    \tmp5,    \tmp4
+    vilvl.b   \out6,    \tmp7,    \tmp6
+    vilvh.b   \out7,    \tmp7,    \tmp6
+    vilvl.w   \tmp0,    \out2,    \out0
+    vilvh.w   \tmp2,    \out2,    \out0
+    vilvl.w   \tmp4,    \out3,    \out1
+    vilvh.w   \tmp6,    \out3,    \out1
+    vilvl.w   \tmp1,    \out6,    \out4
+    vilvh.w   \tmp3,    \out6,    \out4
+    vilvl.w   \tmp5,    \out7,    \out5
+    vilvh.w   \tmp7,    \out7,    \out5
+    vilvl.d   \out0,    \tmp1,    \tmp0
+    vilvh.d   \out1,    \tmp1,    \tmp0
+    vilvl.d   \out2,    \tmp3,    \tmp2
+    vilvh.d   \out3,    \tmp3,    \tmp2
+    vilvl.d   \out4,    \tmp5,    \tmp4
+    vilvh.d   \out5,    \tmp5,    \tmp4
+    vilvl.d   \out6,    \tmp7,    \tmp6
+    vilvh.d   \out7,    \tmp7,    \tmp6
 .endm
 
 /*

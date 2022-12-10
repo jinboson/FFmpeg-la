@@ -34,6 +34,9 @@ av_cold void ff_h264dsp_init_loongarch(H264DSPContext *c, const int bit_depth,
             c->h264_idct8_add    = ff_h264_idct8_add_8_lsx;
             c->h264_idct_dc_add  = ff_h264_idct_dc_add_8_lsx;
             c->h264_idct8_dc_add = ff_h264_idct8_dc_add_8_lsx;
+
+            c->h264_v_loop_filter_luma = ff_h264_v_lpf_luma_8_lsx;
+            c->h264_h_loop_filter_luma = ff_h264_h_lpf_luma_8_lsx;
         }
     }
     if (have_lasx(cpu_flags)) {
