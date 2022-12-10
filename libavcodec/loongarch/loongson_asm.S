@@ -770,3 +770,66 @@ ASM_PREF\name: ;
     vsub.d   \_out2,   \_in1,   \_in2
     vsub.d   \_out3,   \_in0,   \_in3
 .endm
+
+/*
+ * Description : Butterfly of 8 input vectors
+ * Arguments   : Inputs  - _in0, _in1, _in2, _in3, ~
+ *               Outputs - _out0, _out1, _out2, _out3, ~
+ * Details     : Butterfly operation
+ * Example     : LASX_BUTTERFLY_8
+ *               _out0 = _in0 + _in7;
+ *               _out1 = _in1 + _in6;
+ *               _out2 = _in2 + _in5;
+ *               _out3 = _in3 + _in4;
+ *               _out4 = _in3 - _in4;
+ *               _out5 = _in2 - _in5;
+ *               _out6 = _in1 - _in6;
+ *               _out7 = _in0 - _in7;
+ */
+.macro LSX_BUTTERFLY_8_B _in0,  _in1,  _in2,  _in3,  _in4,  _in5,  _in6,  _in7, \
+                         _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7
+    vadd.b    \_out0,    \_in0,    \_in7
+    vadd.b    \_out1,    \_in1,    \_in6
+    vadd.b    \_out2,    \_in2,    \_in5
+    vadd.b    \_out3,    \_in3,    \_in4
+    vsub.b    \_out4,    \_in3,    \_in4
+    vsub.b    \_out5,    \_in2,    \_in5
+    vsub.b    \_out6,    \_in1,    \_in6
+    vsub.b    \_out7,    \_in0,    \_in7
+.endm
+
+.macro LSX_BUTTERFLY_8_H _in0,  _in1,  _in2,  _in3,  _in4,  _in5,  _in6,  _in7, \
+                         _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7
+    vadd.h    \_out0,    \_in0,    \_in7
+    vadd.h    \_out1,    \_in1,    \_in6
+    vadd.h    \_out2,    \_in2,    \_in5
+    vadd.h    \_out3,    \_in3,    \_in4
+    vsub.h    \_out4,    \_in3,    \_in4
+    vsub.h    \_out5,    \_in2,    \_in5
+    vsub.h    \_out6,    \_in1,    \_in6
+    vsub.h    \_out7,    \_in0,    \_in7
+.endm
+
+.macro LSX_BUTTERFLY_8_W _in0,  _in1,  _in2,  _in3,  _in4,  _in5,  _in6,  _in7, \
+                         _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7
+    vadd.w    \_out0,    \_in0,    \_in7
+    vadd.w    \_out1,    \_in1,    \_in6
+    vadd.w    \_out2,    \_in2,    \_in5
+    vadd.w    \_out3,    \_in3,    \_in4
+    vsub.w    \_out4,    \_in3,    \_in4
+    vsub.w    \_out5,    \_in2,    \_in5
+    vsub.w    \_out6,    \_in1,    \_in6
+    vsub.w    \_out7,    \_in0,    \_in7
+.endm
+
+.macro LSX_BUTTERFLY_8_D _in0,  _in1,  _in2,  _in3,  _in4,  _in5,  _in6,  _in7, \
+                         _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7
+    vadd.d    \_out0,    \_in0,    \_in7
+    vadd.d    \_out1,    \_in1,    \_in6
+    vadd.d    \_out2,    \_in2,    \_in5
+    vadd.d    \_out3,    \_in3,    \_in4
+    vsub.d    \_out4,    \_in3,    \_in4
+    vsub.d    \_out5,    \_in2,    \_in5
+    vsub.d    \_out6,    \_in1,    \_in6
+    vsub.d    \_out7,    \_in0,    \_in7
+.endm

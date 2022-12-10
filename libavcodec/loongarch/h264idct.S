@@ -87,6 +87,213 @@ endfunc
 /*
  * #define FUNC2(a, b, c)  FUNC3(a, b, c)
  * #define FUNCC(a) FUNC2(a, BIT_DEPTH, _c)
+ * void FUNCC(ff_h264_idct8_add)(uint8_t *_dst, int16_t *_block, int stride)
+ */
+function ff_h264_idct8_add_8_lsx
+    ld.h          t0,     a1,    0
+    add.d         t2,     a2,    a2
+    add.d         t3,     t2,    a2
+    add.d         t4,     t3,    a2
+    add.d         t5,     t4,    a2
+    add.d         t6,     t5,    a2
+    add.d         t7,     t6,    a2
+    addi.w        t0,     t0,    32
+    st.h          t0,     a1,    0
+
+    vld           vr0,    a1,    0
+    vld           vr1,    a1,    16
+    vld           vr2,    a1,    32
+    vld           vr3,    a1,    48
+    vld           vr4,    a1,    64
+    vld           vr5,    a1,    80
+    vld           vr6,    a1,    96
+    vld           vr7,    a1,    112
+    vxor.v        vr8,    vr8,   vr8
+    vst           vr8,    a1,    0
+    vst           vr8,    a1,    16
+    vst           vr8,    a1,    32
+    vst           vr8,    a1,    48
+    vst           vr8,    a1,    64
+    vst           vr8,    a1,    80
+    vst           vr8,    a1,    96
+    vst           vr8,    a1,    112
+
+    vadd.h        vr18,   vr0,   vr4
+    vsub.h        vr19,   vr0,   vr4
+    vsrai.h       vr20,   vr2,   1
+    vsrai.h       vr21,   vr6,   1
+    vsub.h        vr20,   vr20,  vr6
+    vadd.h        vr21,   vr21,  vr2
+    LSX_BUTTERFLY_4_H vr18, vr19, vr20, vr21,  vr10, vr12, vr14, vr16
+    vsrai.h       vr11,   vr7,   1
+    vsrai.h       vr13,   vr3,   1
+    vsrai.h       vr15,   vr5,   1
+    vsrai.h       vr17,   vr1,   1
+    vsub.h        vr11,   vr5,   vr11
+    vsub.h        vr13,   vr7,   vr13
+    vadd.h        vr15,   vr7,   vr15
+    vadd.h        vr17,   vr5,   vr17
+    vsub.h        vr11,   vr11,  vr7
+    vsub.h        vr13,   vr13,  vr3
+    vadd.h        vr15,   vr15,  vr5
+    vadd.h        vr17,   vr17,  vr1
+    vsub.h        vr11,   vr11,  vr3
+    vadd.h        vr13,   vr13,  vr1
+    vsub.h        vr15,   vr15,  vr1
+    vadd.h        vr17,   vr17,  vr3
+    vsrai.h       vr18,   vr11,  2
+    vsrai.h       vr19,   vr13,  2
+    vsrai.h       vr20,   vr15,  2
+    vsrai.h       vr21,   vr17,  2
+    vadd.h        vr11,   vr11,  vr21
+    vadd.h        vr13,   vr13,  vr20
+    vsub.h        vr15,   vr19,  vr15
+    vsub.h        vr17,   vr17,  vr18
+    LSX_BUTTERFLY_8_H vr10, vr16, vr12, vr14, vr13, vr15, vr11, vr17, \
+                      vr0,  vr3,  vr1,  vr2,  vr5,  vr6,  vr4,  vr7
+
+    LSX_TRANSPOSE8x8_H vr0,  vr1,  vr2,  vr3,  vr4,  vr5,  vr6,  vr7, \
+                       vr0,  vr1,  vr2,  vr3,  vr4,  vr5,  vr6,  vr7, \
+                       vr10, vr11, vr12, vr13, vr14, vr15, vr16, vr17
+    vexth.w.h     vr20,   vr0
+    vexth.w.h     vr21,   vr1
+    vexth.w.h     vr22,   vr2
+    vexth.w.h     vr23,   vr3
+    vexth.w.h     vr8,    vr4
+    vexth.w.h     vr9,    vr5
+    vexth.w.h     vr18,   vr6
+    vexth.w.h     vr19,   vr7
+    vsllwil.w.h   vr0,    vr0,   0
+    vsllwil.w.h   vr1,    vr1,   0
+    vsllwil.w.h   vr2,    vr2,   0
+    vsllwil.w.h   vr3,    vr3,   0
+    vsllwil.w.h   vr4,    vr4,   0
+    vsllwil.w.h   vr5,    vr5,   0
+    vsllwil.w.h   vr6,    vr6,   0
+    vsllwil.w.h   vr7,    vr7,   0
+
+    vadd.w        vr11,   vr0,   vr4
+    vsub.w        vr13,   vr0,   vr4
+    vsrai.w       vr15,   vr2,   1
+    vsrai.w       vr17,   vr6,   1
+    vsub.w        vr15,   vr15,  vr6
+    vadd.w        vr17,   vr17,  vr2
+    LSX_BUTTERFLY_4_W vr11, vr13, vr15, vr17,  vr10, vr12, vr14, vr16
+    vsrai.w       vr11,   vr7,   1
+    vsrai.w       vr13,   vr3,   1
+    vsrai.w       vr15,   vr5,   1
+    vsrai.w       vr17,   vr1,   1
+    vsub.w        vr11,   vr5,   vr11
+    vsub.w        vr13,   vr7,   vr13
+    vadd.w        vr15,   vr7,   vr15
+    vadd.w        vr17,   vr5,   vr17
+    vsub.w        vr11,   vr11,  vr7
+    vsub.w        vr13,   vr13,  vr3
+    vadd.w        vr15,   vr15,  vr5
+    vadd.w        vr17,   vr17,  vr1
+    vsub.w        vr11,   vr11,  vr3
+    vadd.w        vr13,   vr13,  vr1
+    vsub.w        vr15,   vr15,  vr1
+    vadd.w        vr17,   vr17,  vr3
+    vsrai.w       vr0,    vr11,  2
+    vsrai.w       vr1,    vr13,  2
+    vsrai.w       vr2,    vr15,  2
+    vsrai.w       vr3,    vr17,  2
+    vadd.w        vr11,   vr11,  vr3
+    vadd.w        vr13,   vr13,  vr2
+    vsub.w        vr15,   vr1,   vr15
+    vsub.w        vr17,   vr17,  vr0
+    LSX_BUTTERFLY_8_W vr10, vr12, vr14, vr16, vr11, vr13, vr15, vr17, \
+                      vr0,  vr1,  vr2,  vr3,  vr4,  vr5,  vr6,  vr7
+
+    vadd.w        vr11,    vr20,  vr8
+    vsub.w        vr13,    vr20,  vr8
+    vsrai.w       vr15,    vr22,  1
+    vsrai.w       vr17,    vr18,  1
+    vsub.w        vr15,    vr15,  vr18
+    vadd.w        vr17,    vr17,  vr22
+    LSX_BUTTERFLY_4_W vr11, vr13, vr15, vr17,  vr10, vr12, vr14, vr16
+    vsrai.w       vr11,   vr19,  1
+    vsrai.w       vr13,   vr23,  1
+    vsrai.w       vr15,   vr9,   1
+    vsrai.w       vr17,   vr21,  1
+    vsub.w        vr11,   vr9,   vr11
+    vsub.w        vr13,   vr19,  vr13
+    vadd.w        vr15,   vr19,  vr15
+    vadd.w        vr17,   vr9,   vr17
+    vsub.w        vr11,   vr11,  vr19
+    vsub.w        vr13,   vr13,  vr23
+    vadd.w        vr15,   vr15,  vr9
+    vadd.w        vr17,   vr17,  vr21
+    vsub.w        vr11,   vr11,  vr23
+    vadd.w        vr13,   vr13,  vr21
+    vsub.w        vr15,   vr15,  vr21
+    vadd.w        vr17,   vr17,  vr23
+    vsrai.w       vr20,   vr11,  2
+    vsrai.w       vr21,   vr13,  2
+    vsrai.w       vr22,   vr15,  2
+    vsrai.w       vr23,   vr17,  2
+    vadd.w        vr11,   vr11,  vr23
+    vadd.w        vr13,   vr13,  vr22
+    vsub.w        vr15,   vr21,  vr15
+    vsub.w        vr17,   vr17,  vr20
+    LSX_BUTTERFLY_8_W vr10, vr12, vr14, vr16, vr11, vr13, vr15, vr17, \
+                      vr20, vr21, vr22, vr23, vr8, vr9, vr18, vr19
+
+    vld           vr10,   a0,    0
+    vldx          vr11,   a0,    a2
+    vldx          vr12,   a0,    t2
+    vldx          vr13,   a0,    t3
+    vldx          vr14,   a0,    t4
+    vldx          vr15,   a0,    t5
+    vldx          vr16,   a0,    t6
+    vldx          vr17,   a0,    t7
+    vsrani.h.w    vr20,   vr0,   6
+    vsrani.h.w    vr21,   vr1,   6
+    vsrani.h.w    vr22,   vr2,   6
+    vsrani.h.w    vr23,   vr3,   6
+    vsrani.h.w    vr8,    vr4,   6
+    vsrani.h.w    vr9,    vr5,   6
+    vsrani.h.w    vr18,   vr6,   6
+    vsrani.h.w    vr19,   vr7,   6
+    vsllwil.hu.bu vr10,   vr10,  0
+    vsllwil.hu.bu vr11,   vr11,  0
+    vsllwil.hu.bu vr12,   vr12,  0
+    vsllwil.hu.bu vr13,   vr13,  0
+    vsllwil.hu.bu vr14,   vr14,  0
+    vsllwil.hu.bu vr15,   vr15,  0
+    vsllwil.hu.bu vr16,   vr16,  0
+    vsllwil.hu.bu vr17,   vr17,  0
+
+    vadd.h        vr0,    vr20,  vr10
+    vadd.h        vr1,    vr21,  vr11
+    vadd.h        vr2,    vr22,  vr12
+    vadd.h        vr3,    vr23,  vr13
+    vadd.h        vr4,    vr8,   vr14
+    vadd.h        vr5,    vr9,   vr15
+    vadd.h        vr6,    vr18,  vr16
+    vadd.h        vr7,    vr19,  vr17
+    vssrarni.bu.h vr1,    vr0,   0
+    vssrarni.bu.h vr3,    vr2,   0
+    vssrarni.bu.h vr5,    vr4,   0
+    vssrarni.bu.h vr7,    vr6,   0
+    vbsrl.v       vr0,    vr1,   8
+    vbsrl.v       vr2,    vr3,   8
+    vbsrl.v       vr4,    vr5,   8
+    vbsrl.v       vr6,    vr7,   8
+    fst.d         f1,     a0,    0
+    fstx.d        f0,     a0,    a2
+    fstx.d        f3,     a0,    t2
+    fstx.d        f2,     a0,    t3
+    fstx.d        f5,     a0,    t4
+    fstx.d        f4,     a0,    t5
+    fstx.d        f7,     a0,    t6
+    fstx.d        f6,     a0,    t7
+endfunc
+
+/*
+ * #define FUNC2(a, b, c)  FUNC3(a, b, c)
+ * #define FUNCC(a) FUNC2(a, BIT_DEPTH, _c)
  * void FUNCC(ff_h264_idct_dc_add)(uint8_t *_dst, int16_t *_block, int stride)
  * LSX optimization is enough for this function.
  */
