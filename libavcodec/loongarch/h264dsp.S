@@ -356,3 +356,355 @@ function ff_h264_v_lpf_luma_8_lsx
     fld.d           f26,    sp,    16
     addi.d          sp,     sp,    24
 endfunc
+
+.macro AVC_LPF_P0P1P2_OR_Q0Q1Q2 _in0, _in1, _in2, _in3, _in4, _in5  \
+                                _out0, _out1, _out2, _tmp0, _const3
+    vadd.h          \_tmp0,  \_in1,  \_in2
+    vadd.h          \_tmp0,  \_tmp0, \_in3
+    vslli.h         \_out2,  \_in0,  1
+    vslli.h         \_out0,  \_tmp0, 1
+    vadd.h          \_out0,  \_out0, \_in4
+    vadd.h          \_out1,  \_in4,  \_tmp0
+    vadd.h          \_out0,  \_out0, \_in5
+    vmadd.h         \_out2,  \_in4,  \_const3
+    vsrar.h         \_out0,  \_out0, \_const3
+    vadd.h          \_out2,  \_out2, \_tmp0
+    vsrari.h        \_out1,  \_out1, 2
+    vsrar.h         \_out2,  \_out2, \_const3
+.endm
+
+.macro AVC_LPF_P0_OR_Q0 _in0, _in1, _in2, _out0, _tmp0
+    vslli.h         \_tmp0,  \_in2,  1
+    vadd.h          \_out0,  \_in0,  \_in1
+    vadd.h          \_out0,  \_out0, \_tmp0
+    vsrari.h        \_out0,  \_out0, 2
+.endm
+
+function ff_h264_h_lpf_luma_intra_8_lsx
+    slli.d          t0,     a1,    1   //img_width_2x
+    slli.d          t1,     a1,    2   //img_width_4x
+    addi.d          t4,     a0,    -4   //src
+    addi.d          sp,     sp,    -64
+    fst.d           f24,    sp,    0
+    fst.d           f25,    sp,    8
+    fst.d           f26,    sp,    16
+    fst.d           f27,    sp,    24
+    fst.d           f28,    sp,    32
+    fst.d           f29,    sp,    40
+    fst.d           f30,    sp,    48
+    fst.d           f31,    sp,    56
+    add.d           t2,     t0,    a1   //img_width_3x
+    add.d           t5,     t4,    t1
+    vld             vr0,    t4,    0    //row0
+    vldx            vr1,    t4,    a1   //row1
+    vldx            vr2,    t4,    t0   //row2
+    vldx            vr3,    t4,    t2   //row3
+    add.d           t6,     t5,    t1
+    vld             vr4,    t5,    0    //row4
+    vldx            vr5,    t5,    a1   //row5
+    vldx            vr6,    t5,    t0   //row6
+    vldx            vr7,    t5,    t2   //row7
+    add.d           t7,     t6,    t1
+    vld             vr8,    t6,    0    //row8
+    vldx            vr9,    t6,    a1   //row9
+    vldx            vr10,   t6,    t0   //row10
+    vldx            vr11,   t6,    t2   //row11
+    vld             vr12,   t7,    0    //row12
+    vldx            vr13,   t7,    a1   //row13
+    vldx            vr14,   t7,    t0   //row14
+    vldx            vr15,   t7,    t2   //row15
+    LSX_TRANSPOSE16X8_B vr0, vr1, vr2, vr3, vr4, vr5, vr6, vr7,       \
+                        vr8, vr9, vr10, vr11, vr12, vr13, vr14, vr15, \
+                        vr0, vr1, vr2, vr3, vr4, vr5, vr6, vr7,       \
+                        vr16, vr17, vr18, vr19, vr20, vr21, vr22, vr23
+    // vr0: p3_org, vr1: p2_org, vr2: p1_org, vr3: p0_org
+    // vr4: q0_org, vr5: q1_org, vr6: q2_org, vr7: q3_org
+
+    vreplgr2vr.b    vr16,   a2    //alpha_in
+    vreplgr2vr.b    vr17,   a3    //beta_in
+    vabsd.bu        vr10,   vr3,   vr4    //p0_asub_q0
+    vabsd.bu        vr11,   vr2,   vr3    //p1_asub_p0
+    vabsd.bu        vr12,   vr5,   vr4    //q1_asub_q0
+
+    vslt.bu         vr8,    vr10,  vr16  //is_less_than_alpha
+    vslt.bu         vr9,    vr11,  vr17  //is_less_than_beta
+    vand.v          vr18,   vr8,   vr9   //is_less_than
+    vslt.bu         vr9,    vr12,  vr17  //is_less_than_beta
+    vand.v          vr18,   vr18,  vr9   //is_less_than
+
+    vsetnez.v       $fcc0,  vr18
+    bceqz           $fcc0,  .END_H_INTRA_8
+    vsrli.b         vr16,   vr16,  2     //less_alpha_shift2_add2
+    vaddi.bu        vr16,   vr16,  2
+    vslt.bu         vr16,   vr10,  vr16
+    vsllwil.hu.bu   vr10,   vr2,   0   //p1_org_h.0
+    vexth.hu.bu     vr11,   vr2        //p1_org_h.1
+    vsllwil.hu.bu   vr12,   vr3,   0   //p0_org_h.0
+    vexth.hu.bu     vr13,   vr3        //p0_org_h.1
+
+    vsllwil.hu.bu   vr14,   vr4,   0   //q0_org_h.0
+    vexth.hu.bu     vr15,   vr4        //q0_org_h.1
+    vsllwil.hu.bu   vr19,   vr5,   0   //q1_org_h.0
+    vexth.hu.bu     vr20,   vr5        //q1_org_h.1
+
+    vabsd.bu        vr21,   vr1,   vr3  //p2_asub_p0
+    vslt.bu         vr9,    vr21,  vr17  //is_less_than_beta
+    vand.v          vr9,    vr9,   vr16
+    vxori.b         vr22,   vr9,   0xff  //negate_is_less_than_beta
+    vand.v          vr9,    vr9,   vr18
+    vand.v          vr22,   vr22,  vr18
+
+    vsetnez.v       $fcc0,  vr9
+    bceqz           $fcc0,  .END_H_INTRA_LESS_BETA
+    vsllwil.hu.bu   vr23,   vr1,   0   //p2_org_h.0
+    vexth.hu.bu     vr24,   vr1        //p2_org_h.1
+    vsllwil.hu.bu   vr25,   vr0,   0   //p3_org_h.0
+    vexth.hu.bu     vr26,   vr0        //p3_org_h.1
+    vldi            vr27,   0x403
+
+    AVC_LPF_P0P1P2_OR_Q0Q1Q2 vr25, vr12, vr14, vr10, vr23, vr19, vr28, vr29, vr30, vr31, vr27
+    //vr28: p0_h.0   vr29: p1_h.0  vr30: p2_h.0
+    AVC_LPF_P0P1P2_OR_Q0Q1Q2 vr26, vr13, vr15, vr11, vr24, vr20, vr23, vr25, vr21, vr31, vr27
+    //vr23: p0_h.1   vr25: p1_h.1  vr21: p2_h.1
+    vpickev.b       vr28,   vr23,  vr28  //p0_h
+    vpickev.b       vr29,   vr25,  vr29  //p1_h
+    vpickev.b       vr30,   vr21,  vr30  //p2_h
+    vbitsel.v       vr3,    vr3,   vr28,   vr9
+    vbitsel.v       vr2,    vr2,   vr29,   vr9
+    vbitsel.v       vr1,    vr1,   vr30,   vr9
+.END_H_INTRA_LESS_BETA:
+    AVC_LPF_P0_OR_Q0 vr12, vr19, vr10, vr23, vr25
+    AVC_LPF_P0_OR_Q0 vr13, vr20, vr11, vr24, vr25
+    //vr23: p0_h.0   vr24: p0_h.1
+    vpickev.b       vr23,   vr24,  vr23
+    vbitsel.v       vr3,    vr3,   vr23,   vr22
+
+    vabsd.bu        vr21,   vr6,   vr4   //q2_asub_q0
+    vslt.bu         vr9,    vr21,  vr17  //is_less_than_beta
+    vand.v          vr9,    vr9,   vr16
+    vxori.b         vr22,   vr9,   0xff   //negate_is_less_than_beta
+    vand.v          vr9,    vr9,   vr18
+    vand.v          vr22,   vr22,  vr18
+
+    vsetnez.v       $fcc0,  vr9
+    bceqz           $fcc0,  .END_H_INTRA_LESS_BETA_SEC
+    vsllwil.hu.bu   vr23,   vr6,   0   //q2_org_h.0
+    vexth.hu.bu     vr24,   vr6        //q2_org_h.1
+    vsllwil.hu.bu   vr25,   vr7,   0   //q3_org_h.0
+    vexth.hu.bu     vr26,   vr7        //q3_org_h.1
+    vldi            vr27,   0x403
+
+    AVC_LPF_P0P1P2_OR_Q0Q1Q2 vr25, vr14, vr12, vr19, vr23, vr10, vr28, vr29, vr30, vr31, vr27
+    AVC_LPF_P0P1P2_OR_Q0Q1Q2 vr26, vr15, vr13, vr20, vr24, vr11, vr23, vr25, vr21, vr31, vr27
+    vpickev.b       vr28,   vr23,  vr28  //q0_h
+    vpickev.b       vr29,   vr25,  vr29  //q1_h
+    vpickev.b       vr30,   vr21,  vr30  //q2_h
+    vbitsel.v       vr4,    vr4,   vr28,   vr9
+    vbitsel.v       vr5,    vr5,   vr29,   vr9
+    vbitsel.v       vr6,    vr6,   vr30,   vr9
+.END_H_INTRA_LESS_BETA_SEC:
+    AVC_LPF_P0_OR_Q0 vr14, vr10, vr19, vr23, vr25
+    AVC_LPF_P0_OR_Q0 vr15, vr11, vr20, vr24, vr25
+    vpickev.b       vr23,   vr24,  vr23
+    vbitsel.v       vr4,    vr4,   vr23,   vr22
+
+    vilvl.b         vr14,   vr2,   vr0   // row0.0
+    vilvl.b         vr15,   vr6,   vr4   // row0.1
+    vilvl.b         vr16,   vr3,   vr1   // row2.0
+    vilvl.b         vr17,   vr7,   vr5   // row2.1
+
+    vilvh.b         vr18,   vr2,   vr0   // row1.0
+    vilvh.b         vr19,   vr6,   vr4   // row1.1
+    vilvh.b         vr20,   vr3,   vr1   // row3.0
+    vilvh.b         vr21,   vr7,   vr5   // row3.1
+
+    vilvl.b         vr2,    vr16,   vr14    // row4.0
+    vilvl.b         vr3,    vr17,   vr15    // row4.1
+    vilvl.b         vr4,    vr20,   vr18    // row6.0
+    vilvl.b         vr5,    vr21,   vr19    // row6.1
+
+    vilvh.b         vr6,    vr16,   vr14    // row5.0
+    vilvh.b         vr7,    vr17,   vr15    // row5.1
+    vilvh.b         vr8,    vr20,   vr18    // row7.0
+    vilvh.b         vr9,    vr21,   vr19    // row7.1
+
+    vilvl.w         vr14,   vr3,    vr2   // row4: 0, 4, 1, 5
+    vilvh.w         vr15,   vr3,    vr2   // row4: 2, 6, 3, 7
+    vilvl.w         vr16,   vr7,    vr6   // row5: 0, 4, 1, 5
+    vilvh.w         vr17,   vr7,    vr6   // row5: 2, 6, 3, 7
+
+    vilvl.w         vr18,   vr5,    vr4   // row6: 0, 4, 1, 5
+    vilvh.w         vr19,   vr5,    vr4   // row6: 2, 6, 3, 7
+    vilvl.w         vr20,   vr9,    vr8   // row7: 0, 4, 1, 5
+    vilvh.w         vr21,   vr9,    vr8   // row7: 2, 6, 3, 7
+
+    vbsrl.v         vr0,    vr14,   8
+    vbsrl.v         vr1,    vr15,   8
+    vbsrl.v         vr2,    vr16,   8
+    vbsrl.v         vr3,    vr17,   8
+
+    vbsrl.v         vr4,    vr18,   8
+    vbsrl.v         vr5,    vr19,   8
+    vbsrl.v         vr6,    vr20,   8
+    vbsrl.v         vr7,    vr21,   8
+
+    fst.d           f14,    t4,    0
+    fstx.d          f0,     t4,    a1
+    fstx.d          f15,    t4,    t0
+    fstx.d          f1,     t4,    t2
+    fst.d           f16,    t5,    0
+    fstx.d          f2,     t5,    a1
+    fstx.d          f17,    t5,    t0
+    fstx.d          f3,     t5,    t2
+    fst.d           f18,    t6,    0
+    fstx.d          f4,     t6,    a1
+    fstx.d          f19,    t6,    t0
+    fstx.d          f5,     t6,    t2
+    fst.d           f20,    t7,    0
+    fstx.d          f6,     t7,    a1
+    fstx.d          f21,    t7,    t0
+    fstx.d          f7,     t7,    t2
+.END_H_INTRA_8:
+    fld.d           f24,    sp,    0
+    fld.d           f25,    sp,    8
+    fld.d           f26,    sp,    16
+    fld.d           f27,    sp,    24
+    fld.d           f28,    sp,    32
+    fld.d           f29,    sp,    40
+    fld.d           f30,    sp,    48
+    fld.d           f31,    sp,    56
+    addi.d          sp,     sp,    64
+endfunc
+
+function ff_h264_v_lpf_luma_intra_8_lsx
+    slli.d          t0,     a1,    1   //img_width_2x
+    add.d           t1,     t0,    a1  //img_width_3x
+    addi.d          sp,     sp,    -64
+    fst.d           f24,    sp,    0
+    fst.d           f25,    sp,    8
+    fst.d           f26,    sp,    16
+    fst.d           f27,    sp,    24
+    fst.d           f28,    sp,    32
+    fst.d           f29,    sp,    40
+    fst.d           f30,    sp,    48
+    fst.d           f31,    sp,    56
+    sub.d           t4,     a0,    t1  //src - img_width_3x
+
+    vld             vr0,    a0,    0   //q0_org
+    vldx            vr1,    a0,    a1  //q1_org
+    vldx            vr2,    t4,    a1  //p1_org
+    vldx            vr3,    t4,    t0  //p0_org
+
+    vreplgr2vr.b    vr4,    a2   //alpha
+    vreplgr2vr.b    vr5,    a3   //beta
+
+    vabsd.bu        vr6,    vr3,   vr0   //p0_asub_q0
+    vabsd.bu        vr7,    vr2,   vr3   //p1_asub_p0
+    vabsd.bu        vr8,    vr1,   vr0   //q1_asub_q0
+
+    vslt.bu         vr9,    vr6,   vr4  //is_less_than_alpha
+    vslt.bu         vr10,   vr7,   vr5  //is_less_than_beta
+    vand.v          vr11,   vr9,   vr10  //is_less_than
+    vslt.bu         vr10,   vr8,   vr5
+    vand.v          vr11,   vr10,  vr11
+
+    vsetnez.v       $fcc0,  vr11
+    bceqz           $fcc0,  .END_V_INTRA_8
+
+    vld             vr12,   t4,    0   //p2_org
+    vldx            vr13,   a0,    t0  //q2_org
+    vsrli.b         vr14,   vr4,   2   //is_alpha_shift2_add2
+    vsllwil.hu.bu   vr15,   vr2,   0  //p1_org_h.0
+    vexth.hu.bu     vr16,   vr2       //p1_org_h.1
+    vaddi.bu        vr14,   vr14,  2
+    vsllwil.hu.bu   vr17,   vr3,   0  //p0_org_h.0
+    vexth.hu.bu     vr18,   vr3       //p0_org_h.1
+    vslt.bu         vr14,   vr6,   vr14
+    vsllwil.hu.bu   vr19,   vr0,   0  //q0_org_h.0
+    vexth.hu.bu     vr20,   vr0       //q0_org_h.1
+    vsllwil.hu.bu   vr21,   vr1,   0  //q1_org_h.0
+    vexth.hu.bu     vr22,   vr1       //q1_org_h.1
+
+    vabsd.bu        vr23,   vr12,  vr3  //p2_asub_p0
+    vslt.bu         vr10,   vr23,  vr5  //is_less_than_beta
+    vand.v          vr10,   vr10,  vr14
+    vxori.b         vr23,   vr10,  0xff //negate_is_less_than_beta
+    vand.v          vr10,   vr10,  vr11
+    vand.v          vr23,   vr23,  vr11
+
+    vsetnez.v       $fcc0,  vr10
+    bceqz           $fcc0,  .END_V_INTRA_LESS_BETA
+    sub.d           t5,     t4,    a1
+    vld             vr24,   t5,    0  //p3_org
+    vsllwil.hu.bu   vr26,   vr12,  0  //p2_org_h.0
+    vexth.hu.bu     vr27,   vr12      //p2_org_h.1
+    vsllwil.hu.bu   vr28,   vr24,  0  //p3_org_h.0
+    vexth.hu.bu     vr29,   vr24      //p3_org_h.1
+    vldi            vr4,    0x403
+
+    AVC_LPF_P0P1P2_OR_Q0Q1Q2 vr28, vr17, vr19, vr15, vr26, vr21, vr25, vr30, vr31, vr24, vr4
+    AVC_LPF_P0P1P2_OR_Q0Q1Q2 vr29, vr18, vr20, vr16, vr27, vr22, vr6, vr7, vr8, vr24, vr4
+
+    vpickev.b       vr25,   vr6,   vr25  //p0_h
+    vpickev.b       vr30,   vr7,   vr30  //p1_h
+    vpickev.b       vr31,   vr8,   vr31  //p2_h
+
+    vbitsel.v       vr3,    vr3,   vr25,   vr10
+    vbitsel.v       vr2,    vr2,   vr30,   vr10
+    vbitsel.v       vr12,   vr12,  vr31,   vr10
+
+    vstx            vr2,    t4,    a1
+    vst             vr12,   t4,    0
+.END_V_INTRA_LESS_BETA:
+    AVC_LPF_P0_OR_Q0 vr17, vr21, vr15, vr24, vr30
+    AVC_LPF_P0_OR_Q0 vr18, vr22, vr16, vr25, vr30
+    vpickev.b       vr24,   vr25,  vr24
+    vbitsel.v       vr3,    vr3,   vr24,   vr23
+    vstx            vr3,    t4,    t0
+
+    vabsd.bu        vr23,   vr13,  vr0   //q2_asub_q0
+    vslt.bu         vr10,   vr23,  vr5   //is_less_than_beta
+    vand.v          vr10,   vr10,  vr14
+    vxori.b         vr23,   vr10,  0xff  //negate_is_less_than_beta
+    vand.v          vr10,   vr10,  vr11
+    vand.v          vr23,   vr23,  vr11
+
+    vsetnez.v       $fcc0,  vr10
+    bceqz           $fcc0,  .END_V_INTRA_LESS_BETA_SEC
+    vldx            vr24,   a0,    t1  //q3_org
+
+    vsllwil.hu.bu   vr26,   vr13,  0  //q2_org_h.0
+    vexth.hu.bu     vr27,   vr13      //q2_org_h.1
+    vsllwil.hu.bu   vr28,   vr24,  0  //q3_org_h.0
+    vexth.hu.bu     vr29,   vr24      //q3_org_h.1
+    vldi            vr4,    0x403
+
+    AVC_LPF_P0P1P2_OR_Q0Q1Q2 vr28, vr19, vr17, vr21, vr26, vr15, vr25, vr30, vr31, vr24, vr4
+    AVC_LPF_P0P1P2_OR_Q0Q1Q2 vr29, vr20, vr18, vr22, vr27, vr16, vr6, vr7, vr8, vr24, vr4
+
+    vpickev.b       vr25,   vr6,   vr25
+    vpickev.b       vr30,   vr7,   vr30
+    vpickev.b       vr31,   vr8,   vr31
+
+    vbitsel.v       vr0,    vr0,   vr25,   vr10
+    vbitsel.v       vr1,    vr1,   vr30,   vr10
+    vbitsel.v       vr13,   vr13,  vr31,   vr10
+    vstx            vr1,    a0,    a1
+    vstx            vr13,   a0,    t0
+.END_V_INTRA_LESS_BETA_SEC:
+    AVC_LPF_P0_OR_Q0 vr19, vr15, vr21, vr24, vr30
+    AVC_LPF_P0_OR_Q0 vr20, vr16, vr22, vr25, vr30
+    vpickev.b       vr24,   vr25,  vr24
+    vbitsel.v       vr0,    vr0,   vr24,   vr23
+    vst             vr0,    a0,    0
+.END_V_INTRA_8:
+    fld.d           f24,    sp,    0
+    fld.d           f25,    sp,    8
+    fld.d           f26,    sp,    16
+    fld.d           f27,    sp,    24
+    fld.d           f28,    sp,    32
+    fld.d           f29,    sp,    40
+    fld.d           f30,    sp,    48
+    fld.d           f31,    sp,    56
+    addi.d          sp,     sp,    64
+endfunc

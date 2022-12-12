@@ -33,6 +33,10 @@ void ff_h264_h_lpf_luma_8_lsx(uint8_t *src, ptrdiff_t stride,
                               int alpha, int beta, int8_t *tc0);
 void ff_h264_v_lpf_luma_8_lsx(uint8_t *src, ptrdiff_t stride,
                               int alpha, int beta, int8_t *tc0);
+void ff_h264_h_lpf_luma_intra_8_lsx(uint8_t *src, ptrdiff_t stride,
+                                    int alpha, int beta);
+void ff_h264_v_lpf_luma_intra_8_lsx(uint8_t *src, ptrdiff_t stride,
+                                    int alpha, int beta);
 
 void ff_h264_h_lpf_luma_8_lasx(uint8_t *src, ptrdiff_t stride,
                                int alpha, int beta, int8_t *tc0);
