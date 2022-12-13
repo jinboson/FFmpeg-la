@@ -708,3 +708,126 @@ function ff_h264_v_lpf_luma_intra_8_lsx
     fld.d           f31,    sp,    56
     addi.d          sp,     sp,    64
 endfunc
+
+function ff_h264_h_lpf_chroma_intra_8_lsx
+    addi.d          t4,     a0,    -2
+    slli.d          t0,     a1,    1   //img_2x
+    slli.d          t2,     a1,    2   //img_4x
+    add.d           t1,     t0,    a1  //img_3x
+
+    add.d           t5,     t4,    t2
+    fld.s           f0,     t4,    0   //row0
+    fldx.s          f1,     t4,    a1  //row1
+    fldx.s          f2,     t4,    t0  //row2
+    fldx.s          f3,     t4,    t1  //row3
+    fld.s           f4,     t5,    0   //row4
+    fldx.s          f5,     t5,    a1  //row5
+    fldx.s          f6,     t5,    t0  //row6
+    fldx.s          f7,     t5,    t1  //row7
+
+    vilvl.b         vr8,    vr2,   vr0  //p1_org
+    vilvl.b         vr9,    vr3,   vr1  //p0_org
+    vilvl.b         vr10,   vr6,   vr4  //q0_org
+    vilvl.b         vr11,   vr7,   vr5  //q1_org
+
+    vilvl.b         vr0,    vr9,   vr8
+    vilvl.b         vr1,    vr11,  vr10
+    vilvl.w         vr2,    vr1,   vr0
+    vilvh.w         vr3,    vr1,   vr0
+
+    vilvl.d         vr8,    vr2,   vr2   //p1_org
+    vilvh.d         vr9,    vr2,   vr2   //p0_org
+    vilvl.d         vr10,   vr3,   vr3   //q0_org
+    vilvh.d         vr11,   vr3,   vr3   //q1_org
+
+    vreplgr2vr.b    vr0,    a2   //alpha
+    vreplgr2vr.b    vr1,    a3   //beta
+
+    vabsd.bu        vr2,    vr9,   vr10  //p0_asub_q0
+    vabsd.bu        vr3,    vr8,   vr9   //p1_asub_p0
+    vabsd.bu        vr4,    vr11,  vr10  //q1_asub_q0
+
+    vslt.bu         vr5,    vr2,   vr0  //is_less_than_alpha
+    vslt.bu         vr6,    vr3,   vr1  //is_less_than_beta
+    vand.v          vr7,    vr5,   vr6   //is_less_than
+    vslt.bu         vr6,    vr4,   vr1
+    vand.v          vr7,    vr7,   vr6
+
+    vsetnez.v       $fcc0,  vr7
+    bceqz           $fcc0,  .END_H_CHROMA_INTRA_8
+
+    vexth.hu.bu     vr12,   vr8   //p1_org_h
+    vexth.hu.bu     vr13,   vr9   //p0_org_h
+    vexth.hu.bu     vr14,   vr10  //q0_org_h
+    vexth.hu.bu     vr15,   vr11  //q1_org_h
+
+    AVC_LPF_P0_OR_Q0 vr13, vr15, vr12, vr16, vr18
+    AVC_LPF_P0_OR_Q0 vr14, vr12, vr15, vr17, vr18
+
+    vpickev.b       vr18,   vr16,   vr16
+    vpickev.b       vr19,   vr17,   vr17
+    vbitsel.v       vr9,    vr9,    vr18,   vr7
+    vbitsel.v       vr10,   vr10,   vr19,   vr7
+.END_H_CHROMA_INTRA_8:
+    vilvl.b         vr11,   vr10,   vr9
+    addi.d          t4,     t4,     1
+    vstelm.h        vr11,   t4,     0,      0
+    add.d           t4,     t4,     a1
+    vstelm.h        vr11,   t4,     0,      1
+    add.d           t4,     t4,     a1
+    vstelm.h        vr11,   t4,     0,      2
+    add.d           t4,     t4,     a1
+    vstelm.h        vr11,   t4,     0,      3
+    add.d           t4,     t4,     a1
+    vstelm.h        vr11,   t4,     0,      4
+    add.d           t4,     t4,     a1
+    vstelm.h        vr11,   t4,     0,      5
+    add.d           t4,     t4,     a1
+    vstelm.h        vr11,   t4,     0,      6
+    add.d           t4,     t4,     a1
+    vstelm.h        vr11,   t4,     0,      7
+endfunc
+
+function ff_h264_v_lpf_chroma_intra_8_lsx
+    slli.d          t0,     a1,     1    //img_width_2x
+    sub.d           t2,     a0,     a1
+    sub.d           t1,     a0,     t0   //data - img_width_2x
+
+    vreplgr2vr.b    vr0,    a2
+    vreplgr2vr.b    vr1,    a3
+
+    vld             vr2,    t1,     0   //p1_org
+    vldx            vr3,    t1,     a1  //p0_org
+    vld             vr4,    a0,     0   //q0_org
+    vldx            vr5,    a0,     a1  //q1_org
+
+    vabsd.bu        vr6,    vr3,    vr4  //p0_asub_q0
+    vabsd.bu        vr7,    vr2,    vr3  //p1_asub_p0
+    vabsd.bu        vr8,    vr5,    vr4  //q1_asub_q0
+
+    vslt.bu         vr9,    vr6,    vr0  //is_less_than_alpha
+    vslt.bu         vr10,   vr7,    vr1  //is_less_than_beta
+    vand.v          vr11,   vr9,    vr10  //is_less_than
+    vslt.bu         vr10,   vr8,    vr1
+    vand.v          vr11,   vr10,   vr11
+
+    vsetnez.v       $fcc0,  vr11
+    bceqz           $fcc0,  .END_V_CHROMA_INTRA_8
+
+    vsllwil.hu.bu   vr6,    vr2,    0  //p1_org_h.0
+    vsllwil.hu.bu   vr8,    vr3,    0  //p0_org_h.0
+    vsllwil.hu.bu   vr13,   vr4,    0  //q0_org_h.0
+    vsllwil.hu.bu   vr15,   vr5,    0  //q1_org_h.0
+
+    AVC_LPF_P0_OR_Q0 vr8, vr15, vr6, vr17, vr23
+    AVC_LPF_P0_OR_Q0 vr13, vr6, vr15, vr18, vr23
+
+    vpickev.b       vr19,   vr17,   vr17
+    vpickev.b       vr20,   vr18,   vr18
+    vbitsel.v       vr3,    vr3,    vr19,   vr11
+    vbitsel.v       vr4,    vr4,    vr20,   vr11
+
+    vstelm.d        vr3,    t2,     0,      0
+    vstelm.d        vr4,    a0,     0,      0
+.END_V_CHROMA_INTRA_8:
+endfunc
