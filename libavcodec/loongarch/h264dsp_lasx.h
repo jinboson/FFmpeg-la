@@ -70,7 +70,6 @@ void ff_weight_h264_pixels4_8_lasx(uint8_t *src, ptrdiff_t stride,
 void ff_h264_add_pixels4_8_lasx(uint8_t *_dst, int16_t *_src, int stride);
 
 void ff_h264_add_pixels8_8_lasx(uint8_t *_dst, int16_t *_src, int stride);
-void ff_h264_idct_add_lasx(uint8_t *dst, int16_t *src, int32_t dst_stride);
 void ff_h264_idct8_addblk_lasx(uint8_t *dst, int16_t *src, int32_t dst_stride);
 void ff_h264_idct8_dc_add_8_lasx(uint8_t *dst, int16_t *src,
                                   int32_t dst_stride);

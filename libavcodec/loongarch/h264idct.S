@@ -27,6 +27,7 @@
  * #define FUNC2(a, b, c)  FUNC3(a, b, c)
  * #define FUNCC(a) FUNC2(a, BIT_DEPTH, _c)
  * void FUNCC(ff_h264_idct_add)(uint8_t *_dst, int16_t *_block, int stride)
+ * LSX optimization is enough for this function.
  */
 function ff_h264_idct_add_8_lsx
     fld.d         f0,     a1,    0
