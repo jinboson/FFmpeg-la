@@ -771,6 +771,31 @@ ASM_PREF\name: ;
     vsub.d   \_out3,   \_in0,   \_in3
 .endm
 
+.macro LASX_BUTTERFLY_4_B _in0, _in1, _in2, _in3, _out0, _out1, _out2, _out3
+    xvadd.b   \_out0,   \_in0,   \_in3
+    xvadd.b   \_out1,   \_in1,   \_in2
+    xvsub.b   \_out2,   \_in1,   \_in2
+    xvsub.b   \_out3,   \_in0,   \_in3
+.endm
+.macro LASX_BUTTERFLY_4_H _in0, _in1, _in2, _in3, _out0, _out1, _out2, _out3
+    xvadd.h   \_out0,   \_in0,   \_in3
+    xvadd.h   \_out1,   \_in1,   \_in2
+    xvsub.h   \_out2,   \_in1,   \_in2
+    xvsub.h   \_out3,   \_in0,   \_in3
+.endm
+.macro LASX_BUTTERFLY_4_W _in0, _in1, _in2, _in3, _out0, _out1, _out2, _out3
+    xvadd.w   \_out0,   \_in0,   \_in3
+    xvadd.w   \_out1,   \_in1,   \_in2
+    xvsub.w   \_out2,   \_in1,   \_in2
+    xvsub.w   \_out3,   \_in0,   \_in3
+.endm
+.macro LASX_BUTTERFLY_4_D _in0, _in1, _in2, _in3, _out0, _out1, _out2, _out3
+    xvadd.d   \_out0,   \_in0,   \_in3
+    xvadd.d   \_out1,   \_in1,   \_in2
+    xvsub.d   \_out2,   \_in1,   \_in2
+    xvsub.d   \_out3,   \_in0,   \_in3
+.endm
+
 /*
  * Description : Butterfly of 8 input vectors
  * Arguments   : Inputs  - _in0, _in1, _in2, _in3, ~
@@ -833,3 +858,40 @@ ASM_PREF\name: ;
     vsub.d    \_out6,    \_in1,    \_in6
     vsub.d    \_out7,    \_in0,    \_in7
 .endm
+
+.macro LASX_BUTTERFLY_8_B _in0,  _in1,  _in2,  _in3,  _in4,  _in5,  _in6,  _in7, \
+                          _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7
+    xvadd.b    \_out0,    \_in0,    \_in7
+    xvadd.b    \_out1,    \_in1,    \_in6
+    xvadd.b    \_out2,    \_in2,    \_in5
+    xvadd.b    \_out3,    \_in3,    \_in4
+    xvsub.b    \_out4,    \_in3,    \_in4
+    xvsub.b    \_out5,    \_in2,    \_in5
+    xvsub.b    \_out6,    \_in1,    \_in6
+    xvsub.b    \_out7,    \_in0,    \_in7
+.endm
+
+.macro LASX_BUTTERFLY_8_H _in0,  _in1,  _in2,  _in3,  _in4,  _in5,  _in6,  _in7, \
+                          _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7
+    xvadd.h    \_out0,    \_in0,    \_in7
+    xvadd.h    \_out1,    \_in1,    \_in6
+    xvadd.h    \_out2,    \_in2,    \_in5
+    xvadd.h    \_out3,    \_in3,    \_in4
+    xvsub.h    \_out4,    \_in3,    \_in4
+    xvsub.h    \_out5,    \_in2,    \_in5
+    xvsub.h    \_out6,    \_in1,    \_in6
+    xvsub.h    \_out7,    \_in0,    \_in7
+.endm
+
+.macro LASX_BUTTERFLY_8_W _in0,  _in1,  _in2,  _in3,  _in4,  _in5,  _in6,  _in7, \
+                          _out0, _out1, _out2, _out3, _out4, _out5, _out6, _out7
+    xvadd.w    \_out0,    \_in0,    \_in7
+    xvadd.w    \_out1,    \_in1,    \_in6
+    xvadd.w    \_out2,    \_in2,    \_in5
+    xvadd.w    \_out3,    \_in3,    \_in4
+    xvsub.w    \_out4,    \_in3,    \_in4
+    xvsub.w    \_out5,    \_in2,    \_in5
+    xvsub.w    \_out6,    \_in1,    \_in6
+    xvsub.w    \_out7,    \_in0,    \_in7
+.endm
+
