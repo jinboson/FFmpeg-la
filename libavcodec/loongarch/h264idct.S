@@ -609,3 +609,51 @@ function ff_h264_idct8_dc_add_8_lasx
     fstx.d        f4,     a0,    t7
 endfunc
 
+/**
+ * IDCT transforms the 16 dc values and dequantizes them.
+ * @param qmul quantization parameter
+ * void FUNCC(ff_h264_luma_dc_dequant_idct)(int16_t *_output, int16_t *_input, int qmul){
+ * LSX optimization is enough for this function.
+ */
+function ff_h264_luma_dc_dequant_idct_8_lsx
+    vld           vr0,    a1,    0
+    vld           vr1,    a1,    8
+    vld           vr2,    a1,    16
+    vld           vr3,    a1,    24
+    vreplgr2vr.w  vr8,    a2
+    LSX_TRANSPOSE4x4_H vr0, vr1, vr2, vr3, vr4, vr5, vr6, vr7, vr9, vr10
+    LSX_BUTTERFLY_4_H  vr4, vr6, vr7, vr5, vr0, vr3, vr2, vr1
+    LSX_BUTTERFLY_4_H  vr0, vr1, vr2, vr3, vr4, vr7, vr6, vr5
+    LSX_TRANSPOSE4x4_H vr4, vr5, vr6, vr7, vr0, vr1, vr2, vr3, vr9, vr10
+    LSX_BUTTERFLY_4_H  vr0, vr1, vr3, vr2, vr4, vr7, vr6, vr5
+    LSX_BUTTERFLY_4_H  vr4, vr5, vr6, vr7, vr0, vr1, vr2, vr3
+    vsllwil.w.h   vr0,    vr0,   0
+    vsllwil.w.h   vr1,    vr1,   0
+    vsllwil.w.h   vr2,    vr2,   0
+    vsllwil.w.h   vr3,    vr3,   0
+    vmul.w        vr0,    vr0,   vr8
+    vmul.w        vr1,    vr1,   vr8
+    vmul.w        vr2,    vr2,   vr8
+    vmul.w        vr3,    vr3,   vr8
+    vsrarni.h.w   vr1,    vr0,   8
+    vsrarni.h.w   vr3,    vr2,   8
+
+    vstelm.h      vr1,    a0,    0,   0
+    vstelm.h      vr1,    a0,    32,  4
+    vstelm.h      vr1,    a0,    64,  1
+    vstelm.h      vr1,    a0,    96,  5
+    vstelm.h      vr3,    a0,    128, 0
+    vstelm.h      vr3,    a0,    160, 4
+    vstelm.h      vr3,    a0,    192, 1
+    vstelm.h      vr3,    a0,    224, 5
+    addi.d        a0,     a0,    256
+    vstelm.h      vr1,    a0,    0,   2
+    vstelm.h      vr1,    a0,    32,  6
+    vstelm.h      vr1,    a0,    64,  3
+    vstelm.h      vr1,    a0,    96,  7
+    vstelm.h      vr3,    a0,    128, 2
+    vstelm.h      vr3,    a0,    160, 6
+    vstelm.h      vr3,    a0,    192, 3
+    vstelm.h      vr3,    a0,    224, 7
+endfunc
+

@@ -29,6 +29,7 @@ void ff_h264_idct_add_8_lsx(uint8_t *dst, int16_t *src, int dst_stride);
 void ff_h264_idct8_add_8_lsx(uint8_t *dst, int16_t *src, int dst_stride);
 void ff_h264_idct_dc_add_8_lsx(uint8_t *dst, int16_t *src, int dst_stride);
 void ff_h264_idct8_dc_add_8_lsx(uint8_t *dst, int16_t *src, int dst_stride);
+void ff_h264_luma_dc_dequant_idct_8_lsx(int16_t *_output, int16_t *_input, int qmul);
 void ff_h264_h_lpf_luma_8_lsx(uint8_t *src, ptrdiff_t stride,
                               int alpha, int beta, int8_t *tc0);
 void ff_h264_v_lpf_luma_8_lsx(uint8_t *src, ptrdiff_t stride,
@@ -96,9 +97,6 @@ void ff_h264_idct_add8_422_lasx(uint8_t **dst, const int32_t *blk_offset,
 void ff_h264_idct_add16_intra_lasx(uint8_t *dst, const int32_t *blk_offset,
                                    int16_t *block, int32_t dst_stride,
                                    const uint8_t nzc[15 * 8]);
-void ff_h264_deq_idct_luma_dc_lasx(int16_t *dst, int16_t *src,
-                                   int32_t de_qval);
-
 void ff_h264_loop_filter_strength_lasx(int16_t bS[2][4][4], uint8_t nnz[40],
                                        int8_t ref[2][40], int16_t mv[2][40][2],
                                        int bidir, int edges, int step,
