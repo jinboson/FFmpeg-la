@@ -1,5 +1,5 @@
 /*
- * Loongson LASX optimized h264dsp
+ * Loongson LASX optimized h264idct
  *
  * Copyright (c) 2021 Loongson Technology Corporation Limited
  * Contributed by Shiyou Yin <yinshiyou-hf@loongson.cn>
@@ -22,13 +22,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/loongarch/loongson_intrinsics.h"
 #include "h264dsp_lasx.h"
 #include "libavcodec/bit_depth_template.c"
 
-void ff_h264_idct_add16_lasx(uint8_t *dst, const int32_t *blk_offset,
-                             int16_t *block, int32_t dst_stride,
-                             const uint8_t nzc[15 * 8])
+void ff_h264_idct_add16_8_lsx(uint8_t *dst, const int32_t *blk_offset,
+                              int16_t *block, int32_t dst_stride,
+                              const uint8_t nzc[15 * 8])
 {
     int32_t i;
 
@@ -47,9 +46,30 @@ void ff_h264_idct_add16_lasx(uint8_t *dst, const int32_t *blk_offset,
     }
 }
 
-void ff_h264_idct8_add4_lasx(uint8_t *dst, const int32_t *blk_offset,
-                             int16_t *block, int32_t dst_stride,
-                             const uint8_t nzc[15 * 8])
+void ff_h264_idct8_add4_8_lsx(uint8_t *dst, const int32_t *blk_offset,
+                              int16_t *block, int32_t dst_stride,
+                              const uint8_t nzc[15 * 8])
+{
+    int32_t cnt;
+
+    for (cnt = 0; cnt < 16; cnt += 4) {
+        int32_t nnz = nzc[scan8[cnt]];
+
+        if (nnz == 1 && ((dctcoef *) block)[cnt * 16]) {
+            ff_h264_idct8_dc_add_8_lsx(dst + blk_offset[cnt],
+                                        block + cnt * 16 * sizeof(pixel),
+                                        dst_stride);
+        } else if (nnz) {
+            ff_h264_idct8_add_8_lsx(dst + blk_offset[cnt],
+                                     block + cnt * 16 * sizeof(pixel),
+                                     dst_stride);
+        }
+    }
+}
+
+void ff_h264_idct8_add4_8_lasx(uint8_t *dst, const int32_t *blk_offset,
+                               int16_t *block, int32_t dst_stride,
+                               const uint8_t nzc[15 * 8])
 {
     int32_t cnt;
 
@@ -68,10 +88,9 @@ void ff_h264_idct8_add4_lasx(uint8_t *dst, const int32_t *blk_offset,
     }
 }
 
-
-void ff_h264_idct_add8_lasx(uint8_t **dst, const int32_t *blk_offset,
-                            int16_t *block, int32_t dst_stride,
-                            const uint8_t nzc[15 * 8])
+void ff_h264_idct_add8_8_lsx(uint8_t **dst, const int32_t *blk_offset,
+                             int16_t *block, int32_t dst_stride,
+                             const uint8_t nzc[15 * 8])
 {
     int32_t i;
 
@@ -97,9 +116,9 @@ void ff_h264_idct_add8_lasx(uint8_t **dst, const int32_t *blk_offset,
     }
 }
 
-void ff_h264_idct_add8_422_lasx(uint8_t **dst, const int32_t *blk_offset,
-                                int16_t *block, int32_t dst_stride,
-                                const uint8_t nzc[15 * 8])
+void ff_h264_idct_add8_422_8_lsx(uint8_t **dst, const int32_t *blk_offset,
+                                 int16_t *block, int32_t dst_stride,
+                                 const uint8_t nzc[15 * 8])
 {
     int32_t i;
 
@@ -145,9 +164,9 @@ void ff_h264_idct_add8_422_lasx(uint8_t **dst, const int32_t *blk_offset,
     }
 }
 
-void ff_h264_idct_add16_intra_lasx(uint8_t *dst, const int32_t *blk_offset,
-                                   int16_t *block, int32_t dst_stride,
-                                   const uint8_t nzc[15 * 8])
+void ff_h264_idct_add16_intra_8_lsx(uint8_t *dst, const int32_t *blk_offset,
+                                    int16_t *block, int32_t dst_stride,
+                                    const uint8_t nzc[15 * 8])
 {
     int32_t i;
 
