@@ -62,6 +62,10 @@ void ff_biweight_h264_pixels16_8_lsx(uint8_t *dst, uint8_t *src,
                                      int stride, int height,
                                      int log2_denom, int weight_dst,
                                      int weight_src, int offset_in);
+void ff_biweight_h264_pixels8_8_lsx(uint8_t *dst, uint8_t *src,
+                                    int stride, int height,
+                                    int log2_denom, int weight_dst,
+                                    int weight_src, int offset);
 
 void ff_h264_h_lpf_luma_8_lasx(uint8_t *src, ptrdiff_t stride,
                                int alpha, int beta, int8_t *tc0);
@@ -80,7 +84,7 @@ void ff_biweight_h264_pixels16_8_lasx(uint8_t *dst, uint8_t *src,
                                       int log2_denom, int weight_dst,
                                       int weight_src, int offset_in);
 void ff_biweight_h264_pixels8_8_lasx(uint8_t *dst, uint8_t *src,
-                                     ptrdiff_t stride, int height,
+                                     int stride, int height,
                                      int log2_denom, int weight_dst,
                                      int weight_src, int offset);
 void ff_biweight_h264_pixels4_8_lasx(uint8_t *dst, uint8_t *src,
