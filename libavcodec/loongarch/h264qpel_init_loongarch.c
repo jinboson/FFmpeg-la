@@ -34,6 +34,8 @@ av_cold void ff_h264qpel_init_loongarch(H264QpelContext *c, int bit_depth)
             c->put_h264_qpel_pixels_tab[0][1]  = ff_put_h264_qpel16_mc10_lsx;
             c->put_h264_qpel_pixels_tab[0][2]  = ff_put_h264_qpel16_mc20_lsx;
             c->put_h264_qpel_pixels_tab[0][3]  = ff_put_h264_qpel16_mc30_lsx;
+            c->put_h264_qpel_pixels_tab[0][4]  = ff_put_h264_qpel16_mc01_lsx;
+            c->put_h264_qpel_pixels_tab[0][5]  = ff_put_h264_qpel16_mc11_lsx;
         }
     }
     if (have_lasx(cpu_flags)) {
