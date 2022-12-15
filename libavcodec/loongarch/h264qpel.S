@@ -1576,3 +1576,560 @@ function ff_put_h264_qpel16_mc13_lsx
     fld.d         f31,    sp,     56
     addi.d        sp,     sp,     64
 endfunc
+
+/*
+ * void put_h264_qpel16_mc03(uint8_t *dst, const uint8_t *src,
+ *                           ptrdiff_t stride)
+ */
+function ff_put_h264_qpel16_mc03_lsx
+    slli.d        t0,     a2,     1
+    add.d         t1,     t0,     a2
+    sub.d         t2,     a1,     t0  // t2 = src - 2 * stride
+    vldi          vr20,   0x414
+    vldi          vr21,   0x405
+    vldi          vr22,   0x410
+
+    vld           vr0,    t2,     0
+    vldx          vr1,    t2,     a2
+    vldx          vr2,    t2,     t0
+    vldx          vr3,    t2,     t1
+    alsl.d        t2,     a2,     t2,    2  // t2 = t2 + 4 * stride
+    vld           vr4,    t2,     0
+    vldx          vr5,    t2,     a2
+    vldx          vr6,    t2,     t0
+    lsx_put_h264_qpel8_v_lowpass vr0, vr1, vr2, vr3, vr4, vr5, vr6
+    vavgr.bu      vr13,   vr3,    vr13
+    vavgr.bu      vr14,   vr4,    vr14
+    vst           vr13,   a0,     0
+    vstx          vr14,   a0,     a2
+
+    vldx          vr0,    t2,     t1
+    alsl.d        t2,     a2,     t2,    2  // t2 = t2 + 4 *stride
+    vld           vr1,    t2,     0
+    lsx_put_h264_qpel8_v_lowpass vr2, vr3, vr4, vr5, vr6, vr0, vr1
+    vavgr.bu      vr13,   vr5,    vr13
+    vavgr.bu      vr14,   vr6,    vr14
+    vstx          vr13,   a0,     t0
+    vstx          vr14,   a0,     t1
+
+    alsl.d        a0,     a2,     a0,    2  // dst = dst + 4 * stride
+
+    vldx          vr2,    t2,     a2
+    vldx          vr3,    t2,     t0
+    lsx_put_h264_qpel8_v_lowpass vr4, vr5, vr6, vr0, vr1, vr2, vr3
+    vavgr.bu      vr13,   vr0,    vr13
+    vavgr.bu      vr14,   vr1,    vr14
+    vst           vr13,   a0,     0
+    vstx          vr14,   a0,     a2
+
+    vldx          vr4,    t2,     t1
+    alsl.d        t2,     a2,     t2,    2  // t2 = t2 + 4 *stride
+    vld           vr5,    t2,     0
+    lsx_put_h264_qpel8_v_lowpass vr6, vr0, vr1, vr2, vr3, vr4, vr5
+    vavgr.bu      vr13,   vr2,    vr13
+    vavgr.bu      vr14,   vr3,    vr14
+    vstx          vr13,   a0,     t0
+    vstx          vr14,   a0,     t1
+
+    alsl.d        a0,     a2,     a0,    2  // dst = dst + 4 * stride
+
+    vldx          vr6,    t2,     a2
+    vldx          vr0,    t2,     t0
+    lsx_put_h264_qpel8_v_lowpass vr1, vr2, vr3, vr4, vr5, vr6, vr0
+    vavgr.bu      vr13,   vr4,    vr13
+    vavgr.bu      vr14,   vr5,    vr14
+    vst           vr13,   a0,     0
+    vstx          vr14,   a0,     a2
+
+    vldx          vr1,    t2,     t1
+    alsl.d        t2,     a2,     t2,    2 // t2 = t2 + 4 * stride
+    vld           vr2,    t2,     0
+    lsx_put_h264_qpel8_v_lowpass vr3, vr4, vr5, vr6, vr0, vr1, vr2
+    vavgr.bu      vr13,   vr6,    vr13
+    vavgr.bu      vr14,   vr0,    vr14
+    vstx          vr13,   a0,     t0
+    vstx          vr14,   a0,     t1
+
+    alsl.d        a0,     a2,     a0,    2  // dst = dst + 4 * stride
+
+    vldx          vr3,    t2,     a2
+    vldx          vr4,    t2,     t0
+    lsx_put_h264_qpel8_v_lowpass vr5, vr6, vr0, vr1, vr2, vr3, vr4
+    vavgr.bu      vr13,   vr1,    vr13
+    vavgr.bu      vr14,   vr2,    vr14
+    vst           vr13,   a0,     0
+    vstx          vr14,   a0,     a2
+
+    vldx          vr5,    t2,     t1
+    alsl.d        t2,     a2,     t2,    2  // t2 = t2 + 4 * stride
+    vld           vr6,    t2,     0
+    lsx_put_h264_qpel8_v_lowpass vr0, vr1, vr2, vr3, vr4, vr5, vr6
+    vavgr.bu      vr13,   vr3,    vr13
+    vavgr.bu      vr14,   vr4,    vr14
+    vstx          vr13,   a0,     t0
+    vstx          vr14,   a0,     t1
+endfunc
+
+/*
+ * void avg_h264_qpel16_mc10(uint8_t *dst, const uint8_t *src,
+ *                           ptrdiff_t stride)
+ */
+function ff_avg_h264_qpel16_mc10_lsx
+    addi.d        t0,     a0,     0   // t0 = dst
+    addi.d        t1,     a1,     -2  // t1 = src - 2
+    addi.d        t4,     t1,     8
+
+    slli.d        t2,     a2,     1
+    add.d         t3,     a2,     t2
+
+    vldi          vr20,   0x414
+    vldi          vr21,   0x405
+    vldi          vr22,   0x410
+
+    vld           vr0,    t1,     0
+    vldx          vr1,    t1,     a2
+    LSX_QPEL8_H_LOWPASS_1 vr12, vr13
+    vldx          vr0,    t1,     t2
+    vldx          vr1,    t1,     t3
+    LSX_QPEL8_H_LOWPASS_1 vr14, vr15
+
+    alsl.d        t1,     a2,     t1,    2
+
+    vld           vr0,    t1,     0
+    vldx          vr1,    t1,     a2
+    LSX_QPEL8_H_LOWPASS_1 vr16, vr17
+    vldx          vr0,    t1,     t2
+    vldx          vr1,    t1,     t3
+    LSX_QPEL8_H_LOWPASS_1 vr18, vr19
+
+    vld           vr0,    t4,     0
+    vldx          vr1,    t4,     a2
+    LSX_QPEL8_H_LOWPASS_1 vr2, vr3
+    vssrani.bu.h  vr2,    vr12,   5
+    vssrani.bu.h  vr3,    vr13,   5
+    vld           vr0,    a1,     0
+    vldx          vr1,    a1,     a2
+    vld           vr12,   t0,     0
+    vldx          vr13,   t0,     a2
+    vavgr.bu      vr0,    vr0,    vr2
+    vavgr.bu      vr1,    vr1,    vr3
+    vavgr.bu      vr0,    vr0,    vr12
+    vavgr.bu      vr1,    vr1,    vr13
+    vst           vr0,    a0,     0
+    vstx          vr1,    a0,     a2
+
+    vldx          vr0,    t4,     t2
+    vldx          vr1,    t4,     t3
+    LSX_QPEL8_H_LOWPASS_1 vr2, vr3
+    vssrani.bu.h  vr2,    vr14,   5
+    vssrani.bu.h  vr3,    vr15,   5
+    vldx          vr0,    a1,     t2
+    vldx          vr1,    a1,     t3
+    vldx          vr12,   t0,     t2
+    vldx          vr13,   t0,     t3
+    vavgr.bu      vr0,    vr0,    vr2
+    vavgr.bu      vr1,    vr1,    vr3
+    vavgr.bu      vr0,    vr0,    vr12
+    vavgr.bu      vr1,    vr1,    vr13
+    vstx          vr0,    a0,     t2
+    vstx          vr1,    a0,     t3
+
+    alsl.d        t4,     a2,     t4,    2
+    alsl.d        a1,     a2,     a1,    2
+    alsl.d        t0,     a2,     t0,    2
+    alsl.d        a0,     a2,     a0,    2
+
+    vld           vr0,    t4,     0
+    vldx          vr1,    t4,     a2
+    LSX_QPEL8_H_LOWPASS_1 vr2, vr3
+    vssrani.bu.h  vr2,    vr16,   5
+    vssrani.bu.h  vr3,    vr17,   5
+    vld           vr0,    a1,     0
+    vldx          vr1,    a1,     a2
+    vld           vr12,   t0,     0
+    vldx          vr13,   t0,     a2
+    vavgr.bu      vr0,    vr0,    vr2
+    vavgr.bu      vr1,    vr1,    vr3
+    vavgr.bu      vr0,    vr0,    vr12
+    vavgr.bu      vr1,    vr1,    vr13
+    vst           vr0,    a0,     0
+    vstx          vr1,    a0,     a2
+
+    vldx          vr0,    t4,     t2
+    vldx          vr1,    t4,     t3
+    LSX_QPEL8_H_LOWPASS_1 vr2, vr3
+    vssrani.bu.h  vr2,    vr18,   5
+    vssrani.bu.h  vr3,    vr19,   5
+    vldx          vr0,    a1,     t2
+    vldx          vr1,    a1,     t3
+    vldx          vr12,   t0,     t2
+    vldx          vr13,   t0,     t3
+    vavgr.bu      vr0,    vr0,    vr2
+    vavgr.bu      vr1,    vr1,    vr3
+    vavgr.bu      vr0,    vr0,    vr12
+    vavgr.bu      vr1,    vr1,    vr13
+    vstx          vr0,    a0,     t2
+    vstx          vr1,    a0,     t3
+
+    alsl.d        t4,     a2,     t4,    2
+    alsl.d        a1,     a2,     a1,    2
+    alsl.d        t0,     a2,     t0,    2
+    alsl.d        a0,     a2,     a0,    2
+    alsl.d        t1,     a2,     t1,    2   // t1 = src + 8 * stride -2
+
+    vld           vr0,    t1,     0
+    vldx          vr1,    t1,     a2
+    LSX_QPEL8_H_LOWPASS_1 vr12, vr13
+    vldx          vr0,    t1,     t2
+    vldx          vr1,    t1,     t3
+    LSX_QPEL8_H_LOWPASS_1 vr14, vr15
+
+    alsl.d        t1,     a2,     t1,    2
+
+    vld           vr0,    t1,     0
+    vldx          vr1,    t1,     a2
+    LSX_QPEL8_H_LOWPASS_1 vr16, vr17
+    vldx          vr0,    t1,     t2
+    vldx          vr1,    t1,     t3
+    LSX_QPEL8_H_LOWPASS_1 vr18, vr19
+
+    vld           vr0,    t4,     0
+    vldx          vr1,    t4,     a2
+    LSX_QPEL8_H_LOWPASS_1 vr2, vr3
+    vssrani.bu.h  vr2,    vr12,   5
+    vssrani.bu.h  vr3,    vr13,   5
+    vld           vr0,    a1,     0
+    vldx          vr1,    a1,     a2
+    vld           vr12,   t0,     0
+    vldx          vr13,   t0,     a2
+    vavgr.bu      vr0,    vr0,    vr2
+    vavgr.bu      vr1,    vr1,    vr3
+    vavgr.bu      vr0,    vr0,    vr12
+    vavgr.bu      vr1,    vr1,    vr13
+    vst           vr0,    a0,     0
+    vstx          vr1,    a0,     a2
+
+    vldx          vr0,    t4,     t2
+    vldx          vr1,    t4,     t3
+    LSX_QPEL8_H_LOWPASS_1 vr2, vr3
+    vssrani.bu.h  vr2,    vr14,   5
+    vssrani.bu.h  vr3,    vr15,   5
+    vldx          vr0,    a1,     t2
+    vldx          vr1,    a1,     t3
+    vldx          vr12,   t0,     t2
+    vldx          vr13,   t0,     t3
+    vavgr.bu      vr0,    vr0,    vr2
+    vavgr.bu      vr1,    vr1,    vr3
+    vavgr.bu      vr0,    vr0,    vr12
+    vavgr.bu      vr1,    vr1,    vr13
+    vstx          vr0,    a0,     t2
+    vstx          vr1,    a0,     t3
+
+    alsl.d        t4,     a2,     t4,    2
+    alsl.d        a1,     a2,     a1,    2
+    alsl.d        t0,     a2,     t0,    2
+    alsl.d        a0,     a2,     a0,    2
+
+    vld           vr0,    t4,     0
+    vldx          vr1,    t4,     a2
+    LSX_QPEL8_H_LOWPASS_1 vr2, vr3
+    vssrani.bu.h  vr2,    vr16,   5
+    vssrani.bu.h  vr3,    vr17,   5
+    vld           vr0,    a1,     0
+    vldx          vr1,    a1,     a2
+    vld           vr12,   t0,     0
+    vldx          vr13,   t0,     a2
+    vavgr.bu      vr0,    vr0,    vr2
+    vavgr.bu      vr1,    vr1,    vr3
+    vavgr.bu      vr0,    vr0,    vr12
+    vavgr.bu      vr1,    vr1,    vr13
+    vst           vr0,    a0,     0
+    vstx          vr1,    a0,     a2
+
+    vldx          vr0,    t4,     t2
+    vldx          vr1,    t4,     t3
+    LSX_QPEL8_H_LOWPASS_1 vr2, vr3
+    vssrani.bu.h  vr2,    vr18,   5
+    vssrani.bu.h  vr3,    vr19,   5
+    vldx          vr0,    a1,     t2
+    vldx          vr1,    a1,     t3
+    vldx          vr12,   t0,     t2
+    vldx          vr13,   t0,     t3
+    vavgr.bu      vr0,    vr0,    vr2
+    vavgr.bu      vr1,    vr1,    vr3
+    vavgr.bu      vr0,    vr0,    vr12
+    vavgr.bu      vr1,    vr1,    vr13
+    vstx          vr0,    a0,     t2
+    vstx          vr1,    a0,     t3
+endfunc
+
+/*
+ * void avg_h264_qpel16_mc30(uint8_t *dst, const uint8_t *src,
+ *                           ptrdiff_t stride)
+ */
+function ff_avg_h264_qpel16_mc30_lsx
+    addi.d        t0,     a0,     0   // t0 = dst
+    addi.d        t1,     a1,     -2  // t1 = src - 2
+    addi.d        t4,     t1,     8
+    addi.d        a1,     a1,     1   // a1 = a1 + 1
+
+    slli.d        t2,     a2,     1
+    add.d         t3,     a2,     t2
+
+    vldi          vr20,   0x414
+    vldi          vr21,   0x405
+    vldi          vr22,   0x410
+
+    vld           vr0,    t1,     0
+    vldx          vr1,    t1,     a2
+    LSX_QPEL8_H_LOWPASS_1 vr12, vr13
+    vldx          vr0,    t1,     t2
+    vldx          vr1,    t1,     t3
+    LSX_QPEL8_H_LOWPASS_1 vr14, vr15
+
+    alsl.d        t1,     a2,     t1,    2
+
+    vld           vr0,    t1,     0
+    vldx          vr1,    t1,     a2
+    LSX_QPEL8_H_LOWPASS_1 vr16, vr17
+    vldx          vr0,    t1,     t2
+    vldx          vr1,    t1,     t3
+    LSX_QPEL8_H_LOWPASS_1 vr18, vr19
+
+    vld           vr0,    t4,     0
+    vldx          vr1,    t4,     a2
+    LSX_QPEL8_H_LOWPASS_1 vr2, vr3
+    vssrani.bu.h  vr2,    vr12,   5
+    vssrani.bu.h  vr3,    vr13,   5
+    vld           vr0,    a1,     0
+    vldx          vr1,    a1,     a2
+    vld           vr12,   t0,     0
+    vldx          vr13,   t0,     a2
+    vavgr.bu      vr0,    vr0,    vr2
+    vavgr.bu      vr1,    vr1,    vr3
+    vavgr.bu      vr0,    vr0,    vr12
+    vavgr.bu      vr1,    vr1,    vr13
+    vst           vr0,    a0,     0
+    vstx          vr1,    a0,     a2
+
+    vldx          vr0,    t4,     t2
+    vldx          vr1,    t4,     t3
+    LSX_QPEL8_H_LOWPASS_1 vr2, vr3
+    vssrani.bu.h  vr2,    vr14,   5
+    vssrani.bu.h  vr3,    vr15,   5
+    vldx          vr0,    a1,     t2
+    vldx          vr1,    a1,     t3
+    vldx          vr12,   t0,     t2
+    vldx          vr13,   t0,     t3
+    vavgr.bu      vr0,    vr0,    vr2
+    vavgr.bu      vr1,    vr1,    vr3
+    vavgr.bu      vr0,    vr0,    vr12
+    vavgr.bu      vr1,    vr1,    vr13
+    vstx          vr0,    a0,     t2
+    vstx          vr1,    a0,     t3
+
+    alsl.d        t4,     a2,     t4,    2
+    alsl.d        a1,     a2,     a1,    2
+    alsl.d        t0,     a2,     t0,    2
+    alsl.d        a0,     a2,     a0,    2
+
+    vld           vr0,    t4,     0
+    vldx          vr1,    t4,     a2
+    LSX_QPEL8_H_LOWPASS_1 vr2, vr3
+    vssrani.bu.h  vr2,    vr16,   5
+    vssrani.bu.h  vr3,    vr17,   5
+    vld           vr0,    a1,     0
+    vldx          vr1,    a1,     a2
+    vld           vr12,   t0,     0
+    vldx          vr13,   t0,     a2
+    vavgr.bu      vr0,    vr0,    vr2
+    vavgr.bu      vr1,    vr1,    vr3
+    vavgr.bu      vr0,    vr0,    vr12
+    vavgr.bu      vr1,    vr1,    vr13
+    vst           vr0,    a0,     0
+    vstx          vr1,    a0,     a2
+
+    vldx          vr0,    t4,     t2
+    vldx          vr1,    t4,     t3
+    LSX_QPEL8_H_LOWPASS_1 vr2, vr3
+    vssrani.bu.h  vr2,    vr18,   5
+    vssrani.bu.h  vr3,    vr19,   5
+    vldx          vr0,    a1,     t2
+    vldx          vr1,    a1,     t3
+    vldx          vr12,   t0,     t2
+    vldx          vr13,   t0,     t3
+    vavgr.bu      vr0,    vr0,    vr2
+    vavgr.bu      vr1,    vr1,    vr3
+    vavgr.bu      vr0,    vr0,    vr12
+    vavgr.bu      vr1,    vr1,    vr13
+    vstx          vr0,    a0,     t2
+    vstx          vr1,    a0,     t3
+
+    alsl.d        t4,     a2,     t4,    2
+    alsl.d        a1,     a2,     a1,    2
+    alsl.d        t0,     a2,     t0,    2
+    alsl.d        a0,     a2,     a0,    2
+    alsl.d        t1,     a2,     t1,    2   // t1 = src + 8 * stride -2
+
+    vld           vr0,    t1,     0
+    vldx          vr1,    t1,     a2
+    LSX_QPEL8_H_LOWPASS_1 vr12, vr13
+    vldx          vr0,    t1,     t2
+    vldx          vr1,    t1,     t3
+    LSX_QPEL8_H_LOWPASS_1 vr14, vr15
+
+    alsl.d        t1,     a2,     t1,    2
+
+    vld           vr0,    t1,     0
+    vldx          vr1,    t1,     a2
+    LSX_QPEL8_H_LOWPASS_1 vr16, vr17
+    vldx          vr0,    t1,     t2
+    vldx          vr1,    t1,     t3
+    LSX_QPEL8_H_LOWPASS_1 vr18, vr19
+
+    vld           vr0,    t4,     0
+    vldx          vr1,    t4,     a2
+    LSX_QPEL8_H_LOWPASS_1 vr2, vr3
+    vssrani.bu.h  vr2,    vr12,   5
+    vssrani.bu.h  vr3,    vr13,   5
+    vld           vr0,    a1,     0
+    vldx          vr1,    a1,     a2
+    vld           vr12,   t0,     0
+    vldx          vr13,   t0,     a2
+    vavgr.bu      vr0,    vr0,    vr2
+    vavgr.bu      vr1,    vr1,    vr3
+    vavgr.bu      vr0,    vr0,    vr12
+    vavgr.bu      vr1,    vr1,    vr13
+    vst           vr0,    a0,     0
+    vstx          vr1,    a0,     a2
+
+    vldx          vr0,    t4,     t2
+    vldx          vr1,    t4,     t3
+    LSX_QPEL8_H_LOWPASS_1 vr2, vr3
+    vssrani.bu.h  vr2,    vr14,   5
+    vssrani.bu.h  vr3,    vr15,   5
+    vldx          vr0,    a1,     t2
+    vldx          vr1,    a1,     t3
+    vldx          vr12,   t0,     t2
+    vldx          vr13,   t0,     t3
+    vavgr.bu      vr0,    vr0,    vr2
+    vavgr.bu      vr1,    vr1,    vr3
+    vavgr.bu      vr0,    vr0,    vr12
+    vavgr.bu      vr1,    vr1,    vr13
+    vstx          vr0,    a0,     t2
+    vstx          vr1,    a0,     t3
+
+    alsl.d        t4,     a2,     t4,    2
+    alsl.d        a1,     a2,     a1,    2
+    alsl.d        t0,     a2,     t0,    2
+    alsl.d        a0,     a2,     a0,    2
+
+    vld           vr0,    t4,     0
+    vldx          vr1,    t4,     a2
+    LSX_QPEL8_H_LOWPASS_1 vr2, vr3
+    vssrani.bu.h  vr2,    vr16,   5
+    vssrani.bu.h  vr3,    vr17,   5
+    vld           vr0,    a1,     0
+    vldx          vr1,    a1,     a2
+    vld           vr12,   t0,     0
+    vldx          vr13,   t0,     a2
+    vavgr.bu      vr0,    vr0,    vr2
+    vavgr.bu      vr1,    vr1,    vr3
+    vavgr.bu      vr0,    vr0,    vr12
+    vavgr.bu      vr1,    vr1,    vr13
+    vst           vr0,    a0,     0
+    vstx          vr1,    a0,     a2
+
+    vldx          vr0,    t4,     t2
+    vldx          vr1,    t4,     t3
+    LSX_QPEL8_H_LOWPASS_1 vr2, vr3
+    vssrani.bu.h  vr2,    vr18,   5
+    vssrani.bu.h  vr3,    vr19,   5
+    vldx          vr0,    a1,     t2
+    vldx          vr1,    a1,     t3
+    vldx          vr12,   t0,     t2
+    vldx          vr13,   t0,     t3
+    vavgr.bu      vr0,    vr0,    vr2
+    vavgr.bu      vr1,    vr1,    vr3
+    vavgr.bu      vr0,    vr0,    vr12
+    vavgr.bu      vr1,    vr1,    vr13
+    vstx          vr0,    a0,     t2
+    vstx          vr1,    a0,     t3
+endfunc
+
+/*
+ * void put_h264_qpel16_mc02(uint8_t *dst, const uint8_t *src,
+ *                           ptrdiff_t stride)
+ */
+function ff_put_h264_qpel16_mc02_lsx
+    slli.d        t0,     a2,     1
+    add.d         t1,     t0,     a2
+    sub.d         t2,     a1,     t0  // t2 = src - 2 * stride
+    vldi          vr20,   0x414
+    vldi          vr21,   0x405
+    vldi          vr22,   0x410
+
+    vld           vr0,    t2,     0
+    vldx          vr1,    t2,     a2
+    vldx          vr2,    t2,     t0
+    vldx          vr3,    t2,     t1
+    alsl.d        t2,     a2,     t2,    2  // t2 = t2 + 4 * stride
+    vld           vr4,    t2,     0
+    vldx          vr5,    t2,     a2
+    vldx          vr6,    t2,     t0
+    lsx_put_h264_qpel8_v_lowpass vr0, vr1, vr2, vr3, vr4, vr5, vr6
+    vst           vr13,   a0,     0
+    vstx          vr14,   a0,     a2
+
+    vldx          vr0,    t2,     t1
+    alsl.d        t2,     a2,     t2,    2  // t2 = t2 + 4 *stride
+    vld           vr1,    t2,     0
+    lsx_put_h264_qpel8_v_lowpass vr2, vr3, vr4, vr5, vr6, vr0, vr1
+    vstx          vr13,   a0,     t0
+    vstx          vr14,   a0,     t1
+
+    alsl.d        a0,     a2,     a0,    2  // dst = dst + 4 * stride
+
+    vldx          vr2,    t2,     a2
+    vldx          vr3,    t2,     t0
+    lsx_put_h264_qpel8_v_lowpass vr4, vr5, vr6, vr0, vr1, vr2, vr3
+    vst           vr13,   a0,     0
+    vstx          vr14,   a0,     a2
+
+    vldx          vr4,    t2,     t1
+    alsl.d        t2,     a2,     t2,    2 // t2 = t2 + 4 * stride
+    vld           vr5,    t2,     0
+    lsx_put_h264_qpel8_v_lowpass vr6, vr0, vr1, vr2, vr3, vr4, vr5
+    vstx          vr13,   a0,     t0
+    vstx          vr14,   a0,     t1
+
+    alsl.d        a0,     a2,     a0,    2  // dst = dst + 4 * stride
+
+    vldx          vr6,    t2,     a2
+    vldx          vr0,    t2,     t0
+    lsx_put_h264_qpel8_v_lowpass vr1, vr2, vr3, vr4, vr5, vr6, vr0
+    vst           vr13,   a0,     0
+    vstx          vr14,   a0,     a2
+
+    vldx          vr1,    t2,     t1
+    alsl.d        t2,     a2,     t2,    2  // t2 = t2 + 4 * stride
+    vld           vr2,    t2,     0
+    lsx_put_h264_qpel8_v_lowpass vr3, vr4, vr5, vr6, vr0, vr1, vr2
+    vstx          vr13,   a0,     t0
+    vstx          vr14,   a0,     t1
+
+    alsl.d        a0,     a2,     a0,    2  // dst = dst + 4 * stride
+
+    vldx          vr3,    t2,     a2
+    vldx          vr4,    t2,     t0
+    lsx_put_h264_qpel8_v_lowpass vr5, vr6, vr0, vr1, vr2, vr3, vr4
+    vst           vr13,   a0,     0
+    vstx          vr14,   a0,     a2
+
+    vldx          vr5,    t2,     t1
+    alsl.d        t2,     a2,     t2,    2 // t2 = t2 + 4 * stride
+    vld           vr6,    t2,     0
+    lsx_put_h264_qpel8_v_lowpass vr0, vr1, vr2, vr3, vr4, vr5, vr6
+    vstx          vr13,   a0,     t0
+    vstx          vr14,   a0,     t1
+endfunc
