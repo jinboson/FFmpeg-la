@@ -53,6 +53,8 @@ av_cold void ff_h264dsp_init_loongarch(H264DSPContext *c, const int bit_depth,
             c->h264_v_loop_filter_chroma_intra = ff_h264_v_lpf_chroma_intra_8_lsx;
             if (chroma_format_idc <= 1)
                 c->h264_h_loop_filter_chroma_intra = ff_h264_h_lpf_chroma_intra_8_lsx;
+
+            c->biweight_h264_pixels_tab[0] = ff_biweight_h264_pixels16_8_lsx;
         }
     }
     if (have_lasx(cpu_flags)) {
