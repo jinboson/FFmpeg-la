@@ -380,6 +380,7 @@ endfunc
     vsrari.h        \_out0,  \_out0, 2
 .endm
 
+////LSX optimization is enough for this function.
 function ff_h264_h_lpf_luma_intra_8_lsx
     slli.d          t0,     a1,    1   //img_width_2x
     slli.d          t1,     a1,    2   //img_width_4x
@@ -576,6 +577,7 @@ function ff_h264_h_lpf_luma_intra_8_lsx
     addi.d          sp,     sp,    64
 endfunc
 
+//LSX optimization is enough for this function.
 function ff_h264_v_lpf_luma_intra_8_lsx
     slli.d          t0,     a1,    1   //img_width_2x
     add.d           t1,     t0,    a1  //img_width_3x
@@ -1696,4 +1698,95 @@ function ff_biweight_h264_pixels8_8_lasx
     fstx.d           f12,    t5,    t0
     fstx.d           f13,    t5,    t1
 .END_BIWEIGHT_H264_PIXELS8_LASX:
+endfunc
+
+//LSX optimization is enough for this function.
+function ff_biweight_h264_pixels4_8_lsx
+    slli.d           t0,     a2,     1
+    slli.d           t2,     a2,     2
+    add.d            t1,     t0,     a2
+    addi.d           a7,     a7,     1
+    ori              a7,     a7,     1
+    sll.d            a7,     a7,     a4
+    addi.d           a4,     a4,     1
+    addi.d           t3,     zero,   4
+
+    vreplgr2vr.b     vr0,    a6    //tmp0
+    vreplgr2vr.b     vr1,    a5    //tmp1
+    vreplgr2vr.h     vr8,    a7    //offset
+    vreplgr2vr.h     vr9,    a4    //denom
+    vilvh.b          vr20,   vr1,    vr0    //wgt
+
+    fld.s            f0,     a1,     0
+    fldx.s           f1,     a1,     a2
+    fld.s            f10,    a0,     0
+    fldx.s           f11,    a0,     a2
+    vilvl.w          vr2,    vr1,    vr0
+    vilvl.w          vr12,   vr11,   vr10
+    vilvl.b          vr0,    vr12,   vr2
+
+    vmov             vr1,    vr8
+    vmaddwev.h.bu.b  vr1,    vr0,    vr20
+    vmaddwod.h.bu.b  vr1,    vr0,    vr20
+
+    vssran.bu.h      vr1,    vr1,    vr9   //vec0
+    vbsrl.v          vr2,    vr1,    4
+    fst.s            f1,     a0,     0
+    fstx.s           f2,     a0,     a2
+
+    blt              a3,     t3,    .END_BIWEIGHT_H264_PIXELS4
+    addi.d           t3,     zero,   8
+    fldx.s           f0,     a1,     t0
+    fldx.s           f1,     a1,     t1
+    fldx.s           f10,    a0,     t0
+    fldx.s           f11,    a0,     t1
+    vilvl.w          vr2,    vr1,    vr0
+    vilvl.w          vr12,   vr11,   vr10
+    vilvl.b          vr0,    vr12,   vr2
+
+    vmov             vr1,    vr8
+    vmaddwev.h.bu.b  vr1,    vr0,    vr20
+    vmaddwod.h.bu.b  vr1,    vr0,    vr20
+
+    vssran.bu.h      vr1,    vr1,    vr9   //vec0
+    vbsrl.v          vr2,    vr1,    4
+    fstx.s           f1,     a0,     t0
+    fstx.s           f2,     a0,     t1
+
+    blt              a3,     t3,    .END_BIWEIGHT_H264_PIXELS4
+    add.d            a1,     a1,     t2
+    add.d            a0,     a0,     t2
+    fld.s            f0,     a1,     0
+    fldx.s           f1,     a1,     a2
+    fldx.s           f2,     a1,     t0
+    fldx.s           f3,     a1,     t1
+    fld.s            f10,    a0,     0
+    fldx.s           f11,    a0,     a2
+    fldx.s           f12,    a0,     t0
+    fldx.s           f13,    a0,     t1
+    vilvl.w          vr4,    vr1,    vr0
+    vilvl.w          vr5,    vr3,    vr2
+    vilvl.w          vr14,   vr11,   vr10
+    vilvl.w          vr15,   vr13,   vr12
+
+    vilvl.b          vr0,    vr14,   vr4
+    vilvl.b          vr10,   vr15,   vr5
+
+    vmov             vr1,    vr8
+    vmov             vr11,   vr8
+    vmaddwev.h.bu.b  vr1,    vr0,    vr20
+    vmaddwev.h.bu.b  vr11,   vr10,   vr20
+    vmaddwod.h.bu.b  vr1,    vr0,    vr20
+    vmaddwod.h.bu.b  vr11,   vr10,   vr20
+
+    vssran.bu.h      vr0,    vr1,    vr9   //vec0
+    vssran.bu.h      vr10,   vr11,   vr9   //vec0
+    vbsrl.v          vr2,    vr0,    4
+    vbsrl.v          vr12,   vr10,   4
+
+    fst.s            f0,     a0,     0
+    fstx.s           f2,     a0,     a2
+    fstx.s           f10,    a0,     t0
+    fstx.s           f12,    a0,     t1
+.END_BIWEIGHT_H264_PIXELS4:
 endfunc
