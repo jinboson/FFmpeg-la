@@ -33,3 +33,4 @@ LSX-OBJS-$(CONFIG_HEVC_DECODER)       += loongarch/hevcdsp_lsx.o \
 LSX-OBJS-$(CONFIG_H264DSP)            += loongarch/h264idct.o \
                                          loongarch/h264idct_c.o \
                                          loongarch/h264dsp.o
+LSX-OBJS-$(CONFIG_H264QPEL)           += loongarch/h264qpel.o
