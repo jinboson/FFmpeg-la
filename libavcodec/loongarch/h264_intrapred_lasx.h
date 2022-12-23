@@ -24,6 +24,10 @@
 
 #include "libavcodec/avcodec.h"
 
+void ff_h264_pred16x16_plane_h264_8_lsx(uint8_t *src, ptrdiff_t stride);
+void ff_h264_pred16x16_plane_rv40_8_lsx(uint8_t *src, ptrdiff_t stride);
+void ff_h264_pred16x16_plane_svq3_8_lsx(uint8_t *src, ptrdiff_t stride);
+
 void ff_h264_pred16x16_plane_h264_8_lasx(uint8_t *src, ptrdiff_t stride);
 void ff_h264_pred16x16_plane_rv40_8_lasx(uint8_t *src, ptrdiff_t stride);
 void ff_h264_pred16x16_plane_svq3_8_lasx(uint8_t *src, ptrdiff_t stride);
