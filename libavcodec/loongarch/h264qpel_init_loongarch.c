@@ -53,10 +53,17 @@ av_cold void ff_h264qpel_init_loongarch(H264QpelContext *c, int bit_depth)
             c->avg_h264_qpel_pixels_tab[0][1]  = ff_avg_h264_qpel16_mc10_lsx;
             c->avg_h264_qpel_pixels_tab[0][2]  = ff_avg_h264_qpel16_mc20_lsx;
             c->avg_h264_qpel_pixels_tab[0][3]  = ff_avg_h264_qpel16_mc30_lsx;
+            c->avg_h264_qpel_pixels_tab[0][4]  = ff_avg_h264_qpel16_mc01_lsx;
             c->avg_h264_qpel_pixels_tab[0][5]  = ff_avg_h264_qpel16_mc11_lsx;
+            c->avg_h264_qpel_pixels_tab[0][6]  = ff_avg_h264_qpel16_mc21_lsx;
             c->avg_h264_qpel_pixels_tab[0][7]  = ff_avg_h264_qpel16_mc31_lsx;
             c->avg_h264_qpel_pixels_tab[0][8]  = ff_avg_h264_qpel16_mc02_lsx;
+            c->avg_h264_qpel_pixels_tab[0][9]  = ff_avg_h264_qpel16_mc12_lsx;
+            c->avg_h264_qpel_pixels_tab[0][10] = ff_avg_h264_qpel16_mc22_lsx;
+            c->avg_h264_qpel_pixels_tab[0][11] = ff_avg_h264_qpel16_mc32_lsx;
+            c->avg_h264_qpel_pixels_tab[0][12] = ff_avg_h264_qpel16_mc03_lsx;
             c->avg_h264_qpel_pixels_tab[0][13] = ff_avg_h264_qpel16_mc13_lsx;
+            c->avg_h264_qpel_pixels_tab[0][14] = ff_avg_h264_qpel16_mc23_lsx;
             c->avg_h264_qpel_pixels_tab[0][15] = ff_avg_h264_qpel16_mc33_lsx;
         }
     }

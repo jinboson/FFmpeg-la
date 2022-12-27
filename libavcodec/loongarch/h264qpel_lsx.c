@@ -124,7 +124,90 @@ static void avg_h264_qpel16_v_lowpass_lsx(uint8_t *dst, const uint8_t *src,
 }
 
 void ff_avg_h264_qpel16_mc02_lsx(uint8_t *dst, const uint8_t *src,
-                                  ptrdiff_t stride)
+                                 ptrdiff_t stride)
 {
     avg_h264_qpel16_v_lowpass_lsx(dst, src, stride, stride);
+}
+
+void ff_avg_h264_qpel16_mc03_lsx(uint8_t *dst, const uint8_t *src,
+                                 ptrdiff_t stride)
+{
+    uint8_t half[256];
+
+    put_h264_qpel16_v_lowpass_lsx(half, src, 16, stride);
+    avg_pixels16_l2_8_lsx(dst, src + stride, half, stride, stride);
+}
+
+void ff_avg_h264_qpel16_mc23_lsx(uint8_t *dst, const uint8_t *src,
+                                 ptrdiff_t stride)
+{
+    uint8_t temp[512];
+    uint8_t *const halfH  = temp;
+    uint8_t *const halfHV = temp + 256;
+
+    put_h264_qpel16_h_lowpass_lsx(halfH, src + stride, 16, stride);
+    put_h264_qpel16_hv_lowpass_lsx(halfHV, src, 16, stride);
+    avg_pixels16_l2_8_lsx(dst, halfH, halfHV, stride, 16);
+}
+
+void ff_avg_h264_qpel16_mc21_lsx(uint8_t *dst, const uint8_t *src,
+                                 ptrdiff_t stride)
+{
+    uint8_t temp[512];
+    uint8_t *const halfH  = temp;
+    uint8_t *const halfHV = temp + 256;
+
+    put_h264_qpel16_h_lowpass_lsx(halfH, src, 16, stride);
+    put_h264_qpel16_hv_lowpass_lsx(halfHV, src, 16, stride);
+    avg_pixels16_l2_8_lsx(dst, halfH, halfHV, stride, 16);
+}
+
+void ff_avg_h264_qpel16_mc01_lsx(uint8_t *dst, const uint8_t *src,
+                                 ptrdiff_t stride)
+{
+    uint8_t half[256];
+
+    put_h264_qpel16_v_lowpass_lsx(half, src, 16, stride);
+    avg_pixels16_l2_8_lsx(dst, src, half, stride, stride);
+}
+
+void ff_avg_h264_qpel16_mc32_lsx(uint8_t *dst, const uint8_t *src,
+                                 ptrdiff_t stride)
+{
+    uint8_t temp[512];
+    uint8_t *const halfHV = temp;
+    uint8_t *const halfH  = temp + 256;
+
+    put_h264_qpel16_hv_lowpass_lsx(halfHV, src, 16, stride);
+    put_h264_qpel16_v_lowpass_lsx(halfH, src + 1, 16, stride);
+    avg_pixels16_l2_8_lsx(dst, halfH, halfHV, stride, 16);
+}
+
+void ff_avg_h264_qpel16_mc12_lsx(uint8_t *dst, const uint8_t *src,
+                                 ptrdiff_t stride)
+{
+    uint8_t temp[512];
+    uint8_t *const halfHV = temp;
+    uint8_t *const halfH  = temp + 256;
+
+    put_h264_qpel16_hv_lowpass_lsx(halfHV, src, 16, stride);
+    put_h264_qpel16_v_lowpass_lsx(halfH, src, 16, stride);
+    avg_pixels16_l2_8_lsx(dst, halfH, halfHV, stride, 16);
+}
+
+static void avg_h264_qpel16_hv_lowpass_lsx(uint8_t *dst, const uint8_t *src,
+                                           ptrdiff_t dstStride, ptrdiff_t srcStride)
+{
+    avg_h264_qpel8_hv_lowpass_lsx(dst, src, dstStride, srcStride);
+    avg_h264_qpel8_hv_lowpass_lsx(dst + 8, src + 8, dstStride, srcStride);
+    src += srcStride << 3;
+    dst += dstStride << 3;
+    avg_h264_qpel8_hv_lowpass_lsx(dst, src, dstStride, srcStride);
+    avg_h264_qpel8_hv_lowpass_lsx(dst + 8, src + 8, dstStride, srcStride);
+}
+
+void ff_avg_h264_qpel16_mc22_lsx(uint8_t *dst, const uint8_t *src,
+                                 ptrdiff_t stride)
+{
+    avg_h264_qpel16_hv_lowpass_lsx(dst, src, stride, stride);
 }

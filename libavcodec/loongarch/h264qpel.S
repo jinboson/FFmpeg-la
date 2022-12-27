@@ -2991,8 +2991,8 @@ function put_h264_qpel8_v_lowpass_lsx
 endfunc
 
 /*
- * void avg_h264_qpel8_v_lowpass_lsx(uint8_t *dst, uint8_t *src, int dstStride,
- *                                   int srcStride)
+ * void avg_h264_qpel8_v_lowpass(uint8_t *dst, uint8_t *src, int dstStride,
+ *                               int srcStride)
  */
 function avg_h264_qpel8_v_lowpass_lsx
     slli.d        t0,     a3,     1
@@ -3061,4 +3061,235 @@ function avg_h264_qpel8_v_lowpass_lsx
     vstelm.d      vr8,    a0,     0,    0
     add.d         a0,     a0,     a2
     vstelm.d      vr8,    a0,     0,    1
+endfunc
+
+/*
+ * void avg_pixels16_l2_8(uint8_t *dst, const uint8_t *src, uint8_t *half,
+ *                        ptrdiff_t dstStride, ptrdiff_t srcStride)
+ */
+function avg_pixels16_l2_8_lsx
+    slli.d        t0,     a4,     1
+    add.d         t1,     t0,     a4
+    slli.d        t2,     t0,     1
+    slli.d        t3,     a3,     1
+    add.d         t4,     t3,     a3
+    slli.d        t5,     t3,     1
+    addi.d        t6,     a0,     0
+
+    vld           vr0,    a1,     0
+    vldx          vr1,    a1,     a4
+    vldx          vr2,    a1,     t0
+    vldx          vr3,    a1,     t1
+    add.d         a1,     a1,     t2
+    vld           vr4,    a1,     0
+    vldx          vr5,    a1,     a4
+    vldx          vr6,    a1,     t0
+    vldx          vr7,    a1,     t1
+    add.d         a1,     a1,     t2
+
+    vld           vr8,    a2,     0x00
+    vld           vr9,    a2,     0x10
+    vld           vr10,   a2,     0x20
+    vld           vr11,   a2,     0x30
+    vld           vr12,   a2,     0x40
+    vld           vr13,   a2,     0x50
+    vld           vr14,   a2,     0x60
+    vld           vr15,   a2,     0x70
+
+    vavgr.bu      vr0,    vr8,    vr0
+    vavgr.bu      vr1,    vr9,    vr1
+    vavgr.bu      vr2,    vr10,   vr2
+    vavgr.bu      vr3,    vr11,   vr3
+    vavgr.bu      vr4,    vr12,   vr4
+    vavgr.bu      vr5,    vr13,   vr5
+    vavgr.bu      vr6,    vr14,   vr6
+    vavgr.bu      vr7,    vr15,   vr7
+
+    vld           vr8,    t6,     0
+    vldx          vr9,    t6,     a3
+    vldx          vr10,   t6,     t3
+    vldx          vr11,   t6,     t4
+    add.d         t6,     t6,     t5
+    vld           vr12,   t6,     0
+    vldx          vr13,   t6,     a3
+    vldx          vr14,   t6,     t3
+    vldx          vr15,   t6,     t4
+    add.d         t6,     t6,     t5
+
+    vavgr.bu      vr0,    vr8,    vr0
+    vavgr.bu      vr1,    vr9,    vr1
+    vavgr.bu      vr2,    vr10,   vr2
+    vavgr.bu      vr3,    vr11,   vr3
+    vavgr.bu      vr4,    vr12,   vr4
+    vavgr.bu      vr5,    vr13,   vr5
+    vavgr.bu      vr6,    vr14,   vr6
+    vavgr.bu      vr7,    vr15,   vr7
+    vst           vr0,    a0,     0
+    vstx          vr1,    a0,     a3
+    vstx          vr2,    a0,     t3
+    vstx          vr3,    a0,     t4
+    add.d         a0,     a0,     t5
+    vst           vr4,    a0,     0
+    vstx          vr5,    a0,     a3
+    vstx          vr6,    a0,     t3
+    vstx          vr7,    a0,     t4
+    add.d         a0,     a0,     t5
+
+    vld           vr0,    a1,     0
+    vldx          vr1,    a1,     a4
+    vldx          vr2,    a1,     t0
+    vldx          vr3,    a1,     t1
+    add.d         a1,     a1,     t2
+    vld           vr4,    a1,     0
+    vldx          vr5,    a1,     a4
+    vldx          vr6,    a1,     t0
+    vldx          vr7,    a1,     t1
+
+    vld           vr8,    a2,     0x80
+    vld           vr9,    a2,     0x90
+    vld           vr10,   a2,     0xa0
+    vld           vr11,   a2,     0xb0
+    vld           vr12,   a2,     0xc0
+    vld           vr13,   a2,     0xd0
+    vld           vr14,   a2,     0xe0
+    vld           vr15,   a2,     0xf0
+
+    vavgr.bu      vr0,    vr8,    vr0
+    vavgr.bu      vr1,    vr9,    vr1
+    vavgr.bu      vr2,    vr10,   vr2
+    vavgr.bu      vr3,    vr11,   vr3
+    vavgr.bu      vr4,    vr12,   vr4
+    vavgr.bu      vr5,    vr13,   vr5
+    vavgr.bu      vr6,    vr14,   vr6
+    vavgr.bu      vr7,    vr15,   vr7
+
+    vld           vr8,    t6,     0
+    vldx          vr9,    t6,     a3
+    vldx          vr10,   t6,     t3
+    vldx          vr11,   t6,     t4
+    add.d         t6,     t6,     t5
+    vld           vr12,   t6,     0
+    vldx          vr13,   t6,     a3
+    vldx          vr14,   t6,     t3
+    vldx          vr15,   t6,     t4
+
+    vavgr.bu      vr0,    vr8,    vr0
+    vavgr.bu      vr1,    vr9,    vr1
+    vavgr.bu      vr2,    vr10,   vr2
+    vavgr.bu      vr3,    vr11,   vr3
+    vavgr.bu      vr4,    vr12,   vr4
+    vavgr.bu      vr5,    vr13,   vr5
+    vavgr.bu      vr6,    vr14,   vr6
+    vavgr.bu      vr7,    vr15,   vr7
+
+    vst           vr0,    a0,     0
+    vstx          vr1,    a0,     a3
+    vstx          vr2,    a0,     t3
+    vstx          vr3,    a0,     t4
+    add.d         a0,     a0,     t5
+    vst           vr4,    a0,     0
+    vstx          vr5,    a0,     a3
+    vstx          vr6,    a0,     t3
+    vstx          vr7,    a0,     t4
+endfunc
+
+.macro avg_h264_qpel8_hv_lowpass_core_lsx in0, in1, in2
+    vld           vr0,    \in0,  0
+    vldx          vr1,    \in0,  a3
+    LSX_QPEL8_HV_LOWPASS_H vr12, vr13 // a b
+    vldx          vr0,    \in0,  t1
+    vldx          vr1,    \in0,  t2
+    LSX_QPEL8_HV_LOWPASS_H vr14, vr15 // c d
+
+    alsl.d        \in0,   a3,    \in0,   2
+
+    vld           vr0,    \in0,   0
+    vldx          vr1,    \in0,   a3
+    LSX_QPEL8_HV_LOWPASS_H vr16, vr17 // e f
+    vldx          vr0,    \in0,   t1
+    vldx          vr1,    \in0,   t2
+    LSX_QPEL8_HV_LOWPASS_H vr18, vr19 // g h
+
+    LSX_QPEL8_HV_LOWPASS_V vr12, vr13, vr14, vr15, vr16, vr17, vr18, vr6, vr7, vr0, vr1
+    fld.d         f2,     \in2,    0
+    fldx.d        f3,     \in2,    a2
+    vilvl.d       vr2,    vr3,     vr2
+    vavgr.bu      vr1,    vr2,     vr1
+    vstelm.d      vr1,    \in1,    0,     0
+    add.d         \in1,   \in1,    a2
+    vstelm.d      vr1,    \in1,    0,     1
+
+    alsl.d        \in0,    a3,     \in0,  2
+
+    // tmp8
+    vld           vr0,    \in0,   0
+    vldx          vr1,    \in0,   a3
+    LSX_QPEL8_HV_LOWPASS_H vr12, vr13
+    LSX_QPEL8_HV_LOWPASS_V vr14, vr15, vr16, vr17, vr18, vr19, vr12, vr6, vr7, vr0, vr1
+    fldx.d        f2,     \in2,    t5
+    fldx.d        f3,     \in2,    t6
+    vilvl.d       vr2,    vr3,     vr2
+    vavgr.bu      vr1,    vr2,     vr1
+    add.d         \in1,   \in1,   a2
+    vstelm.d      vr1,    \in1,   0,     0
+    add.d         \in1,   \in1,   a2
+    vstelm.d      vr1,    \in1,   0,     1
+
+    alsl.d        \in2,   a2,     \in2,  2
+
+    // tmp10
+    vldx          vr0,    \in0,   t1
+    vldx          vr1,    \in0,   t2
+    LSX_QPEL8_HV_LOWPASS_H vr14, vr15
+    LSX_QPEL8_HV_LOWPASS_V vr16, vr17, vr18, vr19, vr12, vr13, vr14, vr6, vr7, vr0, vr1
+    fld.d         f2,     \in2,    0
+    fldx.d        f3,     \in2,    a2
+    vilvl.d       vr2,    vr3,     vr2
+    vavgr.bu      vr1,    vr2,     vr1
+    add.d         \in1,   \in1,   a2
+    vstelm.d      vr1,    \in1,   0,     0
+    add.d         \in1,   \in1,   a2
+    vstelm.d      vr1,    \in1,   0,     1
+
+    // tmp12
+    alsl.d        \in0,   a3,     \in0,  2
+
+    vld           vr0,    \in0,   0
+    vldx          vr1,    \in0,   a3
+    LSX_QPEL8_HV_LOWPASS_H vr16, vr17
+    LSX_QPEL8_HV_LOWPASS_V vr18, vr19, vr12, vr13, vr14, vr15, vr16, vr6, vr7, vr0, vr1
+    fldx.d        f2,     \in2,   t5
+    fldx.d        f3,     \in2,   t6
+    vilvl.d       vr2,    vr3,    vr2
+    vavgr.bu      vr1,    vr2,    vr1
+    add.d         \in1,   \in1,   a2
+    vstelm.d      vr1,    \in1,   0,     0
+    add.d         \in1,   \in1,   a2
+    vstelm.d      vr1,    \in1,   0,     1
+.endm
+
+function avg_h264_qpel8_hv_lowpass_lsx
+    slli.d        t1,     a3,     1
+    add.d         t2,     t1,     a3
+    slli.d        t5,     a2,     1
+    add.d         t6,     a2,     t5
+
+    addi.d        sp,     sp,     -8
+    fst.d         f24,    sp,     0
+
+    vldi          vr20,   0x414   // h_20
+    vldi          vr21,   0x405   // h_5
+    vldi          vr22,   0x814   // w_20
+    vldi          vr23,   0x805   // w_5
+    addi.d        t4,     zero,   512
+    vreplgr2vr.w  vr24,   t4      // w_512
+
+    addi.d        t0,     a1,     -2   // t0 = src - 2
+    sub.d         t0,     t0,     t1   // t0 = t0 - 2 * stride
+    addi.d        t3,     a0,     0    // t3 = dst
+
+    avg_h264_qpel8_hv_lowpass_core_lsx t0, a0, t3
+
+    fld.d         f24,    sp,     0
+    addi.d        sp,     sp,     8
 endfunc
