@@ -2990,3 +2990,75 @@ function put_h264_qpel8_v_lowpass_lsx
     vstelm.d      vr8,    a0,     0,    1
 endfunc
 
+/*
+ * void avg_h264_qpel8_v_lowpass_lsx(uint8_t *dst, uint8_t *src, int dstStride,
+ *                                   int srcStride)
+ */
+function avg_h264_qpel8_v_lowpass_lsx
+    slli.d        t0,     a3,     1
+    add.d         t1,     t0,     a3
+    sub.d         t2,     a1,     t0  // t2 = src - 2 * stride
+    addi.d        t3,     a0,     0
+    slli.d        t4,     a2,     1
+    add.d         t5,     t4,     a2
+    vldi          vr20,   0x414
+    vldi          vr21,   0x405
+    vldi          vr22,   0x410
+
+    fld.d         f0,     t2,     0
+    fldx.d        f1,     t2,     a3
+    fldx.d        f2,     t2,     t0
+    fldx.d        f3,     t2,     t1
+    alsl.d        t2,     a3,     t2,    2  // t2 = t2 + 4 * stride
+    fld.d         f4,     t2,     0
+    fldx.d        f5,     t2,     a3
+    fldx.d        f6,     t2,     t0
+    put_h264_qpel8_v_lowpass_core_lsx_1 vr0, vr1, vr2, vr3, vr4, vr5, vr6
+    fld.d         f0,     t3,     0
+    fldx.d        f1,     t3,     a2
+    vilvl.d       vr0,    vr1,    vr0
+    vavgr.bu      vr8,    vr8,    vr0
+    vstelm.d      vr8,    a0,     0,    0
+    add.d         a0,     a0,     a2
+    vstelm.d      vr8,    a0,     0,    1
+    add.d         a0,     a0,     a2
+
+    fldx.d        f0,     t2,     t1
+    alsl.d        t2,     a3,     t2,   2  // t2 = t2 + 4 *stride
+    fld.d         f1,     t2,     0
+    put_h264_qpel8_v_lowpass_core_lsx_1 vr2, vr3, vr4, vr5, vr6, vr0, vr1
+    fldx.d        f2,     t3,     t4
+    fldx.d        f3,     t3,     t5
+    vilvl.d       vr2,    vr3,    vr2
+    vavgr.bu      vr8,    vr8,    vr2
+    vstelm.d      vr8,    a0,     0,    0
+    add.d         a0,     a0,     a2
+    vstelm.d      vr8,    a0,     0,    1
+    add.d         a0,     a0,     a2
+
+    alsl.d        t3,     a2,     t3,   2
+
+    fldx.d        f2,     t2,     a3
+    fldx.d        f3,     t2,     t0
+    put_h264_qpel8_v_lowpass_core_lsx_1 vr4, vr5, vr6, vr0, vr1, vr2, vr3
+    fld.d         f4,     t3,     0
+    fldx.d        f5,     t3,     a2
+    vilvl.d       vr4,    vr5,    vr4
+    vavgr.bu      vr8,    vr8,    vr4
+    vstelm.d      vr8,    a0,     0,    0
+    add.d         a0,     a0,     a2
+    vstelm.d      vr8,    a0,     0,    1
+    add.d         a0,     a0,     a2
+
+    fldx.d        f4,     t2,     t1
+    alsl.d        t2,     a3,     t2,   2 // t2 = t2 + 4 * stride
+    fld.d         f5,     t2,     0
+    put_h264_qpel8_v_lowpass_core_lsx_1 vr6, vr0, vr1, vr2, vr3, vr4, vr5
+    fldx.d        f6,     t3,     t4
+    fldx.d        f0,     t3,     t5
+    vilvl.d       vr6,    vr0,    vr6
+    vavgr.bu      vr8,    vr8,    vr6
+    vstelm.d      vr8,    a0,     0,    0
+    add.d         a0,     a0,     a2
+    vstelm.d      vr8,    a0,     0,    1
+endfunc
