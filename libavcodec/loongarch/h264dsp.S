@@ -1812,41 +1812,40 @@ function ff_weight_h264_pixels16_8_lsx
     vldx             vr6,    t4,     t0
     vldx             vr7,    t4,     t1
 
-    vmov             vr10,   vr8
-    vmov             vr11,   vr8
-    vmov             vr12,   vr8
-    vmov             vr13,   vr8
-    vmov             vr14,   vr8
-    vmov             vr15,   vr8
-    vmov             vr16,   vr8
-    vmov             vr17,   vr8
+    vmulwev.h.bu.b   vr10,   vr0,    vr20
+    vmulwev.h.bu.b   vr11,   vr1,    vr20
+    vmulwev.h.bu.b   vr12,   vr2,    vr20
+    vmulwev.h.bu.b   vr13,   vr3,    vr20
+    vmulwev.h.bu.b   vr14,   vr4,    vr20
+    vmulwev.h.bu.b   vr15,   vr5,    vr20
+    vmulwev.h.bu.b   vr16,   vr6,    vr20
+    vmulwev.h.bu.b   vr17,   vr7,    vr20
+    vsadd.h          vr10,   vr8,    vr10
+    vsadd.h          vr11,   vr8,    vr11
+    vsadd.h          vr12,   vr8,    vr12
+    vsadd.h          vr13,   vr8,    vr13
+    vsadd.h          vr14,   vr8,    vr14
+    vsadd.h          vr15,   vr8,    vr15
+    vsadd.h          vr16,   vr8,    vr16
+    vsadd.h          vr17,   vr8,    vr17
 
-    vmaddwev.h.bu.b  vr10,   vr0,    vr20
-    vmaddwev.h.bu.b  vr11,   vr1,    vr20
-    vmaddwev.h.bu.b  vr12,   vr2,    vr20
-    vmaddwev.h.bu.b  vr13,   vr3,    vr20
-    vmaddwev.h.bu.b  vr14,   vr4,    vr20
-    vmaddwev.h.bu.b  vr15,   vr5,    vr20
-    vmaddwev.h.bu.b  vr16,   vr6,    vr20
-    vmaddwev.h.bu.b  vr17,   vr7,    vr20
+    vmulwod.h.bu.b   vr18,   vr0,    vr20
+    vmulwod.h.bu.b   vr19,   vr1,    vr20
+    vmulwod.h.bu.b   vr21,   vr2,    vr20
+    vmulwod.h.bu.b   vr22,   vr3,    vr20
+    vmulwod.h.bu.b   vr0,    vr4,    vr20
+    vmulwod.h.bu.b   vr1,    vr5,    vr20
+    vmulwod.h.bu.b   vr2,    vr6,    vr20
+    vmulwod.h.bu.b   vr3,    vr7,    vr20
+    vsadd.h          vr18,   vr8,    vr18
+    vsadd.h          vr19,   vr8,    vr19
+    vsadd.h          vr21,   vr8,    vr21
+    vsadd.h          vr22,   vr8,    vr22
+    vsadd.h          vr0,    vr8,    vr0
+    vsadd.h          vr1,    vr8,    vr1
+    vsadd.h          vr2,    vr8,    vr2
+    vsadd.h          vr3,    vr8,    vr3
 
-    vmov             vr18,   vr8
-    vmov             vr19,   vr8
-    vmov             vr21,   vr8
-    vmov             vr22,   vr8
-    vmaddwod.h.bu.b  vr18,   vr0,    vr20
-    vmaddwod.h.bu.b  vr19,   vr1,    vr20
-    vmaddwod.h.bu.b  vr21,   vr2,    vr20
-    vmaddwod.h.bu.b  vr22,   vr3,    vr20
-
-    vmov             vr0,    vr8
-    vmov             vr1,    vr8
-    vmov             vr2,    vr8
-    vmov             vr3,    vr8
-    vmaddwod.h.bu.b  vr0,    vr4,    vr20
-    vmaddwod.h.bu.b  vr1,    vr5,    vr20
-    vmaddwod.h.bu.b  vr2,    vr6,    vr20
-    vmaddwod.h.bu.b  vr3,    vr7,    vr20
     vssrarn.bu.h     vr10,   vr10,   vr9
     vssrarn.bu.h     vr11,   vr11,   vr9
     vssrarn.bu.h     vr12,   vr12,   vr9
@@ -1894,40 +1893,39 @@ function ff_weight_h264_pixels16_8_lsx
     vldx             vr6,    t4,     t0
     vldx             vr7,    t4,     t1
 
-    vmov             vr10,   vr8
-    vmov             vr11,   vr8
-    vmov             vr12,   vr8
-    vmov             vr13,   vr8
-    vmov             vr14,   vr8
-    vmov             vr15,   vr8
-    vmov             vr16,   vr8
-    vmov             vr17,   vr8
+    vmulwev.h.bu.b   vr10,   vr0,    vr20
+    vmulwev.h.bu.b   vr11,   vr1,    vr20
+    vmulwev.h.bu.b   vr12,   vr2,    vr20
+    vmulwev.h.bu.b   vr13,   vr3,    vr20
+    vmulwev.h.bu.b   vr14,   vr4,    vr20
+    vmulwev.h.bu.b   vr15,   vr5,    vr20
+    vmulwev.h.bu.b   vr16,   vr6,    vr20
+    vmulwev.h.bu.b   vr17,   vr7,    vr20
+    vsadd.h          vr10,   vr8,    vr10
+    vsadd.h          vr11,   vr8,    vr11
+    vsadd.h          vr12,   vr8,    vr12
+    vsadd.h          vr13,   vr8,    vr13
+    vsadd.h          vr14,   vr8,    vr14
+    vsadd.h          vr15,   vr8,    vr15
+    vsadd.h          vr16,   vr8,    vr16
+    vsadd.h          vr17,   vr8,    vr17
 
-    vmaddwev.h.bu.b  vr10,   vr0,    vr20
-    vmaddwev.h.bu.b  vr11,   vr1,    vr20
-    vmaddwev.h.bu.b  vr12,   vr2,    vr20
-    vmaddwev.h.bu.b  vr13,   vr3,    vr20
-    vmaddwev.h.bu.b  vr14,   vr4,    vr20
-    vmaddwev.h.bu.b  vr15,   vr5,    vr20
-    vmaddwev.h.bu.b  vr16,   vr6,    vr20
-    vmaddwev.h.bu.b  vr17,   vr7,    vr20
-
-    vmov             vr18,   vr8
-    vmov             vr19,   vr8
-    vmov             vr21,   vr8
-    vmov             vr22,   vr8
-    vmaddwod.h.bu.b  vr18,   vr0,    vr20
-    vmaddwod.h.bu.b  vr19,   vr1,    vr20
-    vmaddwod.h.bu.b  vr21,   vr2,    vr20
-    vmaddwod.h.bu.b  vr22,   vr3,    vr20
-    vmov             vr0,    vr8
-    vmov             vr1,    vr8
-    vmov             vr2,    vr8
-    vmov             vr3,    vr8
-    vmaddwod.h.bu.b  vr0,    vr4,    vr20
-    vmaddwod.h.bu.b  vr1,    vr5,    vr20
-    vmaddwod.h.bu.b  vr2,    vr6,    vr20
-    vmaddwod.h.bu.b  vr3,    vr7,    vr20
+    vmulwod.h.bu.b   vr18,   vr0,    vr20
+    vmulwod.h.bu.b   vr19,   vr1,    vr20
+    vmulwod.h.bu.b   vr21,   vr2,    vr20
+    vmulwod.h.bu.b   vr22,   vr3,    vr20
+    vmulwod.h.bu.b   vr0,    vr4,    vr20
+    vmulwod.h.bu.b   vr1,    vr5,    vr20
+    vmulwod.h.bu.b   vr2,    vr6,    vr20
+    vmulwod.h.bu.b   vr3,    vr7,    vr20
+    vsadd.h          vr18,   vr8,    vr18
+    vsadd.h          vr19,   vr8,    vr19
+    vsadd.h          vr21,   vr8,    vr21
+    vsadd.h          vr22,   vr8,    vr22
+    vsadd.h          vr0,    vr8,    vr0
+    vsadd.h          vr1,    vr8,    vr1
+    vsadd.h          vr2,    vr8,    vr2
+    vsadd.h          vr3,    vr8,    vr3
 
     vssrarn.bu.h     vr10,   vr10,   vr9
     vssrarn.bu.h     vr11,   vr11,   vr9
@@ -1991,22 +1989,22 @@ function ff_weight_h264_pixels16_8_lasx
     xvpermi.q        xr3,    xr2,    0x20
     xvpermi.q        xr5,    xr4,    0x20
     xvpermi.q        xr7,    xr6,    0x20
-    xmov             xr10,   xr8
-    xmov             xr11,   xr8
-    xmov             xr12,   xr8
-    xmov             xr13,   xr8
-    xmov             xr14,   xr8
-    xmov             xr15,   xr8
-    xmov             xr16,   xr8
-    xmov             xr17,   xr8
-    xvmaddwev.h.bu.b xr10,   xr1,    xr20
-    xvmaddwev.h.bu.b xr11,   xr3,    xr20
-    xvmaddwev.h.bu.b xr12,   xr5,    xr20
-    xvmaddwev.h.bu.b xr13,   xr7,    xr20
-    xvmaddwod.h.bu.b xr14,   xr1,    xr20
-    xvmaddwod.h.bu.b xr15,   xr3,    xr20
-    xvmaddwod.h.bu.b xr16,   xr5,    xr20
-    xvmaddwod.h.bu.b xr17,   xr7,    xr20
+    xvmulwev.h.bu.b  xr10,   xr1,    xr20
+    xvmulwev.h.bu.b  xr11,   xr3,    xr20
+    xvmulwev.h.bu.b  xr12,   xr5,    xr20
+    xvmulwev.h.bu.b  xr13,   xr7,    xr20
+    xvmulwod.h.bu.b  xr14,   xr1,    xr20
+    xvmulwod.h.bu.b  xr15,   xr3,    xr20
+    xvmulwod.h.bu.b  xr16,   xr5,    xr20
+    xvmulwod.h.bu.b  xr17,   xr7,    xr20
+    xvsadd.h         xr10,   xr8,    xr10
+    xvsadd.h         xr11,   xr8,    xr11
+    xvsadd.h         xr12,   xr8,    xr12
+    xvsadd.h         xr13,   xr8,    xr13
+    xvsadd.h         xr14,   xr8,    xr14
+    xvsadd.h         xr15,   xr8,    xr15
+    xvsadd.h         xr16,   xr8,    xr16
+    xvsadd.h         xr17,   xr8,    xr17
 
     xvssrarn.bu.h    xr10,   xr10,   xr9
     xvssrarn.bu.h    xr11,   xr11,   xr9
@@ -2051,22 +2049,22 @@ function ff_weight_h264_pixels16_8_lasx
     xvpermi.q        xr3,    xr2,    0x20
     xvpermi.q        xr5,    xr4,    0x20
     xvpermi.q        xr7,    xr6,    0x20
-    xmov             xr10,   xr8
-    xmov             xr11,   xr8
-    xmov             xr12,   xr8
-    xmov             xr13,   xr8
-    xmov             xr14,   xr8
-    xmov             xr15,   xr8
-    xmov             xr16,   xr8
-    xmov             xr17,   xr8
-    xvmaddwev.h.bu.b xr10,   xr1,    xr20
-    xvmaddwev.h.bu.b xr11,   xr3,    xr20
-    xvmaddwev.h.bu.b xr12,   xr5,    xr20
-    xvmaddwev.h.bu.b xr13,   xr7,    xr20
-    xvmaddwod.h.bu.b xr14,   xr1,    xr20
-    xvmaddwod.h.bu.b xr15,   xr3,    xr20
-    xvmaddwod.h.bu.b xr16,   xr5,    xr20
-    xvmaddwod.h.bu.b xr17,   xr7,    xr20
+    xvmulwev.h.bu.b  xr10,   xr1,    xr20
+    xvmulwev.h.bu.b  xr11,   xr3,    xr20
+    xvmulwev.h.bu.b  xr12,   xr5,    xr20
+    xvmulwev.h.bu.b  xr13,   xr7,    xr20
+    xvmulwod.h.bu.b  xr14,   xr1,    xr20
+    xvmulwod.h.bu.b  xr15,   xr3,    xr20
+    xvmulwod.h.bu.b  xr16,   xr5,    xr20
+    xvmulwod.h.bu.b  xr17,   xr7,    xr20
+    xvsadd.h         xr10,   xr8,    xr10
+    xvsadd.h         xr11,   xr8,    xr11
+    xvsadd.h         xr12,   xr8,    xr12
+    xvsadd.h         xr13,   xr8,    xr13
+    xvsadd.h         xr14,   xr8,    xr14
+    xvsadd.h         xr15,   xr8,    xr15
+    xvsadd.h         xr16,   xr8,    xr16
+    xvsadd.h         xr17,   xr8,    xr17
 
     xvssrarn.bu.h    xr10,   xr10,   xr9
     xvssrarn.bu.h    xr11,   xr11,   xr9
@@ -2095,4 +2093,264 @@ function ff_weight_h264_pixels16_8_lasx
     vstx             vr3,    t4,     t0
     vstx             vr7,    t4,     t1
 .END_WEIGHT_H264_PIXELS16_8_LASX:
+endfunc
+
+function ff_weight_h264_pixels8_8_lsx
+    slli.d           t0,     a1,     1
+    slli.d           t2,     a1,     2
+    add.d            t1,     t0,     a1
+    addi.d           t3,     zero,   8
+
+    sll.d            a5,     a5,     a3
+    vreplgr2vr.b     vr20,   a4      //weight
+    vreplgr2vr.h     vr8,    a5      //offset
+    vreplgr2vr.h     vr9,    a3      //log2_denom
+
+    fld.d            f0,     a0,     0
+    fldx.d           f1,     a0,     a1
+    fldx.d           f2,     a0,     t0
+    fldx.d           f3,     a0,     t1
+    vilvl.d          vr4,    vr1,    vr0
+    vilvl.d          vr5,    vr3,    vr2
+
+    vmulwev.h.bu.b   vr10,   vr4,    vr20
+    vmulwev.h.bu.b   vr11,   vr5,    vr20
+    vmulwod.h.bu.b   vr12,   vr4,    vr20
+    vmulwod.h.bu.b   vr13,   vr5,    vr20
+    vsadd.h          vr0,    vr8,    vr10
+    vsadd.h          vr1,    vr8,    vr11
+    vsadd.h          vr2,    vr8,    vr12
+    vsadd.h          vr3,    vr8,    vr13
+
+    vssrarn.bu.h     vr0,    vr0,    vr9
+    vssrarn.bu.h     vr1,    vr1,    vr9
+    vssrarn.bu.h     vr2,    vr2,    vr9
+    vssrarn.bu.h     vr3,    vr3,    vr9
+
+    vilvl.b          vr4,    vr2,    vr0
+    vilvl.b          vr5,    vr3,    vr1
+    vbsrl.v          vr0,    vr4,    8
+    vbsrl.v          vr1,    vr5,    8
+
+    fst.d            f4,     a0,     0
+    fstx.d           f0,     a0,     a1
+    fstx.d           f5,     a0,     t0
+    fstx.d           f1,     a0,     t1
+
+    blt              a2,     t3,    .END_WEIGHT_H264_PIXELS8
+    add.d            a0,     a0,     t2
+    addi.d           t3,     zero,   16
+    fld.d            f0,     a0,     0
+    fldx.d           f1,     a0,     a1
+    fldx.d           f2,     a0,     t0
+    fldx.d           f3,     a0,     t1
+    vilvl.d          vr4,    vr1,    vr0
+    vilvl.d          vr5,    vr3,    vr2
+
+    vmulwev.h.bu.b   vr10,   vr4,    vr20
+    vmulwev.h.bu.b   vr11,   vr5,    vr20
+    vmulwod.h.bu.b   vr12,   vr4,    vr20
+    vmulwod.h.bu.b   vr13,   vr5,    vr20
+    vsadd.h          vr0,    vr8,    vr10
+    vsadd.h          vr1,    vr8,    vr11
+    vsadd.h          vr2,    vr8,    vr12
+    vsadd.h          vr3,    vr8,    vr13
+
+    vssrarn.bu.h     vr0,    vr0,    vr9
+    vssrarn.bu.h     vr1,    vr1,    vr9
+    vssrarn.bu.h     vr2,    vr2,    vr9
+    vssrarn.bu.h     vr3,    vr3,    vr9
+
+    vilvl.b          vr4,    vr2,    vr0
+    vilvl.b          vr5,    vr3,    vr1
+    vbsrl.v          vr0,    vr4,    8
+    vbsrl.v          vr1,    vr5,    8
+
+    fst.d            f4,     a0,     0
+    fstx.d           f0,     a0,     a1
+    fstx.d           f5,     a0,     t0
+    fstx.d           f1,     a0,     t1
+    blt              a2,     t3,    .END_WEIGHT_H264_PIXELS8
+    add.d            a0,     a0,     t2
+    add.d            t4,     a0,     t2
+
+    fld.d            f0,     a0,     0
+    fldx.d           f1,     a0,     a1
+    fldx.d           f2,     a0,     t0
+    fldx.d           f3,     a0,     t1
+    fld.d            f4,     t4,     0
+    fldx.d           f5,     t4,     a1
+    fldx.d           f6,     t4,     t0
+    fldx.d           f7,     t4,     t1
+
+    vilvl.d          vr10,   vr1,    vr0
+    vilvl.d          vr11,   vr3,    vr2
+    vilvl.d          vr12,   vr5,    vr4
+    vilvl.d          vr13,   vr7,    vr6
+
+    vmulwev.h.bu.b   vr0,    vr10,   vr20
+    vmulwev.h.bu.b   vr1,    vr11,   vr20
+    vmulwev.h.bu.b   vr2,    vr12,   vr20
+    vmulwev.h.bu.b   vr3,    vr13,   vr20
+    vmulwod.h.bu.b   vr4,    vr10,   vr20
+    vmulwod.h.bu.b   vr5,    vr11,   vr20
+    vmulwod.h.bu.b   vr6,    vr12,   vr20
+    vmulwod.h.bu.b   vr7,    vr13,   vr20
+
+    vsadd.h          vr0,    vr8,    vr0
+    vsadd.h          vr1,    vr8,    vr1
+    vsadd.h          vr2,    vr8,    vr2
+    vsadd.h          vr3,    vr8,    vr3
+    vsadd.h          vr4,    vr8,    vr4
+    vsadd.h          vr5,    vr8,    vr5
+    vsadd.h          vr6,    vr8,    vr6
+    vsadd.h          vr7,    vr8,    vr7
+
+    vssrarn.bu.h     vr10,   vr0,    vr9
+    vssrarn.bu.h     vr11,   vr1,    vr9
+    vssrarn.bu.h     vr12,   vr2,    vr9
+    vssrarn.bu.h     vr13,   vr3,    vr9
+    vssrarn.bu.h     vr14,   vr4,    vr9
+    vssrarn.bu.h     vr15,   vr5,    vr9
+    vssrarn.bu.h     vr16,   vr6,    vr9
+    vssrarn.bu.h     vr17,   vr7,    vr9
+
+    vilvl.b          vr0,    vr14,   vr10
+    vilvl.b          vr2,    vr15,   vr11
+    vilvl.b          vr4,    vr16,   vr12
+    vilvl.b          vr6,    vr17,   vr13
+
+    vbsrl.v          vr1,    vr0,   8
+    vbsrl.v          vr3,    vr2,   8
+    vbsrl.v          vr5,    vr4,   8
+    vbsrl.v          vr7,    vr6,   8
+
+    fst.d            f0,     a0,    0
+    fstx.d           f1,     a0,    a1
+    fstx.d           f2,     a0,    t0
+    fstx.d           f3,     a0,    t1
+    fst.d            f4,     t4,    0
+    fstx.d           f5,     t4,    a1
+    fstx.d           f6,     t4,    t0
+    fstx.d           f7,     t4,    t1
+.END_WEIGHT_H264_PIXELS8:
+endfunc
+
+function ff_weight_h264_pixels8_8_lasx
+    slli.d           t0,     a1,     1
+    slli.d           t2,     a1,     2
+    add.d            t1,     t0,     a1
+    addi.d           t3,     zero,   8
+
+    sll.d            a5,     a5,     a3
+    xvreplgr2vr.b    xr20,   a4      //weight
+    xvreplgr2vr.h    xr8,    a5      //offset
+    xvreplgr2vr.h    xr9,    a3      //log2_denom
+
+    fld.d            f0,     a0,     0
+    fldx.d           f1,     a0,     a1
+    fldx.d           f2,     a0,     t0
+    fldx.d           f3,     a0,     t1
+    vilvl.d          vr4,    vr1,    vr0
+    vilvl.d          vr5,    vr3,    vr2
+    xvpermi.q        xr5,    xr4,    0x20
+
+    xvmulwev.h.bu.b  xr11,   xr5,    xr20
+    xvmulwod.h.bu.b  xr13,   xr5,    xr20
+    xvsadd.h         xr1,    xr8,    xr11
+    xvsadd.h         xr3,    xr8,    xr13
+
+    xvssrarn.bu.h    xr1,    xr1,    xr9
+    xvssrarn.bu.h    xr3,    xr3,    xr9
+    xvilvl.b         xr4,    xr3,    xr1
+    xvpermi.d        xr5,    xr4,    0x4E
+    vbsrl.v          vr0,    vr4,    8
+    vbsrl.v          vr1,    vr5,    8
+
+    fst.d            f4,     a0,     0
+    fstx.d           f0,     a0,     a1
+    fstx.d           f5,     a0,     t0
+    fstx.d           f1,     a0,     t1
+
+    blt              a2,     t3,    .END_WEIGHT_H264_PIXELS8_LASX
+    add.d            a0,     a0,     t2
+    addi.d           t3,     zero,   16
+    fld.d            f0,     a0,     0
+    fldx.d           f1,     a0,     a1
+    fldx.d           f2,     a0,     t0
+    fldx.d           f3,     a0,     t1
+    vilvl.d          vr4,    vr1,    vr0
+    vilvl.d          vr5,    vr3,    vr2
+    xvpermi.q        xr5,    xr4,    0x20
+
+    xvmulwev.h.bu.b  xr11,   xr5,    xr20
+    xvmulwod.h.bu.b  xr13,   xr5,    xr20
+    xvsadd.h         xr1,    xr8,    xr11
+    xvsadd.h         xr3,    xr8,    xr13
+
+    xvssrarn.bu.h    xr1,    xr1,    xr9
+    xvssrarn.bu.h    xr3,    xr3,    xr9
+    xvilvl.b         xr4,    xr3,    xr1
+    xvpermi.d        xr5,    xr4,    0x4E
+    vbsrl.v          vr0,    vr4,    8
+    vbsrl.v          vr1,    vr5,    8
+
+    fst.d            f4,     a0,     0
+    fstx.d           f0,     a0,     a1
+    fstx.d           f5,     a0,     t0
+    fstx.d           f1,     a0,     t1
+
+    blt              a2,     t3,    .END_WEIGHT_H264_PIXELS8_LASX
+    add.d            a0,     a0,     t2
+    add.d            t4,     a0,     t2
+
+    fld.d            f0,     a0,     0
+    fldx.d           f1,     a0,     a1
+    fldx.d           f2,     a0,     t0
+    fldx.d           f3,     a0,     t1
+    fld.d            f4,     t4,     0
+    fldx.d           f5,     t4,     a1
+    fldx.d           f6,     t4,     t0
+    fldx.d           f7,     t4,     t1
+
+    vilvl.d          vr10,   vr1,    vr0
+    vilvl.d          vr11,   vr3,    vr2
+    vilvl.d          vr12,   vr5,    vr4
+    vilvl.d          vr13,   vr7,    vr6
+    xvpermi.q        xr11,   xr10,   0x20
+    xvpermi.q        xr13,   xr12,   0x20
+
+    xvmulwev.h.bu.b  xr1,    xr11,   xr20
+    xvmulwev.h.bu.b  xr3,    xr13,   xr20
+    xvmulwod.h.bu.b  xr5,    xr11,   xr20
+    xvmulwod.h.bu.b  xr7,    xr13,   xr20
+
+    xvsadd.h         xr1,    xr8,    xr1
+    xvsadd.h         xr3,    xr8,    xr3
+    xvsadd.h         xr5,    xr8,    xr5
+    xvsadd.h         xr7,    xr8,    xr7
+
+    xvssrarn.bu.h    xr11,   xr1,    xr9
+    xvssrarn.bu.h    xr13,   xr3,    xr9
+    xvssrarn.bu.h    xr15,   xr5,    xr9
+    xvssrarn.bu.h    xr17,   xr7,    xr9
+
+    xvilvl.b         xr0,    xr15,   xr11
+    xvilvl.b         xr4,    xr17,   xr13
+    xvpermi.d        xr2,    xr0,    0x4E
+    xvpermi.d        xr6,    xr4,    0x4E
+    vbsrl.v          vr1,    vr0,    8
+    vbsrl.v          vr3,    vr2,    8
+    vbsrl.v          vr5,    vr4,    8
+    vbsrl.v          vr7,    vr6,    8
+
+    fst.d            f0,     a0,     0
+    fstx.d           f1,     a0,     a1
+    fstx.d           f2,     a0,     t0
+    fstx.d           f3,     a0,     t1
+    fst.d            f4,     t4,     0
+    fstx.d           f5,     t4,     a1
+    fstx.d           f6,     t4,     t0
+    fstx.d           f7,     t4,     t1
+.END_WEIGHT_H264_PIXELS8_LASX:
 endfunc
