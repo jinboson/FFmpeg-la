@@ -64,13 +64,13 @@
     q0_or_p0_out = __lasx_xvclip255_h(q0_or_p0_out);         \
 }
 
-void ff_h264_h_lpf_luma_8_lasx(uint8_t *data, ptrdiff_t img_width,
+void ff_h264_h_lpf_luma_8_lasx(uint8_t *data, int img_width,
                                int alpha_in, int beta_in, int8_t *tc)
 {
-    ptrdiff_t img_width_2x = img_width << 1;
-    ptrdiff_t img_width_4x = img_width << 2;
-    ptrdiff_t img_width_8x = img_width << 3;
-    ptrdiff_t img_width_3x = img_width_2x + img_width;
+    int img_width_2x = img_width << 1;
+    int img_width_4x = img_width << 2;
+    int img_width_8x = img_width << 3;
+    int img_width_3x = img_width_2x + img_width;
     __m256i tmp_vec0, bs_vec;
     __m256i tc_vec = {0x0101010100000000, 0x0303030302020202,
                       0x0101010100000000, 0x0303030302020202};
@@ -241,11 +241,11 @@ void ff_h264_h_lpf_luma_8_lasx(uint8_t *data, ptrdiff_t img_width,
     }
 }
 
-void ff_h264_v_lpf_luma_8_lasx(uint8_t *data, ptrdiff_t img_width,
+void ff_h264_v_lpf_luma_8_lasx(uint8_t *data, int img_width,
                                    int alpha_in, int beta_in, int8_t *tc)
 {
-    ptrdiff_t img_width_2x = img_width << 1;
-    ptrdiff_t img_width_3x = img_width + img_width_2x;
+    int img_width_2x = img_width << 1;
+    int img_width_3x = img_width + img_width_2x;
     __m256i tmp_vec0, bs_vec;
     __m256i tc_vec = {0x0101010100000000, 0x0303030302020202,
                       0x0101010100000000, 0x0303030302020202};
@@ -363,15 +363,15 @@ void ff_h264_v_lpf_luma_8_lasx(uint8_t *data, ptrdiff_t img_width,
     }
 }
 
-void ff_h264_h_lpf_chroma_8_lasx(uint8_t *data, ptrdiff_t img_width,
+void ff_h264_h_lpf_chroma_8_lasx(uint8_t *data, int img_width,
                                  int alpha_in, int beta_in, int8_t *tc)
 {
     __m256i tmp_vec0, bs_vec;
     __m256i tc_vec = {0x0303020201010000, 0x0303020201010000, 0x0, 0x0};
     __m256i zero = __lasx_xvldi(0);
-    ptrdiff_t img_width_2x = img_width << 1;
-    ptrdiff_t img_width_4x = img_width << 2;
-    ptrdiff_t img_width_3x = img_width_2x + img_width;
+    int img_width_2x = img_width << 1;
+    int img_width_4x = img_width << 2;
+    int img_width_3x = img_width_2x + img_width;
 
     tmp_vec0 = __lasx_xvldrepl_w((uint32_t*)tc, 0);
     tc_vec   = __lasx_xvshuf_b(tmp_vec0, tmp_vec0, tc_vec);
@@ -471,7 +471,7 @@ void ff_h264_h_lpf_chroma_8_lasx(uint8_t *data, ptrdiff_t img_width,
     }
 }
 
-void ff_h264_v_lpf_chroma_8_lasx(uint8_t *data, ptrdiff_t img_width,
+void ff_h264_v_lpf_chroma_8_lasx(uint8_t *data, int img_width,
                                  int alpha_in, int beta_in, int8_t *tc)
 {
     int img_width_2x = img_width << 1;
@@ -581,12 +581,12 @@ void ff_h264_v_lpf_chroma_8_lasx(uint8_t *data, ptrdiff_t img_width,
     p0_or_q0_out = __lasx_xvsrar_h(p0_or_q0_out, const2);              \
 }
 
-void ff_h264_h_lpf_luma_intra_8_lasx(uint8_t *data, ptrdiff_t img_width,
+void ff_h264_h_lpf_luma_intra_8_lasx(uint8_t *data, int img_width,
                                      int alpha_in, int beta_in)
 {
-    ptrdiff_t img_width_2x = img_width << 1;
-    ptrdiff_t img_width_4x = img_width << 2;
-    ptrdiff_t img_width_3x = img_width_2x + img_width;
+    int img_width_2x = img_width << 1;
+    int img_width_4x = img_width << 2;
+    int img_width_3x = img_width_2x + img_width;
     uint8_t *src = data - 4;
     __m256i p0_asub_q0, p1_asub_p0, q1_asub_q0, alpha, beta;
     __m256i is_less_than, is_less_than_beta, is_less_than_alpha;
@@ -757,11 +757,11 @@ void ff_h264_h_lpf_luma_intra_8_lasx(uint8_t *data, ptrdiff_t img_width,
     }
 }
 
-void ff_h264_v_lpf_luma_intra_8_lasx(uint8_t *data, ptrdiff_t img_width,
+void ff_h264_v_lpf_luma_intra_8_lasx(uint8_t *data, int img_width,
                                      int alpha_in, int beta_in)
 {
-    ptrdiff_t img_width_2x = img_width << 1;
-    ptrdiff_t img_width_3x = img_width_2x + img_width;
+    int img_width_2x = img_width << 1;
+    int img_width_3x = img_width_2x + img_width;
     uint8_t *src = data - img_width_2x;
     __m256i p0_asub_q0, p1_asub_p0, q1_asub_q0, alpha, beta;
     __m256i is_less_than, is_less_than_beta, is_less_than_alpha;

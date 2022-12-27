@@ -2418,3 +2418,95 @@ function ff_weight_h264_pixels4_8_lsx
     fstx.s           f13,    a0,     t1
 .END_WEIGHT_H264_PIXELS4:
 endfunc
+
+function ff_h264_add_pixels4_8_lsx
+    slli.d           t0,     a2,     1
+    add.d            t1,     t0,     a2
+    vld              vr0,    a1,     0
+    vld              vr1,    a1,     16
+    vldi             vr2,    0
+    fst.s            f3,     a0,     0
+    fstx.s           f4,     a0,     a2
+    fstx.s           f5,     a0,     t0
+    fstx.s           f6,     a0,     t1
+    vilvl.w          vr7,    vr4,    vr3
+    vilvl.w          vr8,    vr6,    vr5
+    vilvl.b          vr9,    vr2,    vr7
+    vilvl.b          vr10,   vr2,    vr8
+    vadd.h           vr11,   vr0,    vr9
+    vadd.h           vr12,   vr1,    vr10
+    vpickev.b        vr0,    vr12,   vr11
+    vbsrl.v          vr3,    vr0,    4
+    vbsrl.v          vr4,    vr0,    8
+    vbsrl.v          vr5,    vr0,    12
+    fst.s            f0,     a0,     0
+    fstx.s           f3,     a0,     a2
+    fstx.s           f4,     a0,     t0
+    fstx.s           f5,     a0,     t1
+    vst              vr2,    a1,     0
+    vst              vr2,    a1,     16
+endfunc
+
+function ff_h264_add_pixels8_8_lsx
+    slli.d           t0,     a2,     1
+    slli.d           t2,     a2,     2
+    add.d            t1,     t0,     a2
+    add.d            t3,     a0,     t2
+    vldi             vr0,    0
+    vld              vr1,    a1,     0
+    vld              vr2,    a1,     16
+    vld              vr3,    a1,     32
+    vld              vr4,    a1,     48
+    vld              vr5,    a1,     64
+    vld              vr6,    a1,     80
+    vld              vr7,    a1,     96
+    vld              vr8,    a1,     112
+    fld.d            f10,    a0,     0
+    fldx.d           f11,    a0,     a2
+    fldx.d           f12,    a0,     t0
+    fldx.d           f13,    a0,     t1
+    fld.d            f14,    t3,     0
+    fldx.d           f15,    t3,     a2
+    fldx.d           f16,    t3,     t0
+    fldx.d           f17,    t3,     t1
+    vilvl.b          vr10,   vr0,    vr10
+    vilvl.b          vr11,   vr0,    vr11
+    vilvl.b          vr12,   vr0,    vr12
+    vilvl.b          vr13,   vr0,    vr13
+    vilvl.b          vr14,   vr0,    vr14
+    vilvl.b          vr15,   vr0,    vr15
+    vilvl.b          vr16,   vr0,    vr16
+    vilvl.b          vr17,   vr0,    vr17
+    vadd.h           vr1,    vr1,    vr10
+    vadd.h           vr2,    vr2,    vr11
+    vadd.h           vr3,    vr3,    vr12
+    vadd.h           vr4,    vr4,    vr13
+    vadd.h           vr5,    vr5,    vr14
+    vadd.h           vr6,    vr6,    vr15
+    vadd.h           vr7,    vr7,    vr16
+    vadd.h           vr8,    vr8,    vr17
+    vpickev.b        vr10,   vr2,    vr1
+    vpickev.b        vr12,   vr4,    vr3
+    vpickev.b        vr14,   vr6,    vr5
+    vpickev.b        vr16,   vr8,    vr7
+    vbsrl.v          vr11,   vr10,   8
+    vbsrl.v          vr13,   vr12,   8
+    vbsrl.v          vr15,   vr14,   8
+    vbsrl.v          vr17,   vr16,   8
+    vst              vr0,    a1,     0
+    vst              vr0,    a1,     16
+    vst              vr0,    a1,     32
+    vst              vr0,    a1,     48
+    vst              vr0,    a1,     64
+    vst              vr0,    a1,     80
+    vst              vr0,    a1,     96
+    vst              vr0,    a1,     112
+    fst.d            f10,    a0,     0
+    fstx.d           f11,    a0,     a2
+    fstx.d           f12,    a0,     t0
+    fstx.d           f13,    a0,     t1
+    fst.d            f14,    t3,     0
+    fstx.d           f15,    t3,     a2
+    fstx.d           f16,    t3,     t0
+    fstx.d           f17,    t3,     t1
+endfunc
