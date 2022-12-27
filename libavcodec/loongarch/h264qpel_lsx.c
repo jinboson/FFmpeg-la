@@ -357,3 +357,132 @@ void ff_put_h264_qpel8_mc20_lsx(uint8_t *dst, const uint8_t *src,
 {
     put_h264_qpel8_h_lowpass_lsx(dst, src, stride, stride);
 }
+
+void ff_avg_h264_qpel8_mc10_lsx(uint8_t *dst, const uint8_t *src,
+                                 ptrdiff_t stride)
+{
+    uint8_t half[64];
+
+    put_h264_qpel8_h_lowpass_lsx(half, src, 8, stride);
+    avg_pixels8_l2_8_lsx(dst, src, half, stride, stride);
+}
+
+void ff_avg_h264_qpel8_mc20_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride)
+{
+    avg_h264_qpel8_h_lowpass_lsx(dst, src, stride, stride);
+}
+
+void ff_avg_h264_qpel8_mc30_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride)
+{
+    uint8_t half[64];
+
+    put_h264_qpel8_h_lowpass_lsx(half, src, 8, stride);
+    avg_pixels8_l2_8_lsx(dst, src+1, half, stride, stride);
+}
+
+void ff_avg_h264_qpel8_mc11_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride)
+{
+    uint8_t halfH[64];
+    uint8_t halfV[64];
+
+    put_h264_qpel8_h_lowpass_lsx(halfH, src, 8, stride);
+    put_h264_qpel8_v_lowpass_lsx(halfV, (uint8_t*)src, 8, stride);
+    avg_pixels8_l2_8_lsx(dst, halfH, halfV, stride, 8);
+}
+
+void ff_avg_h264_qpel8_mc21_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride)
+{
+    uint8_t temp[128];
+    uint8_t *const halfH  = temp;
+    uint8_t *const halfHV = temp + 64;
+
+    put_h264_qpel8_h_lowpass_lsx(halfH, src, 8, stride);
+    put_h264_qpel8_hv_lowpass_lsx(halfHV, src, 8, stride);
+    avg_pixels8_l2_8_lsx(dst, halfH, halfHV, stride, 8);
+}
+
+void ff_avg_h264_qpel8_mc31_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride)
+{
+    uint8_t halfH[64];
+    uint8_t halfV[64];
+
+    put_h264_qpel8_h_lowpass_lsx(halfH, src, 8, stride);
+    put_h264_qpel8_v_lowpass_lsx(halfV, (uint8_t*)src + 1, 8, stride);
+    avg_pixels8_l2_8_lsx(dst, halfH, halfV, stride, 8);
+}
+
+void ff_avg_h264_qpel8_mc02_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride)
+{
+    avg_h264_qpel8_v_lowpass_lsx(dst, (uint8_t*)src, stride, stride);
+}
+
+void ff_avg_h264_qpel8_mc12_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride)
+{
+    uint8_t temp[128];
+    uint8_t *const halfHV = temp;
+    uint8_t *const halfH  = temp + 64;
+
+    put_h264_qpel8_hv_lowpass_lsx(halfHV, src, 8, stride);
+    put_h264_qpel8_v_lowpass_lsx(halfH, (uint8_t*)src, 8, stride);
+    avg_pixels8_l2_8_lsx(dst, halfH, halfHV, stride, 8);
+}
+
+void ff_avg_h264_qpel8_mc22_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride)
+{
+    avg_h264_qpel8_hv_lowpass_lsx(dst, src, stride, stride);
+}
+
+void ff_avg_h264_qpel8_mc32_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride)
+{
+    uint8_t temp[128];
+    uint8_t *const halfHV = temp;
+    uint8_t *const halfH  = temp + 64;
+
+    put_h264_qpel8_hv_lowpass_lsx(halfHV, src, 8, stride);
+    put_h264_qpel8_v_lowpass_lsx(halfH, (uint8_t*)src + 1, 8, stride);
+    avg_pixels8_l2_8_lsx(dst, halfH, halfHV, stride, 8);
+}
+
+void ff_avg_h264_qpel8_mc13_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride)
+{
+    uint8_t halfH[64];
+    uint8_t halfV[64];
+
+    put_h264_qpel8_h_lowpass_lsx(halfH, src + stride, 8, stride);
+    put_h264_qpel8_v_lowpass_lsx(halfV, (uint8_t*)src, 8, stride);
+    avg_pixels8_l2_8_lsx(dst, halfH, halfV, stride, 8);
+}
+
+void ff_avg_h264_qpel8_mc23_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride)
+{
+    uint8_t temp[128];
+    uint8_t *const halfH  = temp;
+    uint8_t *const halfHV = temp + 64;
+
+    put_h264_qpel8_h_lowpass_lsx(halfH, src + stride, 8, stride);
+    put_h264_qpel8_hv_lowpass_lsx(halfHV, src, 8, stride);
+    avg_pixels8_l2_8_lsx(dst, halfH, halfHV, stride, 8);
+}
+
+void ff_avg_h264_qpel8_mc33_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride)
+{
+    uint8_t halfH[64];
+    uint8_t halfV[64];
+
+    put_h264_qpel8_h_lowpass_lsx(halfH, src + stride, 8, stride);
+    put_h264_qpel8_v_lowpass_lsx(halfV, (uint8_t*)src + 1, 8, stride);
+    avg_pixels8_l2_8_lsx(dst, halfH, halfV, stride, 8);
+}
+
