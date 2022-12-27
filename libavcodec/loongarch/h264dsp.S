@@ -2354,3 +2354,67 @@ function ff_weight_h264_pixels8_8_lasx
     fstx.d           f7,     t4,     t1
 .END_WEIGHT_H264_PIXELS8_LASX:
 endfunc
+
+//LSX optimization is enough for this function.
+function ff_weight_h264_pixels4_8_lsx
+    slli.d           t0,     a1,     1
+    slli.d           t2,     a1,     2
+    add.d            t1,     t0,     a1
+    addi.d           t3,     zero,   4
+
+    sll.d            a5,     a5,     a3
+    vreplgr2vr.b     vr20,   a4      //weight
+    vreplgr2vr.h     vr8,    a5      //offset
+    vreplgr2vr.h     vr9,    a3      //log2_denom
+
+    fld.s            f0,     a0,     0
+    fldx.s           f1,     a0,     a1
+    vilvl.w          vr4,    vr1,    vr0
+    vilvl.b          vr5,    vr4,    vr4
+    vmulwev.h.bu.b   vr10,   vr5,    vr20
+    vsadd.h          vr0,    vr8,    vr10
+    vssrarn.bu.h     vr0,    vr0,    vr9
+    vbsrl.v          vr1,    vr0,    4
+
+    fst.s            f0,     a0,     0
+    fstx.s           f1,     a0,     a1
+    blt              a2,     t3,    .END_WEIGHT_H264_PIXELS4
+    addi.d           t3,     zero,   8
+    fldx.s           f0,     a0,     t0
+    fldx.s           f1,     a0,     t1
+    vilvl.w          vr4,    vr1,    vr0
+    vilvl.b          vr5,    vr4,    vr4
+
+    vmulwev.h.bu.b   vr10,   vr5,    vr20
+    vsadd.h          vr0,    vr8,    vr10
+    vssrarn.bu.h     vr0,    vr0,    vr9
+    vbsrl.v          vr1,    vr0,    4
+    fstx.s           f0,     a0,     t0
+    fstx.s           f1,     a0,     t1
+    blt              a2,     t3,    .END_WEIGHT_H264_PIXELS4
+    add.d            a0,     a0,     t2
+
+    fld.s            f0,     a0,     0
+    fldx.s           f1,     a0,     a1
+    fldx.s           f2,     a0,     t0
+    fldx.s           f3,     a0,     t1
+
+    vilvl.w          vr4,    vr1,    vr0
+    vilvl.w          vr5,    vr3,    vr2
+    vilvl.b          vr6,    vr5,    vr4
+
+    vmulwev.h.bu.b   vr10,   vr6,    vr20
+    vmulwod.h.bu.b   vr11,   vr6,    vr20
+    vsadd.h          vr0,    vr8,    vr10
+    vsadd.h          vr1,    vr8,    vr11
+    vssrarn.bu.h     vr10,   vr0,    vr9
+    vssrarn.bu.h     vr11,   vr1,    vr9
+    vbsrl.v          vr12,   vr10,   4
+    vbsrl.v          vr13,   vr11,   4
+
+    fst.s            f10,    a0,     0
+    fstx.s           f12,    a0,     a1
+    fstx.s           f11,    a0,     t0
+    fstx.s           f13,    a0,     t1
+.END_WEIGHT_H264_PIXELS4:
+endfunc

@@ -59,6 +59,7 @@ av_cold void ff_h264dsp_init_loongarch(H264DSPContext *c, const int bit_depth,
             c->biweight_h264_pixels_tab[2] = ff_biweight_h264_pixels4_8_lsx;
             c->weight_h264_pixels_tab[0] = ff_weight_h264_pixels16_8_lsx;
             c->weight_h264_pixels_tab[1] = ff_weight_h264_pixels8_8_lsx;
+            c->weight_h264_pixels_tab[2] = ff_weight_h264_pixels4_8_lsx;
         }
     }
     if (have_lasx(cpu_flags)) {
@@ -79,7 +80,6 @@ av_cold void ff_h264dsp_init_loongarch(H264DSPContext *c, const int bit_depth,
             /* Weighted MC */
             c->weight_h264_pixels_tab[0] = ff_weight_h264_pixels16_8_lasx;
             c->weight_h264_pixels_tab[1] = ff_weight_h264_pixels8_8_lasx;
-            c->weight_h264_pixels_tab[2] = ff_weight_h264_pixels4_8_lasx;
 
             c->biweight_h264_pixels_tab[0] = ff_biweight_h264_pixels16_8_lasx;
             c->biweight_h264_pixels_tab[1] = ff_biweight_h264_pixels8_8_lasx;
