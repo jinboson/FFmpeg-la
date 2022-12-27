@@ -37,7 +37,6 @@ av_cold void ff_h264qpel_init_loongarch(H264QpelContext *c, int bit_depth)
             c->put_h264_qpel_pixels_tab[0][3]  = ff_put_h264_qpel16_mc30_lsx;
             c->put_h264_qpel_pixels_tab[0][4]  = ff_put_h264_qpel16_mc01_lsx;
             c->put_h264_qpel_pixels_tab[0][5]  = ff_put_h264_qpel16_mc11_lsx;
-
             c->put_h264_qpel_pixels_tab[0][6]  = ff_put_h264_qpel16_mc21_lsx;
             c->put_h264_qpel_pixels_tab[0][7]  = ff_put_h264_qpel16_mc31_lsx;
             c->put_h264_qpel_pixels_tab[0][8]  = ff_put_h264_qpel16_mc02_lsx;
@@ -65,6 +64,23 @@ av_cold void ff_h264qpel_init_loongarch(H264QpelContext *c, int bit_depth)
             c->avg_h264_qpel_pixels_tab[0][13] = ff_avg_h264_qpel16_mc13_lsx;
             c->avg_h264_qpel_pixels_tab[0][14] = ff_avg_h264_qpel16_mc23_lsx;
             c->avg_h264_qpel_pixels_tab[0][15] = ff_avg_h264_qpel16_mc33_lsx;
+
+            c->put_h264_qpel_pixels_tab[1][0]  = ff_put_h264_qpel8_mc00_lsx;
+            c->put_h264_qpel_pixels_tab[1][1]  = ff_put_h264_qpel8_mc10_lsx;
+            c->put_h264_qpel_pixels_tab[1][2]  = ff_put_h264_qpel8_mc20_lsx;
+            c->put_h264_qpel_pixels_tab[1][3]  = ff_put_h264_qpel8_mc30_lsx;
+            c->put_h264_qpel_pixels_tab[1][4]  = ff_put_h264_qpel8_mc01_lsx;
+            c->put_h264_qpel_pixels_tab[1][5]  = ff_put_h264_qpel8_mc11_lsx;
+            c->put_h264_qpel_pixels_tab[1][6]  = ff_put_h264_qpel8_mc21_lsx;
+            c->put_h264_qpel_pixels_tab[1][7]  = ff_put_h264_qpel8_mc31_lsx;
+            c->put_h264_qpel_pixels_tab[1][8]  = ff_put_h264_qpel8_mc02_lsx;
+            c->put_h264_qpel_pixels_tab[1][9]  = ff_put_h264_qpel8_mc12_lsx;
+            c->put_h264_qpel_pixels_tab[1][10] = ff_put_h264_qpel8_mc22_lsx;
+            c->put_h264_qpel_pixels_tab[1][11] = ff_put_h264_qpel8_mc32_lsx;
+            c->put_h264_qpel_pixels_tab[1][12] = ff_put_h264_qpel8_mc03_lsx;
+            c->put_h264_qpel_pixels_tab[1][13] = ff_put_h264_qpel8_mc13_lsx;
+            c->put_h264_qpel_pixels_tab[1][14] = ff_put_h264_qpel8_mc23_lsx;
+            c->put_h264_qpel_pixels_tab[1][15] = ff_put_h264_qpel8_mc33_lsx;
         }
     }
     if (have_lasx(cpu_flags)) {

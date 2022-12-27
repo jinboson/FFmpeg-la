@@ -34,6 +34,9 @@ void put_h264_qpel8_v_lowpass_lsx(uint8_t *dst, const uint8_t *src,
                                   ptrdiff_t dstStride, ptrdiff_t srcStride);
 void put_pixels16_l2_8_lsx(uint8_t *dst, const uint8_t *src, uint8_t *half,
                            ptrdiff_t dstStride, ptrdiff_t srcStride);
+void put_pixels8_l2_8_lsx(uint8_t *dst, const uint8_t *src, const uint8_t *half,
+                          ptrdiff_t dstStride, ptrdiff_t srcStride);
+
 void avg_h264_qpel8_v_lowpass_lsx(uint8_t *dst, uint8_t *src, int dstStride,
                                   int srcStride);
 void avg_pixels16_l2_8_lsx(uint8_t *dst, const uint8_t *src, uint8_t *half,
@@ -106,4 +109,37 @@ void ff_avg_h264_qpel16_mc12_lsx(uint8_t *dst, const uint8_t *src,
                                  ptrdiff_t stride);
 void ff_avg_h264_qpel16_mc22_lsx(uint8_t *dst, const uint8_t *src,
                                  ptrdiff_t stride);
+
+void ff_put_h264_qpel8_mc03_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride);
+void ff_put_h264_qpel8_mc00_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride);
+void ff_put_h264_qpel8_mc01_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride);
+void ff_put_h264_qpel8_mc30_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride);
+void ff_put_h264_qpel8_mc10_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride);
+void ff_put_h264_qpel8_mc33_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride);
+void ff_put_h264_qpel8_mc13_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride);
+void ff_put_h264_qpel8_mc31_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride);
+void ff_put_h264_qpel8_mc11_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride);
+void ff_put_h264_qpel8_mc32_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride);
+void ff_put_h264_qpel8_mc21_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride);
+void ff_put_h264_qpel8_mc23_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride);
+void ff_put_h264_qpel8_mc12_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride);
+void ff_put_h264_qpel8_mc02_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride);
+void ff_put_h264_qpel8_mc22_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride);
+void ff_put_h264_qpel8_mc20_lsx(uint8_t *dst, const uint8_t *src,
+                                ptrdiff_t stride);
 #endif  // #ifndef AVCODEC_LOONGARCH_H264QPEL_LSX_H

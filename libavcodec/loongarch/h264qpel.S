@@ -2706,7 +2706,7 @@ endfunc
     add.d         \in1,   \in1,    a2
     vstelm.d      vr1,    \in1,    0,     1
 
-    alsl.d        \in0,    a3,    \in0,  2
+    alsl.d        \in0,    a3,    \in0,   2
 
     // tmp8
     vld           vr0,    \in0,   0
@@ -2729,7 +2729,7 @@ endfunc
     vstelm.d      vr1,    \in1,   0,     1
 
     // tmp12
-    alsl.d        \in0,   a3,     \in0,    2
+    alsl.d        \in0,   a3,     \in0,  2
 
     vld           vr0,    \in0,   0
     vldx          vr1,    \in0,   a3
@@ -3292,4 +3292,83 @@ function avg_h264_qpel8_hv_lowpass_lsx
 
     fld.d         f24,    sp,     0
     addi.d        sp,     sp,     8
+endfunc
+
+function put_pixels8_l2_8_lsx
+    slli.d        t0,     a4,     1
+    add.d         t1,     t0,     a4
+    slli.d        t2,     t0,     1
+    vld           vr0,    a1,     0
+    vldx          vr1,    a1,     a4
+    vldx          vr2,    a1,     t0
+    vldx          vr3,    a1,     t1
+    add.d         a1,     a1,     t2
+    vld           vr4,    a1,     0
+    vldx          vr5,    a1,     a4
+    vldx          vr6,    a1,     t0
+    vldx          vr7,    a1,     t1
+
+    vld           vr8,    a2,     0x00
+    vld           vr9,    a2,     0x08
+    vld           vr10,   a2,     0x10
+    vld           vr11,   a2,     0x18
+    vld           vr12,   a2,     0x20
+    vld           vr13,   a2,     0x28
+    vld           vr14,   a2,     0x30
+    vld           vr15,   a2,     0x38
+
+    vavgr.bu      vr0,    vr8,    vr0
+    vavgr.bu      vr1,    vr9,    vr1
+    vavgr.bu      vr2,    vr10,   vr2
+    vavgr.bu      vr3,    vr11,   vr3
+    vavgr.bu      vr4,    vr12,   vr4
+    vavgr.bu      vr5,    vr13,   vr5
+    vavgr.bu      vr6,    vr14,   vr6
+    vavgr.bu      vr7,    vr15,   vr7
+
+    vstelm.d      vr0,    a0,     0,     0
+    add.d         a0,     a0,     a3
+    vstelm.d      vr1,    a0,     0,     0
+    add.d         a0,     a0,     a3
+    vstelm.d      vr2,    a0,     0,     0
+    add.d         a0,     a0,     a3
+    vstelm.d      vr3,    a0,     0,     0
+    add.d         a0,     a0,     a3
+    vstelm.d      vr4,    a0,     0,     0
+    add.d         a0,     a0,     a3
+    vstelm.d      vr5,    a0,     0,     0
+    add.d         a0,     a0,     a3
+    vstelm.d      vr6,    a0,     0,     0
+    add.d         a0,     a0,     a3
+    vstelm.d      vr7,    a0,     0,     0
+endfunc
+
+/*
+ * void ff_put_h264_qpel8_mc00(uint8_t *dst, const uint8_t *src,
+ *                             ptrdiff_t stride)
+ */
+function ff_put_h264_qpel8_mc00_lsx
+    slli.d        t0,     a2,     1
+    add.d         t1,     t0,     a2
+    slli.d        t2,     t0,     1
+    ld.d          t3,     a1,     0x0
+    ldx.d         t4,     a1,     a2
+    ldx.d         t5,     a1,     t0
+    ldx.d         t6,     a1,     t1
+    st.d          t3,     a0,     0x0
+    stx.d         t4,     a0,     a2
+    stx.d         t5,     a0,     t0
+    stx.d         t6,     a0,     t1
+
+    add.d         a1,     a1,     t2
+    add.d         a0,     a0,     t2
+
+    ld.d          t3,     a1,     0x0
+    ldx.d         t4,     a1,     a2
+    ldx.d         t5,     a1,     t0
+    ldx.d         t6,     a1,     t1
+    st.d          t3,     a0,     0x0
+    stx.d         t4,     a0,     a2
+    stx.d         t5,     a0,     t0
+    stx.d         t6,     a0,     t1
 endfunc
