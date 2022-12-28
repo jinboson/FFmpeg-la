@@ -1,7 +1,7 @@
 /*
  * Loongson LSX optimized h264qpel
  *
- * Copyright (c) 2020 Loongson Technology Corporation Limited
+ * Copyright (c) 2022 Loongson Technology Corporation Limited
  * Contributed by Hecai Yuan <yuanhecai@loongson.cn>
  *
  * This file is part of FFmpeg.
