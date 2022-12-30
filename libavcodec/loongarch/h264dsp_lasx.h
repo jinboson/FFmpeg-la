@@ -81,6 +81,10 @@ void ff_weight_h264_pixels4_8_lsx(uint8_t *src, ptrdiff_t stride,
                                   int weight_src, int offset);
 void ff_h264_add_pixels4_8_lsx(uint8_t *_dst, int16_t *_src, int stride);
 void ff_h264_add_pixels8_8_lsx(uint8_t *_dst, int16_t *_src, int stride);
+void ff_h264_loop_filter_strength_lsx(int16_t bS[2][4][4], uint8_t nnz[40],
+                                      int8_t ref[2][40], int16_t mv[2][40][2],
+                                      int bidir, int edges, int step,
+                                      int mask_mv0, int mask_mv1, int field);
 
 void ff_h264_h_lpf_luma_8_lasx(uint8_t *src, int stride,
                                int alpha, int beta, int8_t *tc0);

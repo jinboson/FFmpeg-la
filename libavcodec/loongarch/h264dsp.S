@@ -2510,3 +2510,187 @@ function ff_h264_add_pixels8_8_lsx
     fstx.d           f16,    t3,     t0
     fstx.d           f17,    t3,     t1
 endfunc
+
+const cnst_value
+.byte 6, 2, 6, 2, 6, 2, 6, 2, 6, 2, 6, 2, 6, 2, 6, 2
+.byte 3, 1, 3, 1, 3, 1, 3, 1, 3, 1, 3, 1, 3, 1, 3, 1
+endconst
+
+function ff_h264_loop_filter_strength_lsx
+    vldi             vr0,    0
+    ldptr.w          t0,     sp,     0   //mask_mv1
+    ldptr.w          t1,     sp,     8   //field
+    beqz             t1,     .FIELD
+    la.local         t2,     cnst_value
+    vld              vr1,    t2,     0
+    vld              vr2,    t2,     16
+    b                .END_FIELD
+.FIELD:
+    vldi             vr1,    0x06
+    vldi             vr2,    0x03
+.END_FIELD:
+    vldi             vr3,    0x01
+    slli.d           a6,     a6,     3  //step <<= 3
+    slli.d           a5,     a5,     3  //edges <<= 3
+    move             t3,     zero
+    slli.d           t4,     a6,     2
+    move             t5,     a2
+    move             t6,     a3
+    move             t7,     a1
+    move             t8,     a0
+    slli.d           t0,     t0,     3
+.ITERATION_FIR:
+    bge              t3,     a5,     .END_ITERATION_FIR
+    vand.v           vr20,   vr20,   vr0
+    and              t2,     t0,     t3
+    bnez             t2,     .MASK_MV_FIR
+    beqz             a4,     .BIDIR_FIR
+    vld              vr4,    t5,     4
+    vld              vr5,    t5,     44
+    vld              vr6,    t5,     12
+    vld              vr7,    t5,     52
+    vilvl.w          vr4,    vr5,    vr4
+    vilvl.w          vr6,    vr6,    vr6
+    vilvl.w          vr7,    vr7,    vr7
+    vshuf4i.h        vr5,    vr4,    0x4e
+    vsub.b           vr6,    vr6,    vr4
+    vsub.b           vr7,    vr7,    vr5
+    vor.v            vr6,    vr6,    vr7
+    vld              vr10,   t6,     16
+    vld              vr11,   t6,     48
+    vld              vr12,   t6,     208
+    vld              vr8,    t6,     176
+    vsub.h           vr13,   vr10,   vr11
+    vsub.h           vr14,   vr10,   vr12
+    vsub.h           vr15,   vr8,    vr11
+    vsub.h           vr16,   vr8,    vr12
+    vssrarni.b.h     vr14,   vr13,   0
+    vssrarni.b.h     vr16,   vr15,   0
+    vadd.b           vr14,   vr2,    vr14
+    vadd.b           vr16,   vr2,    vr16
+    vssub.bu         vr14,   vr14,   vr1
+    vssub.bu         vr16,   vr16,   vr1
+    vssrarni.b.h     vr14,   vr14,   0
+    vssrarni.b.h     vr16,   vr16,   0
+    vor.v            vr20,   vr6,    vr14
+    vshuf4i.h        vr16,   vr16,   0x4e
+    vor.v            vr20,   vr20,   vr16
+    vshuf4i.h        vr21,   vr20,   0x4e
+    vmin.bu          vr20,   vr20,   vr21
+    b                .MASK_MV_FIR
+.BIDIR_FIR:
+    vld              vr4,    t5,     4
+    vld              vr5,    t5,     12
+    vld              vr10,   t6,     16
+    vld              vr11,   t6,     48
+    vsub.h           vr12,   vr11,   vr10
+    vssrarni.b.h     vr12,   vr12,   0
+    vadd.b           vr13,   vr12,   vr2
+    vssub.bu         vr14,   vr13,   vr1
+    vsat.h           vr15,   vr14,   7
+    vpickev.b        vr20,   vr15,   vr15
+    vsub.b           vr6,    vr5,    vr4
+    vor.v            vr20,   vr20,   vr6
+.MASK_MV_FIR:
+    vld              vr4,    t7,     12
+    vld              vr5,    t7,     4
+    vor.v            vr6,    vr4,    vr5
+    vmin.bu          vr6,    vr6,    vr3
+    vmin.bu          vr20,   vr20,   vr3
+    vslli.h          vr6,    vr6,    1
+    vmax.bu          vr6,    vr20,   vr6
+    vilvl.b          vr7,    vr0,    vr6
+    add.d            t3,     t3,     a6
+    fst.d            f7,     t8,     32
+    add.d            t5,     t5,     a6
+    add.d            t6,     t6,     t4
+    add.d            t7,     t7,     a6
+    add.d            t8,     t8,     a6
+    b                .ITERATION_FIR
+.END_ITERATION_FIR:
+    move             t3,     zero
+    addi.d           a5,     zero,   32
+    vldi             vr21,   0xff
+    move             t5,     a2
+    move             t6,     a3
+    move             t7,     a1
+    move             t8,     a0
+    slli.d           a7,     a7,     3
+.ITERATION_SEC:
+    bge              t3,     a5,     .END_ITERATION_SEC
+    vand.v           vr20,   vr20,   vr21
+    and              t2,     a7,     t3
+    bnez             t2,     .MASK_MV_SEC
+    beqz             a4,     .BIDIR_SEC
+    vld              vr4,    t5,     11
+    vld              vr5,    t5,     51
+    vld              vr6,    t5,     12
+    vld              vr7,    t5,     52
+    vilvl.w          vr4,    vr5,    vr4
+    vilvl.w          vr6,    vr6,    vr6
+    vilvl.w          vr7,    vr7,    vr7
+    vshuf4i.h        vr5,    vr4,    0x4e
+    vsub.b           vr6,    vr6,    vr4
+    vsub.b           vr7,    vr7,    vr5
+    vor.v            vr6,    vr6,    vr7
+    vld              vr10,   t6,     44
+    vld              vr11,   t6,     48
+    vld              vr12,   t6,     208
+    vld              vr8,    t6,     204
+    vsub.h           vr13,   vr10,   vr11
+    vsub.h           vr14,   vr10,   vr12
+    vsub.h           vr15,   vr8,    vr11
+    vsub.h           vr16,   vr8,    vr12
+    vssrarni.b.h     vr14,   vr13,   0
+    vssrarni.b.h     vr16,   vr15,   0
+    vadd.b           vr14,   vr2,    vr14
+    vadd.b           vr16,   vr2,    vr16
+    vssub.bu         vr14,   vr14,   vr1
+    vssub.bu         vr16,   vr16,   vr1
+    vssrarni.b.h     vr14,   vr14,   0
+    vssrarni.b.h     vr16,   vr16,   0
+    vor.v            vr20,   vr6,    vr14
+    vshuf4i.h        vr16,   vr16,   0x4e
+    vor.v            vr20,   vr20,   vr16
+    vshuf4i.h        vr22,   vr20,   0x4e
+    vmin.bu          vr20,   vr20,   vr22
+    b                .MASK_MV_SEC
+.BIDIR_SEC:
+    vld              vr4,    t5,     11
+    vld              vr5,    t5,     12
+    vld              vr10,   t6,     44
+    vld              vr11,   t6,     48
+    vsub.h           vr12,   vr11,   vr10
+    vssrarni.b.h     vr12,   vr12,   0
+    vadd.b           vr13,   vr12,   vr2
+    vssub.bu         vr14,   vr13,   vr1
+    vssrarni.b.h     vr14,   vr14,   0
+    vsub.b           vr6,    vr5,    vr4
+    vor.v            vr20,   vr14,   vr6
+.MASK_MV_SEC:
+    vld              vr4,    t7,     12
+    vld              vr5,    t7,     11
+    vor.v            vr6,    vr4,    vr5
+    vmin.bu          vr6,    vr6,    vr3
+    vmin.bu          vr20,   vr20,   vr3
+    vslli.h          vr6,    vr6,    1
+    vmax.bu          vr6,    vr20,   vr6
+    vilvl.b          vr7,    vr0,    vr6
+    addi.d           t3,     t3,     8
+    fst.d            f7,     t8,     0
+    addi.d           t5,     t5,     8
+    addi.d           t6,     t6,     32
+    addi.d           t7,     t7,     8
+    addi.d           t8,     t8,     8
+    b                .ITERATION_SEC
+.END_ITERATION_SEC:
+    vld              vr4,    a0,     0
+    vld              vr5,    a0,     16
+    vilvh.d          vr6,    vr4,    vr4
+    vilvh.d          vr7,    vr5,    vr5
+    LSX_TRANSPOSE4x4_H vr4, vr6, vr5, vr7, vr6, vr7, vr8, vr9, vr10, vr11
+    vilvl.d          vr4,    vr7,    vr6
+    vilvl.d          vr5,    vr9,    vr8
+    vst              vr4,    a0,     0
+    vst              vr5,    a0,     16
+endfunc
