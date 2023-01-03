@@ -2571,10 +2571,10 @@ function ff_h264_add_pixels4_8_lsx
     vld              vr0,    a1,     0
     vld              vr1,    a1,     16
     vldi             vr2,    0
-    fst.s            f3,     a0,     0
-    fstx.s           f4,     a0,     a2
-    fstx.s           f5,     a0,     t0
-    fstx.s           f6,     a0,     t1
+    fld.s            f3,     a0,     0
+    fldx.s           f4,     a0,     a2
+    fldx.s           f5,     a0,     t0
+    fldx.s           f6,     a0,     t1
     vilvl.w          vr7,    vr4,    vr3
     vilvl.w          vr8,    vr6,    vr5
     vilvl.b          vr9,    vr2,    vr7
