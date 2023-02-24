@@ -25,6 +25,30 @@
 #include "libswscale/swscale.h"
 #include "libswscale/swscale_internal.h"
 
+void ff_hscale_8_to_15_lsx(SwsContext *c, int16_t *dst, int dstW,
+                           const uint8_t *src, const int16_t *filter,
+                           const int32_t *filterPos, int filterSize);
+
+void ff_hscale_8_to_19_lsx(SwsContext *c, int16_t *_dst, int dstW,
+                           const uint8_t *src, const int16_t *filter,
+                           const int32_t *filterPos, int filterSize);
+
+void ff_hscale_16_to_15_lsx(SwsContext *c, int16_t *_dst, int dstW,
+                            const uint8_t *_src, const int16_t *filter,
+                            const int32_t *filterPos, int filterSize);
+
+void ff_hscale_16_to_15_sub_lsx(SwsContext *c, int16_t *_dst, int dstW,
+                                const uint8_t *_src, const int16_t *filter,
+                                const int32_t *filterPos, int filterSize, int sh);
+
+void ff_hscale_16_to_19_lsx(SwsContext *c, int16_t *_dst, int dstW,
+                            const uint8_t *_src, const int16_t *filter,
+                            const int32_t *filterPos, int filterSize);
+
+void ff_hscale_16_to_19_sub_lsx(SwsContext *c, int16_t *_dst, int dstW,
+                                const uint8_t *_src, const int16_t *filter,
+                                const int32_t *filterPos, int filterSize, int sh);
+
 void ff_hscale_8_to_15_lasx(SwsContext *c, int16_t *dst, int dstW,
                             const uint8_t *src, const int16_t *filter,
                             const int32_t *filterPos, int filterSize);

@@ -27,6 +27,18 @@
 av_cold void ff_sws_init_swscale_loongarch(SwsContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
+    if (have_lsx(cpu_flags)) {
+        if (c->srcBpc == 8) {
+            if (c->dstBpc <= 14) {
+                c->hyScale = c->hcScale = ff_hscale_8_to_15_lsx;
+            } else {
+                c->hyScale = c->hcScale = ff_hscale_8_to_19_lsx;
+            }
+        } else {
+            c->hyScale = c->hcScale = c->dstBpc > 14 ? ff_hscale_16_to_19_lsx
+                                                     : ff_hscale_16_to_15_lsx;
+        }
+    }
     if (have_lasx(cpu_flags)) {
         ff_sws_init_output_loongarch(c);
         if (c->srcBpc == 8) {
