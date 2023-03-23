@@ -38,6 +38,15 @@ av_cold void ff_sws_init_swscale_loongarch(SwsContext *c)
             c->hyScale = c->hcScale = c->dstBpc > 14 ? ff_hscale_16_to_19_lsx
                                                      : ff_hscale_16_to_15_lsx;
         }
+        switch (c->srcFormat) {
+        case AV_PIX_FMT_GBRAP:
+        case AV_PIX_FMT_GBRP:
+            {
+                c->readChrPlanar = planar_rgb_to_uv_lsx;
+                c->readLumPlanar = planar_rgb_to_y_lsx;
+            }
+            break;
+        }
     }
     if (have_lasx(cpu_flags)) {
         ff_sws_init_output_loongarch(c);
