@@ -55,6 +55,10 @@ void planar_rgb_to_uv_lsx(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[4],
 void planar_rgb_to_y_lsx(uint8_t *_dst, const uint8_t *src[4], int width,
                          int32_t *rgb2yuv);
 
+void ff_yuv2planeX_8_lsx(const int16_t *filter, int filterSize,
+                         const int16_t **src, uint8_t *dest, int dstW,
+                         const uint8_t *dither, int offset);
+
 void ff_hscale_8_to_15_lasx(SwsContext *c, int16_t *dst, int dstW,
                             const uint8_t *src, const int16_t *filter,
                             const int32_t *filterPos, int filterSize);

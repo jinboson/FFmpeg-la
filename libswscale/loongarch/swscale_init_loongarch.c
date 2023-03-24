@@ -47,6 +47,8 @@ av_cold void ff_sws_init_swscale_loongarch(SwsContext *c)
             }
             break;
         }
+        if (c->dstBpc == 8)
+            c->yuv2planeX = ff_yuv2planeX_8_lsx;
     }
     if (have_lasx(cpu_flags)) {
         ff_sws_init_output_loongarch(c);
