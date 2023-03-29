@@ -209,3 +209,39 @@ av_cold void ff_sws_init_swscale_mips(SwsContext *c)
     }
 #endif /* #if HAVE_MSA */
 }
+
+av_cold SwsFunc ff_yuv2rgb_init_mips(SwsContext *c)
+{
+    int cpu_flags = av_get_cpu_flags();
+#if HAVE_MSA
+    if (have_msa(cpu_flags)) {
+        switch (c->dstFormat) {
+            case AV_PIX_FMT_RGB24:
+                return yuv420_rgb24_msa;
+            case AV_PIX_FMT_BGR24:
+                return yuv420_bgr24_msa;
+            case AV_PIX_FMT_RGBA:
+                if (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat)) {
+                    break;
+                } else
+                    return yuv420_rgba32_msa;
+            case AV_PIX_FMT_ARGB:
+                if (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat)) {
+                    break;
+                } else
+                    return yuv420_argb32_msa;
+            case AV_PIX_FMT_BGRA:
+                if (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat)) {
+                    break;
+                } else
+                    return yuv420_bgra32_msa;
+            case AV_PIX_FMT_ABGR:
+                if (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat)) {
+                    break;
+                } else
+                    return yuv420_abgr32_msa;
+        }
+    }
+    return NULL;
+#endif
+}

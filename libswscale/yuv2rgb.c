@@ -685,6 +685,8 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
         t = ff_yuv2rgb_init_x86(c);
     if (ARCH_LOONGARCH)
         t = ff_yuv2rgb_init_loongarch(c);
+    if (ARCH_MIPS)
+        t = ff_yuv2rgb_init_mips(c);
 
     if (t)
         return t;
