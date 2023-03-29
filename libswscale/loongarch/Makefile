@@ -8,3 +8,4 @@ LSX-OBJS-$(CONFIG_SWSCALE)  += loongarch/swscale.o \
                                loongarch/swscale_lsx.o \
                                loongarch/input.o   \
                                loongarch/output.o  \
+                               loongarch/yuv2rgb_lsx.o
