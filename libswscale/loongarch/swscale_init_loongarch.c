@@ -28,6 +28,7 @@ av_cold void ff_sws_init_swscale_loongarch(SwsContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
     if (have_lsx(cpu_flags)) {
+        ff_sws_init_output_lsx(c);
         if (c->srcBpc == 8) {
             if (c->dstBpc <= 14) {
                 c->hyScale = c->hcScale = ff_hscale_8_to_15_lsx;

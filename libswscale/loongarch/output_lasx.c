@@ -550,10 +550,6 @@ yuv2rgb_2_template_lasx(SwsContext *c, const int16_t *buf[2],
         DUP2_ARG2(__lasx_xvldx, ubuf1, c_dex, vbuf1, c_dex, u1, v1);
         DUP2_ARG2(__lasx_xvsllwil_w_h, y0, 0, y1, 0, y0_l, y1_l);
         DUP2_ARG1(__lasx_xvexth_w_h, y0, y1, y0_h, y1_h);
-        //DUP2_ARG1(__lasx_vext2xv_w_h, y0, y1, y0_l, y1_l);
-        //y0   = __lasx_xvpermi_d(y0, 0x4E);
-        //y1   = __lasx_xvpermi_d(y1, 0x4E);
-        //DUP2_ARG1(__lasx_vext2xv_w_h, y0, y1, y0_h, y1_h);
         DUP4_ARG1(__lasx_vext2xv_w_h, u0, u1, v0, v1, u0, u1, v0, v1);
         y0_l = __lasx_xvmul_w(y0_l, v_yalpha1);
         y0_h = __lasx_xvmul_w(y0_h, v_yalpha1);

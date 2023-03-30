@@ -77,6 +77,8 @@ int yuv420_argb32_lsx(SwsContext *c, const uint8_t *src[], int srcStride[],
 int yuv420_abgr32_lsx(SwsContext *c, const uint8_t *src[], int srcStride[],
                       int srcSliceY, int srcSliceH, uint8_t *dst[], int dstStride[]);
 
+av_cold void ff_sws_init_output_lsx(SwsContext *c);
+
 void ff_hscale_8_to_15_lasx(SwsContext *c, int16_t *dst, int dstW,
                             const uint8_t *src, const int16_t *filter,
                             const int32_t *filterPos, int filterSize);
