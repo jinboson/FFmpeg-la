@@ -401,12 +401,6 @@ void planar_rgb_to_uv_msa(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[4],
 void planar_rgb_to_y_msa(uint8_t *_dst, const uint8_t *src[4], int width,
                          int32_t *rgb2yuv);
 
-int yuv420_rgb24_msa(SwsContext *c, const uint8_t *src[], int srcStride[],
-                     int srcSliceY, int srcSliceH, uint8_t *dst[], int dstStride[]);
-
-int yuv420_bgr24_msa(SwsContext *c, const uint8_t *src[], int srcStride[],
-                     int srcSliceY, int srcSliceH, uint8_t *dst[], int dstStride[]);
-
 int yuv420_rgba32_msa(SwsContext *c, const uint8_t *src[], int srcStride[],
                       int srcSliceY, int srcSliceH, uint8_t *dst[], int dstStride[]);
 

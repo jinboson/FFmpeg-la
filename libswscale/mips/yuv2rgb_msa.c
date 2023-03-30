@@ -23,13 +23,6 @@
 #include "swscale_mips.h"
 #include "libavutil/mips/generic_macros_msa.h"
 
-//Using ST_D1 will result in great regression, reason is not clear.
-#define SD_NEW(val, pdst)                             \
-{                                                     \
-    uint64_t *pdst_sd_m = (uint64_t *) (pdst);        \
-    *pdst_sd_m = (val);                               \
-}
-
 #define YUV2RGB_LOAD_COE                              \
     /* Load x_offset */                               \
     v8i16 y_offset = (v8i16)__msa_fill_d(c->yOffset); \
@@ -102,14 +95,6 @@
     CLIP_SH2_0_255(g2, b2);                             \
 }
 
-#define RGB_PACK(r, g, b, rgb_l, rgb_h)                        \
-{                                                              \
-    v16i8 rg;                                                  \
-    rg = __msa_ilvev_b((v16i8)g, (v16i8)r);                    \
-    rgb_l = (v8i16)__msa_vshf_b((v16i8)shuf2, (v16i8)b, rg);   \
-    rgb_h = (v8i16)__msa_vshf_b((v16i8)shuf3, (v16i8)b, rg);   \
-}
-
 #define RGB32_PACK(a, r, g, b, rgb_l, rgb_h)            \
 {                                                       \
     v16i8 ra, bg;                                       \
@@ -119,48 +104,10 @@
     rgb_h = __msa_ilvl_h((v8i16)bg, (v8i16)ra);         \
 }
 
-#define RGB_STORE(rgb_l, rgb_h, image)                  \
-{                                                       \
-    ST_SH(rgb_l, image);                                \
-    SD_NEW(__msa_copy_u_d((v2i64)rgb_h, 0), image);     \
-}
-
 #define RGB32_STORE(rgb_l, rgb_h, image)                \
 {                                                       \
     ST_SH2(rgb_l, rgb_h, image, 4);                     \
 }
-
-#define YUV2RGBFUNC(func_name, dst_type, alpha)                                     \
-           int func_name(SwsContext *c, const uint8_t *src[],                       \
-                         int srcStride[], int srcSliceY, int srcSliceH,             \
-                         uint8_t *dst[], int dstStride[])                           \
-{                                                                                   \
-    int x, y, h_size, vshift, res;                                                  \
-    v16i8 m_y1, m_y2, m_u, m_v;                                                     \
-    v16i8 m_u_l, m_v_l, m_y1_l, m_y2_l;                                             \
-    v4i32 y_coeff_r, y_coeff_l, ug_coeff_r, ug_coeff_l;                             \
-    v4i32 ub_coeff_r, ub_coeff_l, vr_coeff_r, vr_coeff_l;                           \
-    v4i32 vg_coeff_r, vg_coeff_l, tmp_r, tmp_l;                                     \
-    v8i16 y_1_r, y_2_r, u2g_r, v2g_r, u2b_r, v2r_r, rgb1_l, rgb1_h;                 \
-    v8i16 rgb2_l, rgb2_h, r1, g1, b1, r2, g2, b2;                                   \
-    v2i64 shuf2 = {0x0504120302100100, 0x0A18090816070614};                         \
-    v2i64 shuf3 = {0x1E0F0E1C0D0C1A0B, 0x0101010101010101};                         \
-    v16i8 zero = __msa_fill_b(0);                                                   \
-                                                                                    \
-    YUV2RGB_LOAD_COE                                                                \
-                                                                                    \
-    h_size = c->dstW >> 4;                                                          \
-    res = (c->dstW & 15) >> 1;                                                      \
-    vshift = c->srcFormat != AV_PIX_FMT_YUV422P;                                    \
-    for (y = 0; y < srcSliceH; y += 2) {                                            \
-        dst_type av_unused *r, *g, *b;                                              \
-        dst_type *image1    = (dst_type *)(dst[0] + (y + srcSliceY) * dstStride[0]);\
-        dst_type *image2    = (dst_type *)(image1 +                   dstStride[0]);\
-        const uint8_t *py_1 = src[0] +               y * srcStride[0];              \
-        const uint8_t *py_2 = py_1   +                   srcStride[0];              \
-        const uint8_t *pu   = src[1] +   (y >> vshift) * srcStride[1];              \
-        const uint8_t *pv   = src[2] +   (y >> vshift) * srcStride[2];              \
-        for(x = 0; x < h_size; x++) {                                               \
 
 #define YUV2RGBFUNC32(func_name, dst_type, alpha)                               \
            int func_name(SwsContext *c, const uint8_t *src[],                   \
@@ -194,23 +141,6 @@
         const uint8_t *pv   = src[2] +   (y >> vshift) * srcStride[2];          \
         for(x = 0; x < h_size; x++) {                                           \
 
-#define DEALYUV2RGBREMAIN                                                           \
-            py_1 += 16;                                                             \
-            py_2 += 16;                                                             \
-            pu += 8;                                                                \
-            pv += 8;                                                                \
-            image1 += 48;                                                           \
-            image2 += 48;                                                           \
-        }                                                                           \
-        for (x = 0; x < res; x++) {                                                 \
-            int av_unused U, V, Y;                                                  \
-            U = pu[0];                                                              \
-            V = pv[0];                                                              \
-            r = (void *)c->table_rV[V+YUVRGB_TABLE_HEADROOM];                       \
-            g = (void *)(c->table_gU[U+YUVRGB_TABLE_HEADROOM]                       \
-                       + c->table_gV[V+YUVRGB_TABLE_HEADROOM]);                     \
-            b = (void *)c->table_bU[U+YUVRGB_TABLE_HEADROOM];
-
 #define DEALYUV2RGBREMAIN32                                                     \
             py_1 += 16;                                                         \
             py_2 += 16;                                                         \
@@ -228,39 +158,11 @@
                        + c->table_gV[V+YUVRGB_TABLE_HEADROOM]);                 \
             b = (void *)c->table_bU[U+YUVRGB_TABLE_HEADROOM];                   \
 
-#define PUTRGB24(dst, src)                  \
-    Y      = src[0];                        \
-    dst[0] = r[Y];                          \
-    dst[1] = g[Y];                          \
-    dst[2] = b[Y];                          \
-    Y      = src[1];                        \
-    dst[3] = r[Y];                          \
-    dst[4] = g[Y];                          \
-    dst[5] = b[Y];
-
-#define PUTBGR24(dst, src)                  \
-    Y      = src[0];                        \
-    dst[0] = b[Y];                          \
-    dst[1] = g[Y];                          \
-    dst[2] = r[Y];                          \
-    Y      = src[1];                        \
-    dst[3] = b[Y];                          \
-    dst[4] = g[Y];                          \
-    dst[5] = r[Y];
-
 #define PUTRGB(dst, src)                    \
     Y      = src[0];                        \
     dst[0] = r[Y] + g[Y] + b[Y];            \
     Y      = src[1];                        \
     dst[1] = r[Y] + g[Y] + b[Y];            \
-
-#define ENDRES                              \
-    pu += 1;                                \
-    pv += 1;                                \
-    py_1 += 2;                              \
-    py_2 += 2;                              \
-    image1 += 6;                            \
-    image2 += 6;                            \
 
 #define ENDRES32                            \
     pu += 1;                                \
@@ -275,42 +177,6 @@
     }                                       \
     return srcSliceH;                       \
 }
-
-YUV2RGBFUNC(yuv420_rgb24_msa, uint8_t, 0)
-    LOAD_YUV_16
-    YUV2RGB(m_y1, m_y2, m_u, m_v, r1, g1, b1, r2, g2, b2);
-    RGB_PACK(r1, g1, b1, rgb1_l, rgb1_h);
-    RGB_PACK(r2, g2, b2, rgb2_l, rgb2_h);
-    RGB_STORE(rgb1_l, rgb1_h, image1);
-    RGB_STORE(rgb2_l, rgb2_h, image2);
-    YUV2RGB(m_y1_l, m_y2_l, m_u_l, m_v_l, r1, g1, b1, r2, g2, b2);
-    RGB_PACK(r1, g1, b1, rgb1_l, rgb1_h);
-    RGB_PACK(r2, g2, b2, rgb2_l, rgb2_h);
-    RGB_STORE(rgb1_l, rgb1_h, image1 + 24);
-    RGB_STORE(rgb2_l, rgb2_h, image2 + 24);
-    DEALYUV2RGBREMAIN
-    PUTRGB24(image1, py_1);
-    PUTRGB24(image2, py_2);
-    ENDRES
-    END_FUNC()
-
-YUV2RGBFUNC(yuv420_bgr24_msa, uint8_t, 0)
-    LOAD_YUV_16
-    YUV2RGB(m_y1, m_y2, m_u, m_v, r1, g1, b1, r2, g2, b2);
-    RGB_PACK(b1, g1, r1, rgb1_l, rgb1_h);
-    RGB_PACK(b2, g2, r2, rgb2_l, rgb2_h);
-    RGB_STORE(rgb1_l, rgb1_h, image1);
-    RGB_STORE(rgb2_l, rgb2_h, image2);
-    YUV2RGB(m_y1_l, m_y2_l, m_u_l, m_v_l, r1, g1, b1, r2, g2, b2);
-    RGB_PACK(b1, g1, r1, rgb1_l, rgb1_h);
-    RGB_PACK(b2, g2, r2, rgb2_l, rgb2_h);
-    RGB_STORE(rgb1_l, rgb1_h, image1 + 24);
-    RGB_STORE(rgb2_l, rgb2_h, image2 + 24);
-    DEALYUV2RGBREMAIN
-    PUTBGR24(image1, py_1);
-    PUTBGR24(image2, py_2);
-    ENDRES
-    END_FUNC()
 
 YUV2RGBFUNC32(yuv420_rgba32_msa, uint32_t, 0)
     LOAD_YUV_16

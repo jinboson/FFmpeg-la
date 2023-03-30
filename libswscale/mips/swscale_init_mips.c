@@ -216,10 +216,6 @@ av_cold SwsFunc ff_yuv2rgb_init_mips(SwsContext *c)
 #if HAVE_MSA
     if (have_msa(cpu_flags)) {
         switch (c->dstFormat) {
-            case AV_PIX_FMT_RGB24:
-                return yuv420_rgb24_msa;
-            case AV_PIX_FMT_BGR24:
-                return yuv420_bgr24_msa;
             case AV_PIX_FMT_RGBA:
                 if (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat)) {
                     break;
