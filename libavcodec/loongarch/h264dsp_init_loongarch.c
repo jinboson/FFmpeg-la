@@ -89,6 +89,7 @@ av_cold void ff_h264dsp_init_loongarch(H264DSPContext *c, const int bit_depth,
 
             c->h264_idct8_add    = ff_h264_idct8_add_8_lasx;
             c->h264_idct8_dc_add = ff_h264_idct8_dc_add_8_lasx;
+            c->h264_idct8_add4 = ff_h264_idct8_add4_8_lasx;
         }
     }
 }
