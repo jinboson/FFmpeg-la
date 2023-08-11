@@ -84,8 +84,8 @@ static void hevc_uniwgt_copy_4w_msa(uint8_t *src,
     v16i8 zero = { 0 };
     v16u8 out0, out1;
     v16i8 src0 = { 0 }, src1 = { 0 };
-    v8i16 dst0, dst1, dst2, dst3, offset_vec;
-    v4i32 weight_vec, rnd_vec;
+    v8i16 dst0, dst1, dst2, dst3;
+    v4i32 weight_vec, rnd_vec, offset_vec;
 
     weight_vec = __msa_fill_w(weight);
     offset_vec = __msa_fill_w(offset);
@@ -153,8 +153,8 @@ static void hevc_uniwgt_copy_6w_msa(uint8_t *src,
     v16i8 zero = { 0 };
     v16u8 out0, out1, out2, out3;
     v16i8 src0, src1, src2, src3;
-    v8i16 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7, offset_vec;
-    v4i32 weight_vec, rnd_vec;
+    v8i16 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
+    v4i32 weight_vec, rnd_vec, offset_vec;
 
     weight_vec = __msa_fill_w(weight);
     offset_vec = __msa_fill_w(offset);
@@ -259,8 +259,8 @@ static void hevc_uniwgt_copy_8w_msa(uint8_t *src,
     v16i8 src0 = { 0 }, src1 = { 0 }, src2 = { 0 }, src3 = { 0 };
     v16i8 zero = { 0 };
     v16u8 out0, out1, out2, out3;
-    v8i16 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7, offset_vec;
-    v4i32 weight_vec, rnd_vec;
+    v8i16 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
+    v4i32 weight_vec, rnd_vec, offset_vec;
 
     weight_vec = __msa_fill_w(weight);
     offset_vec = __msa_fill_w(offset);
@@ -352,9 +352,8 @@ static void hevc_uniwgt_copy_12w_msa(uint8_t *src,
     v16u8 out0, out1, out2;
     v16i8 src0, src1, src2, src3;
     v8i16 dst0, dst1, dst2, dst3, dst4, dst5;
-    v8i16 offset_vec;
     v16i8 zero = { 0 };
-    v4i32 weight_vec, rnd_vec;
+    v4i32 weight_vec, rnd_vec, offset_vec;
 
     weight_vec = __msa_fill_w(weight);
     offset_vec = __msa_fill_w(offset);
@@ -396,8 +395,8 @@ static void hevc_uniwgt_copy_16w_msa(uint8_t *src,
     v16u8 out0, out1, out2, out3;
     v16i8 src0, src1, src2, src3;
     v16i8 zero = { 0 };
-    v8i16 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7, offset_vec;
-    v4i32 weight_vec, rnd_vec;
+    v8i16 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
+    v4i32 weight_vec, rnd_vec, offset_vec;
 
     weight_vec = __msa_fill_w(weight);
     offset_vec = __msa_fill_w(offset);
@@ -438,9 +437,9 @@ static void hevc_uniwgt_copy_24w_msa(uint8_t *src,
     v16u8 out0, out1, out2, out3, out4, out5;
     v16i8 src0, src1, src2, src3, src4, src5, src6, src7;
     v16i8 zero = { 0 };
-    v8i16 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7, offset_vec;
+    v8i16 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
     v8i16 dst8, dst9, dst10, dst11;
-    v4i32 weight_vec, rnd_vec;
+    v4i32 weight_vec, rnd_vec, offset_vec;
 
     weight_vec = __msa_fill_w(weight);
     offset_vec = __msa_fill_w(offset);
@@ -490,8 +489,8 @@ static void hevc_uniwgt_copy_32w_msa(uint8_t *src,
     v16u8 out0, out1, out2, out3;
     v16i8 src0, src1, src2, src3;
     v16i8 zero = { 0 };
-    v8i16 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7, offset_vec;
-    v4i32 weight_vec, rnd_vec;
+    v8i16 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
+    v4i32 weight_vec, rnd_vec, offset_vec;
 
     weight_vec = __msa_fill_w(weight);
     offset_vec = __msa_fill_w(offset);
@@ -535,9 +534,9 @@ static void hevc_uniwgt_copy_48w_msa(uint8_t *src,
     v16u8 out0, out1, out2, out3, out4, out5;
     v16i8 src0, src1, src2, src3, src4, src5;
     v16i8 zero = { 0 };
-    v8i16 dst0, dst1, dst2, dst3, dst4, dst5, offset_vec;
+    v8i16 dst0, dst1, dst2, dst3, dst4, dst5;
     v8i16 dst6, dst7, dst8, dst9, dst10, dst11;
-    v4i32 weight_vec, rnd_vec;
+    v4i32 weight_vec, rnd_vec, offset_vec;
 
     weight_vec = __msa_fill_w(weight);
     offset_vec = __msa_fill_w(offset);
@@ -591,9 +590,9 @@ static void hevc_uniwgt_copy_64w_msa(uint8_t *src,
     v16u8 out0, out1, out2, out3, out4, out5, out6, out7;
     v16i8 src0, src1, src2, src3, src4, src5, src6, src7;
     v16i8 zero = { 0 };
-    v8i16 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7, offset_vec;
+    v8i16 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
     v8i16 dst8, dst9, dst10, dst11, dst12, dst13, dst14, dst15;
-    v4i32 weight_vec, rnd_vec;
+    v4i32 weight_vec, rnd_vec, offset_vec;
 
     weight_vec = __msa_fill_w(weight);
     offset_vec = __msa_fill_w(offset);
