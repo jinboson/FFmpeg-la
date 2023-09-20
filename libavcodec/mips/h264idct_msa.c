@@ -233,13 +233,10 @@ static void avc_idct8_addblk_msa(uint8_t *dst, int16_t *src, int32_t dst_stride)
          res0, res1, res2, res3);
     ADD4(res4, tmp4, res5, tmp5, res6, tmp6, res7, tmp7,
          res4, res5, res6, res7);
-    CLIP_SH4_0_255(res0, res1, res2, res3);
-    CLIP_SH4_0_255(res4, res5, res6, res7);
+    CLIP_SH8_0_255(res0, res1, res2, res3, res4, res5, res6, res7);
     PCKEV_B4_SB(res1, res0, res3, res2, res5, res4, res7, res6,
                 dst0, dst1, dst2, dst3);
-    ST8x4_UB(dst0, dst1, dst, dst_stride);
-    dst += (4 * dst_stride);
-    ST8x4_UB(dst2, dst3, dst, dst_stride);
+    ST_D8(dst0, dst1, dst2, dst3, 0, 1, 0, 1, 0, 1, 0, 1, dst, dst_stride)
 }
 
 static void avc_idct8_dc_addblk_msa(uint8_t *dst, int16_t *src,
@@ -265,18 +262,16 @@ static void avc_idct8_dc_addblk_msa(uint8_t *dst, int16_t *src,
          dst0_r, dst1_r, dst2_r, dst3_r);
     ADD4(dst4_r, dc, dst5_r, dc, dst6_r, dc, dst7_r, dc,
          dst4_r, dst5_r, dst6_r, dst7_r);
-    CLIP_SH4_0_255(dst0_r, dst1_r, dst2_r, dst3_r);
-    CLIP_SH4_0_255(dst4_r, dst5_r, dst6_r, dst7_r);
+    CLIP_SH8_0_255(dst0_r, dst1_r, dst2_r, dst3_r,
+                   dst4_r, dst5_r, dst6_r, dst7_r);
     PCKEV_B4_SB(dst1_r, dst0_r, dst3_r, dst2_r, dst5_r, dst4_r, dst7_r, dst6_r,
                 dst0, dst1, dst2, dst3);
-    ST8x4_UB(dst0, dst1, dst, dst_stride);
-    dst += (4 * dst_stride);
-    ST8x4_UB(dst2, dst3, dst, dst_stride);
+    ST_D8(dst0, dst1, dst2, dst3, 0, 1, 0, 1, 0, 1, 0, 1, dst, dst_stride)
 }
 
 void ff_h264_idct_add_msa(uint8_t *dst, int16_t *src, int32_t dst_stride)
 {
-    uint32_t src0_m, src1_m, src2_m, src3_m, out0_m, out1_m, out2_m, out3_m;
+    uint32_t out0_m, out1_m, out2_m, out3_m;
     v16i8 dst0_m = { 0 };
     v16i8 dst1_m = { 0 };
     v8i16 hres0, hres1, hres2, hres3, vres0, vres1, vres2, vres3;
@@ -284,23 +279,23 @@ void ff_h264_idct_add_msa(uint8_t *dst, int16_t *src, int32_t dst_stride)
     const v8i16 src0 = LD_SH(src);
     const v8i16 src2 = LD_SH(src + 8);
     const v8i16 zero = { 0 };
-    const uint8_t *dst1 = dst + dst_stride;
-    const uint8_t *dst2 = dst + 2 * dst_stride;
-    const uint8_t *dst3 = dst + 3 * dst_stride;
+    const uint8_t *dst1 = dst  + dst_stride;
+    const uint8_t *dst2 = dst1 + dst_stride;
+    const uint8_t *dst3 = dst2 + dst_stride;
 
     ILVL_D2_SH(src0, src0, src2, src2, src1, src3);
     ST_SH2(zero, zero, src, 8);
     AVC_ITRANS_H(src0, src1, src2, src3, hres0, hres1, hres2, hres3);
     TRANSPOSE4x4_SH_SH(hres0, hres1, hres2, hres3, hres0, hres1, hres2, hres3);
     AVC_ITRANS_H(hres0, hres1, hres2, hres3, vres0, vres1, vres2, vres3);
-    src0_m = LW(dst);
-    src1_m = LW(dst1);
-    SRARI_H4_SH(vres0, vres1, vres2, vres3, 6);
-    src2_m = LW(dst2);
-    src3_m = LW(dst3);
+    out0_m = LW(dst);
+    out1_m = LW(dst1);
+    out2_m = LW(dst2);
+    out3_m = LW(dst3);
     ILVR_D2_SH(vres1, vres0, vres3, vres2, inp0_m, inp1_m);
-    INSERT_W2_SB(src0_m, src1_m, dst0_m);
-    INSERT_W2_SB(src2_m, src3_m, dst1_m);
+    SRARI_H2_SH(inp0_m, inp1_m, 6);
+    INSERT_W2_SB(out0_m, out1_m, dst0_m);
+    INSERT_W2_SB(out2_m, out3_m, dst1_m);
     ILVR_B2_SH(zero, dst0_m, zero, dst1_m, res0_m, res1_m);
     ADD2(res0_m, inp0_m, res1_m, inp1_m, res0_m, res1_m);
     CLIP_SH2_0_255(res0_m, res1_m);
@@ -340,7 +335,7 @@ void ff_h264_idct4x4_addblk_dc_msa(uint8_t *dst, int16_t *src,
     ADD2(pred_r, input_dc, pred_l, input_dc, pred_r, pred_l);
     CLIP_SH2_0_255(pred_r, pred_l);
     out = __msa_pckev_b((v16i8) pred_l, (v16i8) pred_r);
-    ST4x4_UB(out, out, 0, 1, 2, 3, dst, dst_stride);
+    ST_W4(out, 0, 1, 2, 3, dst, dst_stride);
 }
 
 void ff_h264_idct8_dc_addblk_msa(uint8_t *dst, int16_t *src,
@@ -357,17 +352,13 @@ void ff_h264_idct_add16_msa(uint8_t *dst,
     int32_t i;
 
     for (i = 0; i < 16; i++) {
-        int32_t nnz = nzc[scan8[i]];
+        uint8_t *dst_l = dst + blk_offset[i];
+        uint8_t  nnz   = nzc[scan8[i]];
+        int32_t i_16p  = i << 4;
 
         if (nnz) {
-            if (nnz == 1 && ((dctcoef *) block)[i * 16])
-                ff_h264_idct4x4_addblk_dc_msa(dst + blk_offset[i],
-                                              block + i * 16 * sizeof(pixel),
-                                              dst_stride);
-            else
-                ff_h264_idct_add_msa(dst + blk_offset[i],
-                                     block + i * 16 * sizeof(pixel),
-                                     dst_stride);
+            i_16p *= sizeof(pixel);
+            ff_h264_idct_add_msa(dst_l, block + i_16p, dst_stride);
         }
     }
 }

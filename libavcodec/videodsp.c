@@ -54,4 +54,6 @@ av_cold void ff_videodsp_init(VideoDSPContext *ctx, int bpc)
         ff_videodsp_init_x86(ctx, bpc);
     if (ARCH_MIPS)
         ff_videodsp_init_mips(ctx, bpc);
+    if (ARCH_LOONGARCH)
+        ff_videodsp_init_loongarch(ctx, bpc);
 }

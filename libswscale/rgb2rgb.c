@@ -139,6 +139,10 @@ av_cold void ff_sws_rgb2rgb_init(void)
     rgb2rgb_init_c();
     if (ARCH_X86)
         rgb2rgb_init_x86();
+    if (ARCH_MIPS)
+        rgb2rgb_init_mips();
+    if (ARCH_LOONGARCH)
+        rgb2rgb_init_loongarch();
 }
 
 void rgb32to24(const uint8_t *src, uint8_t *dst, int src_size)

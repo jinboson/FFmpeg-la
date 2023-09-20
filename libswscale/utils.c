@@ -53,6 +53,8 @@
 #include "libavutil/ppc/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
+#include "libavutil/mips/cpu.h"
+#include "libavutil/loongarch/cpu.h"
 
 // We have to implement deprecated functions until they are removed, this is the
 // simplest way to prevent warnings
@@ -586,6 +588,33 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
          * fall back on the scalar C code for very small filters.
          * Vectorizing is worth it only if you have a decent-sized vector. */
         if (minFilterSize < 3)
+            filterAlign = 1;
+    }
+
+    if (have_msa(cpu_flags)) {
+        int reNum = minFilterSize & (0x07);
+
+        if (minFilterSize < 5)
+            filterAlign = 4;
+        if (reNum < 3)
+            filterAlign = 1;
+    }
+
+    if (have_lsx(cpu_flags)) {
+        int reNum = minFilterSize & (0x07);
+
+        if (minFilterSize < 5)
+            filterAlign = 4;
+        if (reNum < 3)
+            filterAlign = 1;
+    }
+
+    if (have_lasx(cpu_flags)) {
+        int reNum = minFilterSize & (0x07);
+
+        if (minFilterSize < 5)
+            filterAlign = 4;
+        if (reNum < 3)
             filterAlign = 1;
     }
 
@@ -1665,7 +1694,10 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
         {
             const int filterAlign = X86_MMX(cpu_flags)     ? 4 :
                                     PPC_ALTIVEC(cpu_flags) ? 8 :
-                                    have_neon(cpu_flags)   ? 8 : 1;
+                                    have_neon(cpu_flags)   ? 8 :
+                                    have_lsx(cpu_flags)    ? 8 :
+                                    have_lasx(cpu_flags)   ? 8 :
+                                    have_msa(cpu_flags)    ? 8 : 1;
 
             if ((ret = initFilter(&c->hLumFilter, &c->hLumFilterPos,
                            &c->hLumFilterSize, c->lumXInc,

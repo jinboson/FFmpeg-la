@@ -237,9 +237,9 @@ static void apply_ltp_mips(AACContext *ac, SingleChannelElement *sce)
 
         if (ltp->lag < 1024)
             num_samples = ltp->lag + 1024;
-            j = (2048 - num_samples) >> 2;
-            k = (2048 - num_samples) & 3;
-            p_predTime = &predTime[num_samples];
+        j = (2048 - num_samples) >> 2;
+        k = (2048 - num_samples) & 3;
+        p_predTime = &predTime[num_samples];
 
         for (i = 0; i < num_samples; i++)
             predTime[i] = sce->ltp_state[i + 2048 - ltp->lag] * ltp->coef;
@@ -340,7 +340,7 @@ static void update_ltp_mips(AACContext *ac, SingleChannelElement *sce)
     float *saved_ltp = sce->coeffs;
     const float *lwindow = ics->use_kb_window[0] ? ff_aac_kbd_long_1024 : ff_sine_1024;
     const float *swindow = ics->use_kb_window[0] ? ff_aac_kbd_short_128 : ff_sine_128;
-    float temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7;
+    uint32_t temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7;
 
     if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
         float *p_saved_ltp = saved_ltp + 576;

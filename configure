@@ -442,6 +442,8 @@ Optimization options (experts only):
   --disable-mipsfpu        disable floating point MIPS optimizations
   --disable-mmi            disable Loongson SIMD optimizations
   --disable-fast-unaligned consider unaligned accesses slow
+  --disable-lsx            disable LSX optimizations
+  --disable-lasx           disable LASX optimizations
 
 Developer options (useful when working on FFmpeg itself):
   --disable-debug          disable debugging symbols
@@ -1930,6 +1932,9 @@ ARCH_LIST="
     x86
     x86_32
     x86_64
+    loongarch
+    loongarch32
+    loongarch64
 "
 
 ARCH_EXT_LIST_ARM="
@@ -1959,6 +1964,8 @@ ARCH_EXT_LIST_LOONGSON="
     loongson2
     loongson3
     mmi
+    lsx
+    lasx
 "
 
 ARCH_EXT_LIST_X86_SIMD="
@@ -2468,6 +2475,10 @@ power8_deps="vsx"
 
 loongson2_deps="mips"
 loongson3_deps="mips"
+mmi_deps_any="loongson2 loongson3"
+lsx_deps="loongarch"
+lasx_deps="lsx"
+
 mips32r2_deps="mips"
 mips32r5_deps="mips"
 mips32r6_deps="mips"
@@ -2476,7 +2487,6 @@ mips64r6_deps="mips"
 mipsfpu_deps="mips"
 mipsdsp_deps="mips"
 mipsdspr2_deps="mips"
-mmi_deps="mips"
 msa_deps="mipsfpu"
 
 cpunop_deps="i686"
@@ -2514,8 +2524,8 @@ for ext in $(filter_out mmx $ARCH_EXT_LIST_X86_SIMD); do
 done
 
 aligned_stack_if_any="aarch64 ppc x86"
-fast_64bit_if_any="aarch64 alpha ia64 mips64 parisc64 ppc64 sparc64 x86_64"
-fast_clz_if_any="aarch64 alpha avr32 mips ppc x86"
+fast_64bit_if_any="aarch64 alpha ia64 mips64 parisc64 ppc64 sparc64 x86_64 loongarch64"
+fast_clz_if_any="aarch64 alpha avr32 mips ppc x86 loongarch"
 fast_unaligned_if_any="aarch64 ppc x86"
 simd_align_16_if_any="altivec neon sse"
 simd_align_32_if_any="avx"
@@ -4667,6 +4677,9 @@ case "$arch" in
     arm*|iPad*|iPhone*)
         arch="arm"
     ;;
+    loongarch*)
+        arch="loongarch"
+    ;;
     mips*|IP*)
         case "$arch" in
         *el)
@@ -4811,8 +4824,6 @@ elif enabled bfin; then
 
 elif enabled mips; then
 
-    cpuflags="-march=$cpu"
-
     if [ "$cpu" != "generic" ]; then
         disable mips32r2
         disable mips32r5
@@ -4821,82 +4832,40 @@ elif enabled mips; then
         disable mips64r6
         disable loongson2
         disable loongson3
+        disable mipsdsp
+        disable mipsdspr2
+
+        cpuflags="-march=$cpu"
 
         case $cpu in
-            24kc|24kf*|24kec|34kc|1004kc|24kef*|34kf*|1004kf*|74kc|74kf)
+            # General ISA levels
+            mips1|mips3)
+            ;;
+            mips32r2)
                 enable mips32r2
-                disable msa
             ;;
-            p5600|i6400|p6600)
-                disable mipsdsp
-                disable mipsdspr2
+            mips32r5)
+                enable mips32r2
+                enable mips32r5
             ;;
-            loongson*)
-                enable loongson2
+            mips64r2|mips64r5)
+                enable mips64r2
                 enable loongson3
-                enable local_aligned
-                enable simd_align_16
-                enable fast_64bit
-                enable fast_clz
-                enable fast_cmov
-                enable fast_unaligned
-                disable aligned_stack
-                disable mipsfpu
-                disable mipsdsp
-                disable mipsdspr2
-                # When gcc version less than 5.3.0, add -fno-expensive-optimizations flag.
-                if [ $cc == gcc ]; then
-                    gcc_version=$(gcc -dumpversion)
-                    if [ "$(echo "$gcc_version 5.3.0" | tr " " "\n" | sort -rV | head -n 1)" == "$gcc_version" ]; then
-                        expensive_optimization_flag=""
-                    else
-                        expensive_optimization_flag="-fno-expensive-optimizations"
-                    fi
-                fi
-                case $cpu in
-                    loongson3*)
-                        cpuflags="-march=loongson3a -mhard-float $expensive_optimization_flag"
-                    ;;
-                    loongson2e)
-                        cpuflags="-march=loongson2e -mhard-float $expensive_optimization_flag"
-                    ;;
-                    loongson2f)
-                        cpuflags="-march=loongson2f -mhard-float $expensive_optimization_flag"
-                    ;;
-                esac
             ;;
-            *)
-                # Unknown CPU. Disable everything.
-                warn "unknown CPU. Disabling all MIPS optimizations."
-                disable mipsfpu
-                disable mipsdsp
-                disable mipsdspr2
-                disable msa
-                disable mmi
-            ;;
-        esac
-
-        case $cpu in
+            # Cores from MIPS(MTI)
             24kc)
                 disable mipsfpu
-                disable mipsdsp
-                disable mipsdspr2
+                enable mips32r2
             ;;
-            24kf*)
-                disable mipsdsp
-                disable mipsdspr2
-            ;;
-            24kec|34kc|1004kc)
-                disable mipsfpu
-                disable mipsdspr2
+            24kf*|24kec|34kc|74Kc|1004kc)
+                enable mips32r2
             ;;
             24kef*|34kf*|1004kf*)
-                disable mipsdspr2
-            ;;
-            74kc)
-                disable mipsfpu
+                enable mipsdsp
+                enable mips32r2
             ;;
             p5600)
+                enable mips32r2
                 enable mips32r5
                 check_cflags "-mtune=p5600" && check_cflags "-msched-weight -mload-store-pairs -funroll-loops"
             ;;
@@ -4908,9 +4877,51 @@ elif enabled mips; then
                 enable mips64r6
                 check_cflags "-mtune=p6600 -mabi=64" && check_cflags "-msched-weight -mload-store-pairs -funroll-loops" && check_ldflags "-mabi=64"
             ;;
+            # Cores from Loongson
+            loongson2e|loongson2f|loongson3*)
+                enable local_aligned
+                enable simd_align_16
+                enable fast_64bit
+                enable fast_clz
+                enable fast_cmov
+                enable fast_unaligned
+                disable aligned_stack
+                # When gcc version less than 5.3.0, add -fno-expensive-optimizations flag.
+                if test "$cc_type" = "gcc"; then
+                    case $gcc_basever in
+                        2|2.*|3.*|4.*|5.0|5.1|5.2)
+                        expensive_optimization_flag="-fno-expensive-optimizations"
+                        ;;
+                        *)
+                        expensive_optimization_flag=""
+                        ;;
+                    esac
+                fi
+
+                case $cpu in
+                    loongson3*)
+                        enable loongson3
+                        cpuflags="-march=loongson3a -mhard-float $expensive_optimization_flag"
+                    ;;
+                    loongson2e)
+                        enable loongson2
+                        cpuflags="-march=loongson2e -mhard-float $expensive_optimization_flag"
+                    ;;
+                    loongson2f)
+                        enable loongson2
+                        cpuflags="-march=loongson2f -mhard-float $expensive_optimization_flag"
+                    ;;
+                esac
+            ;;
+            *)
+                warn "unknown MIPS CPU"
+            ;;
         esac
+
     else
-        # We do not disable anything. Is up to the user to disable the unwanted features.
+        disable mipsdsp
+        disable mipsdspr2
+        # Disable DSP stuff for generic CPU, it can't be detected at runtime.
         warn 'generic cpu selected'
     fi
 
@@ -5015,6 +5026,20 @@ elif enabled x86; then
         ;;
     esac
 
+elif enabled loongarch; then
+    # TODO: pending to test.
+    enable local_aligned
+    enable simd_align_16
+    enable fast_64bit
+    enable fast_clz
+    enable fast_cmov
+    enable fast_unaligned
+    disable aligned_stack
+    case $cpu in
+        gs464v)
+            cpuflags="-march=$cpu"
+        ;;
+    esac
 fi
 
 if [ "$cpu" != generic ]; then
@@ -5096,6 +5121,11 @@ case "$arch" in
             enabled shared && enable_weak pic
             objformat=elf64
         fi
+    ;;
+    loongarch)
+        check_64bit loongarch32 loongarch64
+        enabled loongarch64 && disable loongarch32
+        enabled shared && enable_weak pic
     ;;
 esac
 
@@ -5644,27 +5674,45 @@ EOF
 
 elif enabled mips; then
 
-    enabled loongson2 && check_inline_asm loongson2 '"dmult.g $8, $9, $10"'
-    enabled loongson3 && check_inline_asm loongson3 '"gsldxc1 $f0, 0($2, $3)"'
-    enabled mmi && check_inline_asm mmi '"punpcklhw $f0, $f0, $f0"'
-
-    # Enable minimum ISA based on selected options
+    # Check toolchain ISA level
     if enabled mips64; then
-        enabled mips64r6 && check_inline_asm_flags mips64r6 '"dlsa $0, $0, $0, 1"' '-mips64r6'
-        enabled mips64r2 && check_inline_asm_flags mips64r2 '"dext $0, $0, 0, 1"' '-mips64r2'
-        disabled mips64r6 && disabled mips64r2 && check_inline_asm_flags mips64r1 '"daddi $0, $0, 0"' '-mips64'
+        enabled mips64r6 && check_inline_asm mips64r6 '"dlsa $0, $0, $0, 1"' &&
+            disable mips64r2
+
+        enabled mips64r2 && check_inline_asm mips64r2 '"dext $0, $0, 0, 1"'
+
+        disable mips32r6 && disable mips32r5 && disable mips32r2
     else
-        enabled mips32r6 && check_inline_asm_flags mips32r6 '"aui $0, $0, 0"' '-mips32r6'
-        enabled mips32r5 && check_inline_asm_flags mips32r5 '"eretnc"' '-mips32r5'
-        enabled mips32r2 && check_inline_asm_flags mips32r2 '"ext $0, $0, 0, 1"' '-mips32r2'
-        disabled mips32r6 && disabled mips32r5 && disabled mips32r2 && check_inline_asm_flags mips32r1 '"addi $0, $0, 0"' '-mips32'
+        enabled mips32r6 && check_inline_asm mips32r6 '"aui $0, $0, 0"' &&
+            disable mips32r5 && disable mips32r2
+
+        enabled mips32r5 && check_inline_asm mips32r5 '"eretnc"'
+        enabled mips32r2 && check_inline_asm mips32r2 '"ext $0, $0, 0, 1"'
+
+        disable mips64r6 && disable mips64r5 && disable mips64r2
     fi
 
-    enabled mipsfpu && check_inline_asm_flags mipsfpu '"cvt.d.l $f0, $f2"' '-mhard-float'
+    enabled mipsfpu && check_inline_asm mipsfpu '"cvt.d.l $f0, $f2"'
     enabled mipsfpu && (enabled mips32r5 || enabled mips32r6 || enabled mips64r6) && check_inline_asm_flags mipsfpu '"cvt.d.l $f0, $f1"' '-mfp64'
-    enabled mipsfpu && enabled msa && check_inline_asm_flags msa '"addvi.b $w0, $w1, 1"' '-mmsa' && check_headers msa.h || disable msa
+
     enabled mipsdsp && check_inline_asm_flags mipsdsp '"addu.qb $t0, $t1, $t2"' '-mdsp'
     enabled mipsdspr2 && check_inline_asm_flags mipsdspr2 '"absq_s.qb $t0, $t1"' '-mdspr2'
+
+    # MSA can be detected at runtime so we supply extra flags here
+    enabled mipsfpu && enabled msa && check_inline_asm msa '"addvi.b $w0, $w1, 1"' '-mmsa' && append MSAFLAGS '-mmsa'
+
+    # loongson2 have no switch cflag so we can only probe toolchain ability
+    enabled loongson2 && check_inline_asm loongson2 '"dmult.g $8, $9, $10"' && disable loongson3
+
+    # loongson3 is paired with MMI
+    enabled loongson3 && check_inline_asm loongson3 '"gsldxc1 $f0, 0($2, $3)"' '-mloongson-ext' && append MMIFLAGS '-mloongson-ext'
+
+    # MMI can be detected at runtime too
+    enabled mmi && check_inline_asm mmi '"punpcklhw $f0, $f0, $f0"' '-mloongson-mmi' && append MMIFLAGS '-mloongson-mmi'
+
+    # TODO: The following code is intended to fix h264 decoding module compilation error,
+    # but it is not resonable. Maybe we should fix it in the feature.
+    enabled mmi && h264_decoder_select="$h264_decoder_select hpeldsp"
 
     if enabled bigendian && enabled msa; then
         disable msa
@@ -5783,6 +5831,9 @@ EOF
         ;;
     esac
 
+elif enabled loongarch; then
+    enabled lsx && check_inline_asm lsx '"vadd.b $vr0, $vr1, $vr2"' '-mlsx' && append LSXFLAGS '-mlsx'
+    enabled lasx && check_inline_asm lasx '"xvadd.b $xr0, $xr1, $xr2"' '-mlasx' && append LASXFLAGS '-mlasx'
 fi
 
 check_cc intrinsics_neon arm_neon.h "int16x8_t test = vdupq_n_s16(0)"
@@ -7020,6 +7071,10 @@ if enabled ppc; then
     echo "PPC 4xx optimizations     ${ppc4xx-no}"
     echo "dcbzl available           ${dcbzl-no}"
 fi
+if enabled loongarch; then
+    echo "LSX enabled               ${lsx-no}"
+    echo "LASX enabled              ${lasx-no}"
+fi
 echo "debug symbols             ${debug-no}"
 echo "strip symbols             ${stripping-no}"
 echo "optimize for size         ${small-no}"
@@ -7170,6 +7225,10 @@ LDSOFLAGS=$LDSOFLAGS
 SHFLAGS=$(echo $($ldflags_filter $SHFLAGS))
 ASMSTRIPFLAGS=$ASMSTRIPFLAGS
 X86ASMFLAGS=$X86ASMFLAGS
+MSAFLAGS=$MSAFLAGS
+MMIFLAGS=$MMIFLAGS
+LSXFLAGS=$LSXFLAGS
+LASXFLAGS=$LASXFLAGS
 BUILDSUF=$build_suffix
 PROGSSUF=$progs_suffix
 FULLNAME=$FULLNAME
